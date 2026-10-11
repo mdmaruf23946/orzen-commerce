@@ -19,6 +19,7 @@ import { Route as ContactRouteImport } from './routes/contact'
 import { Route as DataDeletionRouteImport } from './routes/data-deletion'
 import { Route as EmployeeLoginRouteImport } from './routes/employee-login'
 import { Route as FeaturesRouteImport } from './routes/features'
+import { Route as LlmsDottxtRouteImport } from './routes/llms[.]txt'
 import { Route as ManifestDotwebmanifestRouteImport } from './routes/manifest[.]webmanifest'
 import { Route as McpRouteImport } from './routes/mcp'
 import { Route as PricingRouteImport } from './routes/pricing'
@@ -321,6 +322,11 @@ const EmployeeLoginRoute = EmployeeLoginRouteImport.update({
 const FeaturesRoute = FeaturesRouteImport.update({
   id: '/features',
   path: '/features',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LlmsDottxtRoute = LlmsDottxtRouteImport.update({
+  id: '/llms.txt',
+  path: '/llms.txt',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ManifestDotwebmanifestRoute = ManifestDotwebmanifestRouteImport.update({
@@ -1785,6 +1791,7 @@ export interface FileRoutesByFullPath {
   '/data-deletion': typeof DataDeletionRoute
   '/employee-login': typeof EmployeeLoginRoute
   '/features': typeof FeaturesRoute
+  '/llms.txt': typeof LlmsDottxtRoute
   '/manifest.webmanifest': typeof ManifestDotwebmanifestRoute
   '/mcp': typeof McpRoute
   '/pricing': typeof PricingRoute
@@ -2050,6 +2057,7 @@ export interface FileRoutesByTo {
   '/data-deletion': typeof DataDeletionRoute
   '/employee-login': typeof EmployeeLoginRoute
   '/features': typeof FeaturesRoute
+  '/llms.txt': typeof LlmsDottxtRoute
   '/manifest.webmanifest': typeof ManifestDotwebmanifestRoute
   '/mcp': typeof McpRoute
   '/pricing': typeof PricingRoute
@@ -2304,6 +2312,7 @@ export interface FileRoutesById {
   '/data-deletion': typeof DataDeletionRoute
   '/employee-login': typeof EmployeeLoginRoute
   '/features': typeof FeaturesRoute
+  '/llms.txt': typeof LlmsDottxtRoute
   '/manifest.webmanifest': typeof ManifestDotwebmanifestRoute
   '/mcp': typeof McpRoute
   '/pricing': typeof PricingRoute
@@ -2571,6 +2580,7 @@ export interface FileRouteTypes {
     | '/data-deletion'
     | '/employee-login'
     | '/features'
+    | '/llms.txt'
     | '/manifest.webmanifest'
     | '/mcp'
     | '/pricing'
@@ -2836,6 +2846,7 @@ export interface FileRouteTypes {
     | '/data-deletion'
     | '/employee-login'
     | '/features'
+    | '/llms.txt'
     | '/manifest.webmanifest'
     | '/mcp'
     | '/pricing'
@@ -3089,6 +3100,7 @@ export interface FileRouteTypes {
     | '/data-deletion'
     | '/employee-login'
     | '/features'
+    | '/llms.txt'
     | '/manifest.webmanifest'
     | '/mcp'
     | '/pricing'
@@ -3356,6 +3368,7 @@ export interface RootRouteChildren {
   DataDeletionRoute: typeof DataDeletionRoute
   EmployeeLoginRoute: typeof EmployeeLoginRoute
   FeaturesRoute: typeof FeaturesRoute
+  LlmsDottxtRoute: typeof LlmsDottxtRoute
   ManifestDotwebmanifestRoute: typeof ManifestDotwebmanifestRoute
   McpRoute: typeof McpRoute
   PricingRoute: typeof PricingRoute
@@ -3487,6 +3500,13 @@ declare module '@tanstack/react-router' {
       path: '/features'
       fullPath: '/features'
       preLoaderRoute: typeof FeaturesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/llms.txt': {
+      id: '/llms.txt'
+      path: '/llms.txt'
+      fullPath: '/llms.txt'
+      preLoaderRoute: typeof LlmsDottxtRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/manifest.webmanifest': {
@@ -5919,6 +5939,7 @@ const rootRouteChildren: RootRouteChildren = {
   DataDeletionRoute: DataDeletionRoute,
   EmployeeLoginRoute: EmployeeLoginRoute,
   FeaturesRoute: FeaturesRoute,
+  LlmsDottxtRoute: LlmsDottxtRoute,
   ManifestDotwebmanifestRoute: ManifestDotwebmanifestRoute,
   McpRoute: McpRoute,
   PricingRoute: PricingRoute,

@@ -2,7 +2,8 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { PLAN_DISPLAY_FEATURES } from "@/lib/features";
 import { getPlatformSeoOverrides } from "@/lib/platform-seo-pages.functions";
 import { effectiveSeo } from "@/lib/platform-seo-pages";
-import { platformHead, ORG_NODE, WEBSITE_NODE, softwareAppNode } from "@/lib/platform-seo";
+import { platformHead, ORG_NODE, WEBSITE_NODE, softwareAppNode, faqNode } from "@/lib/platform-seo";
+import { PlatformFaq } from "@/components/platform/PlatformFaq";
 
 const TITLE = "Features — ORZEN AI eCommerce Platform";
 const DESC =
@@ -11,7 +12,7 @@ const DESC =
 export const Route = createFileRoute("/features")({
   loader: async () => ({ seo: await getPlatformSeoOverrides().catch(() => ({})) }),
   head: ({ loaderData }) =>
-    platformHead({ path: "/features", ...effectiveSeo("features", loaderData?.seo), jsonLd: [ORG_NODE, WEBSITE_NODE, softwareAppNode()] }),
+    platformHead({ path: "/features", ...effectiveSeo("features", loaderData?.seo), jsonLd: [ORG_NODE, WEBSITE_NODE, softwareAppNode(), faqNode("/features")] }),
   component: FeaturesPage,
 });
 
@@ -40,6 +41,7 @@ function FeaturesPage() {
           </Link>
         </div>
       </section>
+      <PlatformFaq />
     </main>
   );
 }

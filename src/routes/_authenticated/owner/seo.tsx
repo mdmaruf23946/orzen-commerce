@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { PLATFORM_ORIGIN } from "@/lib/seo";
+import { PageSpeedPanel, SearchConsoleCard } from "@/components/owner/PageSpeedPanel";
 import {
   PLATFORM_PAGES, effectiveSeo, scorePageSeo, type PageSeo, type PlatformPageKey,
 } from "@/lib/platform-seo-pages";
@@ -88,6 +89,8 @@ function OwnerSeoPage() {
   return (
     <div className="space-y-6">
       <OwnerPageHeader title="Platform SEO" description="ORZEN-এর মূল পেজগুলোর Google-এ দেখানো টাইটেল, বিবরণ ও কিওয়ার্ড নিয়ন্ত্রণ করুন।" />
+      <SearchConsoleCard />
+      <PageSpeedPanel />
 
       <section className="rounded-xl border bg-card p-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
