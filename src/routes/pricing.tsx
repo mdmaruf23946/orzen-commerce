@@ -2,7 +2,8 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { listPublicPlans } from "@/lib/billing.functions";
 import { getPlatformSeoOverrides } from "@/lib/platform-seo-pages.functions";
 import { effectiveSeo } from "@/lib/platform-seo-pages";
-import { platformHead, ORG_NODE, WEBSITE_NODE, softwareAppNode } from "@/lib/platform-seo";
+import { platformHead, ORG_NODE, WEBSITE_NODE, softwareAppNode, faqNode } from "@/lib/platform-seo";
+import { PlatformFaq } from "@/components/platform/PlatformFaq";
 
 const TITLE = "Pricing — ORZEN eCommerce Plans";
 const DESC =
@@ -21,7 +22,7 @@ export const Route = createFileRoute("/pricing")({
     platformHead({
       path: "/pricing",
       ...effectiveSeo("pricing", (loaderData as any)?.seo),
-      jsonLd: [ORG_NODE, WEBSITE_NODE, softwareAppNode(loaderData?.plans ?? [])],
+      jsonLd: [ORG_NODE, WEBSITE_NODE, softwareAppNode(loaderData?.plans ?? []), faqNode("/pricing")],
     }),
   component: PricingPage,
 });
