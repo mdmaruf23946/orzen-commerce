@@ -18,8 +18,10 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as ContactRouteImport } from './routes/contact'
 import { Route as DataDeletionRouteImport } from './routes/data-deletion'
 import { Route as EmployeeLoginRouteImport } from './routes/employee-login'
+import { Route as FeaturesRouteImport } from './routes/features'
 import { Route as ManifestDotwebmanifestRouteImport } from './routes/manifest[.]webmanifest'
 import { Route as McpRouteImport } from './routes/mcp'
+import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as PrivacyPolicyRouteImport } from './routes/privacy-policy'
 import { Route as RefundPolicyRouteImport } from './routes/refund-policy'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
@@ -315,6 +317,11 @@ const EmployeeLoginRoute = EmployeeLoginRouteImport.update({
   path: '/employee-login',
   getParentRoute: () => rootRouteImport,
 } as any)
+const FeaturesRoute = FeaturesRouteImport.update({
+  id: '/features',
+  path: '/features',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ManifestDotwebmanifestRoute = ManifestDotwebmanifestRouteImport.update({
   id: '/manifest.webmanifest',
   path: '/manifest.webmanifest',
@@ -323,6 +330,11 @@ const ManifestDotwebmanifestRoute = ManifestDotwebmanifestRouteImport.update({
 const McpRoute = McpRouteImport.update({
   id: '/mcp',
   path: '/mcp',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PricingRoute = PricingRouteImport.update({
+  id: '/pricing',
+  path: '/pricing',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PrivacyPolicyRoute = PrivacyPolicyRouteImport.update({
@@ -1766,8 +1778,10 @@ export interface FileRoutesByFullPath {
   '/contact': typeof ContactRoute
   '/data-deletion': typeof DataDeletionRoute
   '/employee-login': typeof EmployeeLoginRoute
+  '/features': typeof FeaturesRoute
   '/manifest.webmanifest': typeof ManifestDotwebmanifestRoute
   '/mcp': typeof McpRoute
+  '/pricing': typeof PricingRoute
   '/privacy-policy': typeof PrivacyPolicyRoute
   '/refund-policy': typeof RefundPolicyRoute
   '/reset-password': typeof ResetPasswordRoute
@@ -2028,8 +2042,10 @@ export interface FileRoutesByTo {
   '/contact': typeof ContactRoute
   '/data-deletion': typeof DataDeletionRoute
   '/employee-login': typeof EmployeeLoginRoute
+  '/features': typeof FeaturesRoute
   '/manifest.webmanifest': typeof ManifestDotwebmanifestRoute
   '/mcp': typeof McpRoute
+  '/pricing': typeof PricingRoute
   '/privacy-policy': typeof PrivacyPolicyRoute
   '/refund-policy': typeof RefundPolicyRoute
   '/reset-password': typeof ResetPasswordRoute
@@ -2279,8 +2295,10 @@ export interface FileRoutesById {
   '/contact': typeof ContactRoute
   '/data-deletion': typeof DataDeletionRoute
   '/employee-login': typeof EmployeeLoginRoute
+  '/features': typeof FeaturesRoute
   '/manifest.webmanifest': typeof ManifestDotwebmanifestRoute
   '/mcp': typeof McpRoute
+  '/pricing': typeof PricingRoute
   '/privacy-policy': typeof PrivacyPolicyRoute
   '/refund-policy': typeof RefundPolicyRoute
   '/reset-password': typeof ResetPasswordRoute
@@ -2543,8 +2561,10 @@ export interface FileRouteTypes {
     | '/contact'
     | '/data-deletion'
     | '/employee-login'
+    | '/features'
     | '/manifest.webmanifest'
     | '/mcp'
+    | '/pricing'
     | '/privacy-policy'
     | '/refund-policy'
     | '/reset-password'
@@ -2805,8 +2825,10 @@ export interface FileRouteTypes {
     | '/contact'
     | '/data-deletion'
     | '/employee-login'
+    | '/features'
     | '/manifest.webmanifest'
     | '/mcp'
+    | '/pricing'
     | '/privacy-policy'
     | '/refund-policy'
     | '/reset-password'
@@ -3055,8 +3077,10 @@ export interface FileRouteTypes {
     | '/contact'
     | '/data-deletion'
     | '/employee-login'
+    | '/features'
     | '/manifest.webmanifest'
     | '/mcp'
+    | '/pricing'
     | '/privacy-policy'
     | '/refund-policy'
     | '/reset-password'
@@ -3319,8 +3343,10 @@ export interface RootRouteChildren {
   ContactRoute: typeof ContactRoute
   DataDeletionRoute: typeof DataDeletionRoute
   EmployeeLoginRoute: typeof EmployeeLoginRoute
+  FeaturesRoute: typeof FeaturesRoute
   ManifestDotwebmanifestRoute: typeof ManifestDotwebmanifestRoute
   McpRoute: typeof McpRoute
+  PricingRoute: typeof PricingRoute
   PrivacyPolicyRoute: typeof PrivacyPolicyRoute
   RefundPolicyRoute: typeof RefundPolicyRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
@@ -3444,6 +3470,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EmployeeLoginRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/features': {
+      id: '/features'
+      path: '/features'
+      fullPath: '/features'
+      preLoaderRoute: typeof FeaturesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/manifest.webmanifest': {
       id: '/manifest.webmanifest'
       path: '/manifest.webmanifest'
@@ -3456,6 +3489,13 @@ declare module '@tanstack/react-router' {
       path: '/mcp'
       fullPath: '/mcp'
       preLoaderRoute: typeof McpRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pricing': {
+      id: '/pricing'
+      path: '/pricing'
+      fullPath: '/pricing'
+      preLoaderRoute: typeof PricingRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/privacy-policy': {
@@ -5857,8 +5897,10 @@ const rootRouteChildren: RootRouteChildren = {
   ContactRoute: ContactRoute,
   DataDeletionRoute: DataDeletionRoute,
   EmployeeLoginRoute: EmployeeLoginRoute,
+  FeaturesRoute: FeaturesRoute,
   ManifestDotwebmanifestRoute: ManifestDotwebmanifestRoute,
   McpRoute: McpRoute,
+  PricingRoute: PricingRoute,
   PrivacyPolicyRoute: PrivacyPolicyRoute,
   RefundPolicyRoute: RefundPolicyRoute,
   ResetPasswordRoute: ResetPasswordRoute,
