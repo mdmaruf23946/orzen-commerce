@@ -70,3 +70,8 @@
 - [x] Merchant Panel plan cards show the grouped feature list (max 16), nothing hidden
 - [x] Winner Admin /owner/packages uses the same grouped toggles; create/edit/delete stays dynamic
 - [x] Guarded wrangler deployment to orzen.top; identity + parity checks passed; public routes 200
+
+## AI credit-saver release (2026-10-11)
+- [x] Test Chat hard-caps the answer (300 tokens) and keeps only the last few turns
+- [x] Chat replies get a default output cap (1024) and temperature capped at 1.0
+- [x] Guarded wrangler deployment (version c0e5c998) to orzen.top; identity + parity checks passed; home/login 200, health ok
