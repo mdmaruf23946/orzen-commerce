@@ -29,7 +29,7 @@ export function KeyPlayground() {
     setBusy(true);
     const histories: Record<string, { role: "user" | "assistant"; content: string }[]> = {};
     for (const id of selected) {
-      histories[id] = (threads[id] ?? []).filter((m) => !m.error).slice(-10).map(({ role, content }) => ({ role, content }));
+      histories[id] = (threads[id] ?? []).filter((m) => !m.error).slice(-4).map(({ role, content }) => ({ role, content }));
     }
     setThreads((t) => {
       const n = { ...t };

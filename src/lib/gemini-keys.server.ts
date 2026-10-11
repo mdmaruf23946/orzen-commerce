@@ -185,12 +185,16 @@ function pickChatModel(ids: string[]): string | null {
     (id) => !/embed|whisper|tts|speech|audio|transcri|image|dall-e|moderation|guard|rerank|vision-preview-old/i.test(id),
   );
   if (!chat.length) return null;
-  const prefs = [/flash/i, /llama-3\.3-70b/i, /mini/i, /instruct/i, /chat/i, /grok/i, /deepseek-chat/i, /small/i];
+  // Cheapest/fastest families first; premium or "thinking" models only as last resort.
+  const heavy = /opus|fable|sonnet|(^|[-/])o[134](-|$)|gpt-5(?!.*(mini|nano))|pro\b|-pro|thinking|reason|r1|max\b|ultra|405b/i;
+  const light = chat.filter((id) => !heavy.test(id));
+  const pool = light.length ? light : chat;
+  const prefs = [/flash-lite|flash/i, /haiku/i, /mini|nano/i, /lite/i, /turbo/i, /llama-3\.3-70b/i, /deepseek-chat/i, /instruct/i, /chat/i, /small/i, /grok/i];
   for (const re of prefs) {
-    const hit = chat.find((id) => re.test(id));
+    const hit = pool.find((id) => re.test(id));
     if (hit) return hit;
   }
-  return chat[0]!;
+  return pool[0]!;
 }
 
 export type DetectedKey = {
