@@ -1,5 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { PLATFORM_OG_IMAGE } from "@/lib/platform-seo";
+import { getPlatformSeoOverrides } from "@/lib/platform-seo-pages.functions";
+import { effectiveSeo } from "@/lib/platform-seo-pages";
 import { getLegalPagePublic } from "@/lib/legal.functions";
 import { LegalPage, LegalPageMissing } from "@/components/storefront/LegalPage";
 
@@ -8,13 +10,20 @@ const PAGE_PATH = "/about";
 const DEFAULT_TITLE = "About Us";
 
 export const Route = createFileRoute("/about")({
-  loader: () => getLegalPagePublic({ data: { page: PAGE_KEY } }),
+  loader: async () => {
+    const [d, seo] = await Promise.all([
+      getLegalPagePublic({ data: { page: PAGE_KEY } }),
+      getPlatformSeoOverrides().catch(() => ({})),
+    ]);
+    return { ...(d as any), platformSeo: seo };
+  },
   head: ({ loaderData }) => {
     const d: any = loaderData ?? {};
     const p = d.page;
     const store = d.store;
-    const title = p?.title || `${DEFAULT_TITLE}${store?.name ? ` — ${store.name}` : ""}`;
-    const description = p?.description || `${DEFAULT_TITLE} for ${store?.name || "our store"}.`;
+    const ov = !store ? (d.platformSeo as any)?.about : null;
+    const title = ov?.title || p?.title || `${DEFAULT_TITLE}${store?.name ? ` — ${store.name}` : ""}`;
+    const description = ov?.description || p?.description || `${DEFAULT_TITLE} for ${store?.name || "our store"}.`;
     const canonical = d.origin ? `${d.origin}${PAGE_PATH}` : undefined;
     const meta: any[] = [
       { title },

@@ -1,5 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { listPublicPlans } from "@/lib/billing.functions";
+import { getPlatformSeoOverrides } from "@/lib/platform-seo-pages.functions";
+import { effectiveSeo } from "@/lib/platform-seo-pages";
 import { platformHead, ORG_NODE, WEBSITE_NODE, softwareAppNode } from "@/lib/platform-seo";
 
 const TITLE = "Pricing — ORZEN eCommerce Plans";
@@ -9,16 +11,16 @@ const DESC =
 export const Route = createFileRoute("/pricing")({
   loader: async () => {
     try {
-      return { plans: (await listPublicPlans()) as any[] };
+      const [plans, seo] = await Promise.all([listPublicPlans(), getPlatformSeoOverrides().catch(() => ({}))]);
+      return { plans: plans as any[], seo };
     } catch {
-      return { plans: [] as any[] };
+      return { plans: [] as any[], seo: {} };
     }
   },
   head: ({ loaderData }) =>
     platformHead({
       path: "/pricing",
-      title: TITLE,
-      description: DESC,
+      ...effectiveSeo("pricing", (loaderData as any)?.seo),
       jsonLd: [ORG_NODE, WEBSITE_NODE, softwareAppNode(loaderData?.plans ?? [])],
     }),
   component: PricingPage,
