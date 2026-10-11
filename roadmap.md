@@ -89,3 +89,6 @@
 - [x] SEO Step 1: product custom SEO in head, platform meta/schema, /features & /pricing, sitemap/robots (preview; live deploy pending approval)
 - [x] SEO Step 2: change tracking (semantic SHA-256 triggers), recommendations table, history + 1-click rollback (preview)
 - [x] SEO Step 3: /owner/seo platform SEO manager — health score, audit, AI draft, preview, live overrides (preview; live deploy pending)
+- [x] SEO Step 4: merchant AI SEO optimizer — audit, single/bulk suggestions, approve/reject, rollback (preview)
+- [x] SEO Step 5: custom-domain 301 + canonicals (store, product, shop, categories), PageSpeed panel, FAQPage schema (home/features/pricing), /llms.txt, AI crawler rules (preview)
+- [ ] SEO Step 5: live Search Console data — BLOCKED (owner): verify orzen.top in Google Search Console
