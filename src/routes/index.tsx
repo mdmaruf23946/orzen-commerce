@@ -1,3 +1,4 @@
+import { platformHead, ORG_NODE, WEBSITE_NODE, softwareAppNode } from "@/lib/platform-seo";
 import { createFileRoute, Link, redirect, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 
@@ -70,43 +71,14 @@ export const Route = createFileRoute("/")({
       // swallow lookup errors — fall through to landing
     }
   },
-  head: () => ({
-    meta: [
-      { title: "ORZEN — Online Store & Commerce" },
-      { name: "description", content: "Grow your online store with ORZEN commerce, order management and merchant tools." },
-      { property: "og:title", content: "ORZEN — Online Store & Commerce" },
-      { property: "og:description", content: "Grow your online store with ORZEN commerce, order management and merchant tools." },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
-      { property: "og:url", content: "https://orzen.top/" },
-    ],
-    links: [{ rel: "canonical", href: "https://orzen.top/" }],
-    scripts: [
-      {
-        type: "application/ld+json",
-        children: JSON.stringify({
-          "@context": "https://schema.org",
-          "@graph": [
-            {
-              "@type": "Organization",
-              "@id": "https://orzen.top/#organization",
-              name: "ORZEN",
-              url: "https://orzen.top/",
-              description:
-                "All-in-one eCommerce platform for store building, AI sales assistance, messenger automation, courier delivery, analytics and secure payments.",
-            },
-            {
-              "@type": "WebSite",
-              "@id": "https://orzen.top/#website",
-              name: "ORZEN",
-              url: "https://orzen.top/",
-              publisher: { "@id": "https://orzen.top/#organization" },
-            },
-          ],
-        }),
-      },
-    ],
-  }),
+  head: () =>
+    platformHead({
+      path: "/",
+      title: "ORZEN — AI eCommerce Platform for Online Stores in Bangladesh",
+      description:
+        "Build your online store with ORZEN: AI sales agent, Messenger & WhatsApp automation, courier delivery, landing pages, custom domain and analytics.",
+      jsonLd: [ORG_NODE, WEBSITE_NODE, softwareAppNode()],
+    }),
   component: Landing,
 });
 

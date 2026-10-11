@@ -21,6 +21,8 @@ export const Route = createFileRoute("/sitemap.xml")({
               : PLATFORM_ORIGIN;
           const paths: Array<[string, string]> = [
             ["/", "1.0"],
+            ["/features", "0.8"],
+            ["/pricing", "0.8"],
             ["/about", "0.6"],
             ["/contact", "0.6"],
             ["/privacy-policy", "0.3"],

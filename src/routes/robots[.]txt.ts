@@ -18,7 +18,7 @@ export const Route = createFileRoute("/robots.txt")({
             host.endsWith(".lovable.app") && !host.includes("id-preview--")
               ? origin
               : PLATFORM_ORIGIN;
-          return new Response(`User-agent: *\nAllow: /\n\nSitemap: ${platBase}/sitemap.xml\n`, {
+          return new Response(`User-agent: *\nAllow: /\nDisallow: /admin\nDisallow: /owner\nDisallow: /auth\nDisallow: /api/\nDisallow: /_serverFn/\nDisallow: /reset-password\nDisallow: /account-recovery\nDisallow: /employee-login\n\nSitemap: ${platBase}/sitemap.xml\n`, {
             headers: { "Content-Type": "text/plain", "Cache-Control": "public, max-age=3600" },
           });
         }
