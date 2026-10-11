@@ -18,7 +18,7 @@ export const Route = createFileRoute("/llms.txt")({
 - [Pricing](${o}/pricing): Current packages and prices (BDT)
 - [About](${o}/about): About ORZEN
 - [Contact](${o}/contact): Contact the ORZEN team
-- [Terms](${o}/terms) and [Privacy](${o}/privacy)
+- [Terms](${o}/terms) and [Privacy](${o}/privacy-policy)
 
 ## FAQ
 ${PLATFORM_FAQ.map((f) => `- **${f.q}** ${f.a}`).join("\n")}
