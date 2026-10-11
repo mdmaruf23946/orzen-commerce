@@ -92,3 +92,7 @@
 - [x] SEO Step 4: merchant AI SEO optimizer — audit, single/bulk suggestions, approve/reject, rollback (preview)
 - [x] SEO Step 5: custom-domain 301 + canonicals (store, product, shop, categories), PageSpeed panel, FAQPage schema (home/features/pricing), /llms.txt, AI crawler rules (preview)
 - [ ] SEO Step 5: live Search Console data — BLOCKED (owner): verify orzen.top in Google Search Console
+
+## Winner Admin SEO mobile layout
+- [x] Fit the edit form, Google/Facebook previews and PageSpeed controls within mobile width
+- [x] Verify authenticated SEO page at 320, 360, 404, 768 and 1280px without horizontal clipping (preview only)
