@@ -5,6 +5,7 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { ACTION_BY_KEY } from "./catalog";
 import { TOOLS, TOOL_BY_KEY, loadPermissions, logAction } from "./tools.server";
 import { loadSettings } from "./connection.server";
+import { detectReplyStyle } from "@/lib/reply-language";
 
 export type AgentResult = { reply: string; actions: string[] };
 
@@ -13,7 +14,10 @@ function detectLanguageInstruction(text: string): string {
   if (/[\u0980-\u09FF]/.test(text ?? "")) {
     return "The admin wrote in Bengali script. Reply entirely in natural Bengali (বাংলা).";
   }
-  return "The admin wrote in Latin script. Reply in the same language/style they used (English or Banglish).";
+  if (detectReplyStyle(text) === "banglish") {
+    return "The admin wrote in Banglish (Bangla in English letters). Reply ONLY in Banglish, never in English sentences.";
+  }
+  return "The admin wrote in English. Reply in English.";
 }
 
 const SYSTEM = `You are the ORZEN platform AI Admin Assistant for the platform owner (Winner Admin).
