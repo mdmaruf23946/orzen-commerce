@@ -96,3 +96,7 @@
 ## Winner Admin SEO mobile layout
 - [x] Fit the edit form, Google/Facebook previews and PageSpeed controls within mobile width
 - [x] Verify authenticated SEO page at 320, 360, 404, 768 and 1280px without horizontal clipping (preview only)
+
+## SEO Steps 1–5 deployed LIVE (2026-10-12 UTC)
+- Guarded wrangler deploy to Cloudflare Worker orzen-commerce-production, version bb9273e7, verified at https://orzen.top (robots.txt AI bots, /llms.txt, /sitemap.xml, FAQPage schema, /features, /pricing all confirmed live).
+- Still blocked (owner): verify orzen.top in Google Search Console for real click/impression data.
