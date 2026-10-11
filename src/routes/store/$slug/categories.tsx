@@ -76,7 +76,7 @@ function CategoriesPage() {
   const { selectMain, selectSub } = useStoreUI();
   const [openId, setOpenId] = useState<string | null>(null);
 
-  const categories = data?.categories ?? [];
+  const categories: any[] = (data as any)?.categories ?? [];
   const mains = useMemo(() => categories.filter((c: any) => !c.parent_id), [categories]);
   const subsByParent = useMemo(() => {
     const m = new Map<string, any[]>();
