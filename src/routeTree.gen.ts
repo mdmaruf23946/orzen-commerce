@@ -125,6 +125,7 @@ import { Route as AuthenticatedOwnerPlanFeaturesRouteImport } from './routes/_au
 import { Route as AuthenticatedOwnerPlatformBrandingRouteImport } from './routes/_authenticated/owner/platform-branding'
 import { Route as AuthenticatedOwnerReportsRouteImport } from './routes/_authenticated/owner/reports'
 import { Route as AuthenticatedOwnerReviewsRouteImport } from './routes/_authenticated/owner/reviews'
+import { Route as AuthenticatedOwnerSeoRouteImport } from './routes/_authenticated/owner/seo'
 import { Route as AuthenticatedOwnerShowcaseRouteImport } from './routes/_authenticated/owner/showcase'
 import { Route as AuthenticatedOwnerStoreTemplateRouteImport } from './routes/_authenticated/owner/store-template'
 import { Route as AuthenticatedOwnerStoresRouteImport } from './routes/_authenticated/owner/stores'
@@ -929,6 +930,11 @@ const AuthenticatedOwnerReviewsRoute =
     path: '/reviews',
     getParentRoute: () => AuthenticatedOwnerRouteRoute,
   } as any)
+const AuthenticatedOwnerSeoRoute = AuthenticatedOwnerSeoRouteImport.update({
+  id: '/seo',
+  path: '/seo',
+  getParentRoute: () => AuthenticatedOwnerRouteRoute,
+} as any)
 const AuthenticatedOwnerShowcaseRoute =
   AuthenticatedOwnerShowcaseRouteImport.update({
     id: '/showcase',
@@ -1884,6 +1890,7 @@ export interface FileRoutesByFullPath {
   '/owner/platform-branding': typeof AuthenticatedOwnerPlatformBrandingRoute
   '/owner/reports': typeof AuthenticatedOwnerReportsRoute
   '/owner/reviews': typeof AuthenticatedOwnerReviewsRoute
+  '/owner/seo': typeof AuthenticatedOwnerSeoRoute
   '/owner/showcase': typeof AuthenticatedOwnerShowcaseRoute
   '/owner/store-template': typeof AuthenticatedOwnerStoreTemplateRoute
   '/owner/stores': typeof AuthenticatedOwnerStoresRoute
@@ -2135,6 +2142,7 @@ export interface FileRoutesByTo {
   '/owner/platform-branding': typeof AuthenticatedOwnerPlatformBrandingRoute
   '/owner/reports': typeof AuthenticatedOwnerReportsRoute
   '/owner/reviews': typeof AuthenticatedOwnerReviewsRoute
+  '/owner/seo': typeof AuthenticatedOwnerSeoRoute
   '/owner/showcase': typeof AuthenticatedOwnerShowcaseRoute
   '/owner/store-template': typeof AuthenticatedOwnerStoreTemplateRoute
   '/owner/stores': typeof AuthenticatedOwnerStoresRoute
@@ -2401,6 +2409,7 @@ export interface FileRoutesById {
   '/_authenticated/owner/platform-branding': typeof AuthenticatedOwnerPlatformBrandingRoute
   '/_authenticated/owner/reports': typeof AuthenticatedOwnerReportsRoute
   '/_authenticated/owner/reviews': typeof AuthenticatedOwnerReviewsRoute
+  '/_authenticated/owner/seo': typeof AuthenticatedOwnerSeoRoute
   '/_authenticated/owner/showcase': typeof AuthenticatedOwnerShowcaseRoute
   '/_authenticated/owner/store-template': typeof AuthenticatedOwnerStoreTemplateRoute
   '/_authenticated/owner/stores': typeof AuthenticatedOwnerStoresRoute
@@ -2667,6 +2676,7 @@ export interface FileRouteTypes {
     | '/owner/platform-branding'
     | '/owner/reports'
     | '/owner/reviews'
+    | '/owner/seo'
     | '/owner/showcase'
     | '/owner/store-template'
     | '/owner/stores'
@@ -2918,6 +2928,7 @@ export interface FileRouteTypes {
     | '/owner/platform-branding'
     | '/owner/reports'
     | '/owner/reviews'
+    | '/owner/seo'
     | '/owner/showcase'
     | '/owner/store-template'
     | '/owner/stores'
@@ -3183,6 +3194,7 @@ export interface FileRouteTypes {
     | '/_authenticated/owner/platform-branding'
     | '/_authenticated/owner/reports'
     | '/_authenticated/owner/reviews'
+    | '/_authenticated/owner/seo'
     | '/_authenticated/owner/showcase'
     | '/_authenticated/owner/store-template'
     | '/_authenticated/owner/stores'
@@ -4217,6 +4229,13 @@ declare module '@tanstack/react-router' {
       path: '/reviews'
       fullPath: '/owner/reviews'
       preLoaderRoute: typeof AuthenticatedOwnerReviewsRouteImport
+      parentRoute: typeof AuthenticatedOwnerRouteRoute
+    }
+    '/_authenticated/owner/seo': {
+      id: '/_authenticated/owner/seo'
+      path: '/seo'
+      fullPath: '/owner/seo'
+      preLoaderRoute: typeof AuthenticatedOwnerSeoRouteImport
       parentRoute: typeof AuthenticatedOwnerRouteRoute
     }
     '/_authenticated/owner/showcase': {
@@ -5730,6 +5749,7 @@ interface AuthenticatedOwnerRouteRouteChildren {
   AuthenticatedOwnerPlatformBrandingRoute: typeof AuthenticatedOwnerPlatformBrandingRoute
   AuthenticatedOwnerReportsRoute: typeof AuthenticatedOwnerReportsRoute
   AuthenticatedOwnerReviewsRoute: typeof AuthenticatedOwnerReviewsRoute
+  AuthenticatedOwnerSeoRoute: typeof AuthenticatedOwnerSeoRoute
   AuthenticatedOwnerShowcaseRoute: typeof AuthenticatedOwnerShowcaseRoute
   AuthenticatedOwnerStoreTemplateRoute: typeof AuthenticatedOwnerStoreTemplateRoute
   AuthenticatedOwnerStoresRoute: typeof AuthenticatedOwnerStoresRoute
@@ -5793,6 +5813,7 @@ const AuthenticatedOwnerRouteRouteChildren: AuthenticatedOwnerRouteRouteChildren
       AuthenticatedOwnerPlatformBrandingRoute,
     AuthenticatedOwnerReportsRoute: AuthenticatedOwnerReportsRoute,
     AuthenticatedOwnerReviewsRoute: AuthenticatedOwnerReviewsRoute,
+    AuthenticatedOwnerSeoRoute: AuthenticatedOwnerSeoRoute,
     AuthenticatedOwnerShowcaseRoute: AuthenticatedOwnerShowcaseRoute,
     AuthenticatedOwnerStoreTemplateRoute: AuthenticatedOwnerStoreTemplateRoute,
     AuthenticatedOwnerStoresRoute: AuthenticatedOwnerStoresRoute,
