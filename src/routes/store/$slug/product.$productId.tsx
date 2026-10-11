@@ -222,7 +222,7 @@ function ProductPage() {
         {/* Gallery */}
         <div className="min-w-0">
           <ProductGallery
-            name={product!.name}
+            name={(product as any)?.meta?.seo?.image_alt || product!.name}
             primary={product!.primary_image_url}
             gallery={product!.gallery}
             videoUrl={(product as any).video_url ?? null}

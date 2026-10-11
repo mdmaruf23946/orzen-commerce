@@ -26,6 +26,7 @@ import { Progress } from "@/components/ui/progress";
 import { ImageUploader } from "@/components/admin/ImageUploader";
 import { GalleryUploader } from "@/components/admin/GalleryUploader";
 import { DigitalFilesUploader, type DigitalFile } from "./DigitalFilesUploader";
+import { SeoSuggestButton } from "./SeoSuggestButton";
 import { AiAssistTab } from "./AiAssistTab";
 
 
@@ -49,7 +50,7 @@ type ProductMeta = {
   purchase?: { cod?: boolean; online?: boolean; min_qty?: number; max_qty?: number };
   labels?: string[];
   related?: { related?: string[]; fbt?: string[]; cross?: string[]; upsell?: string[] };
-  seo?: { title?: string; description?: string; keywords?: string; slug?: string };
+  seo?: { title?: string; description?: string; keywords?: string; slug?: string; image_alt?: string };
   videos?: { url: string; provider: "youtube" | "facebook"; primary?: boolean }[];
   visibility?: { scheduled_at?: string | null };
   ai_ready?: { description?: boolean; enhance?: boolean; bg_removal?: boolean; seo?: boolean };
@@ -1017,9 +1018,17 @@ export function ProductDialog({
       label: "SEO",
       content: (
         <div className="space-y-4">
+          <SeoSuggestButton
+            name={name}
+            brand={brand}
+            category={categories.find((c) => c.id === categoryId)?.name ?? ""}
+            description={[shortDesc, description].filter(Boolean).join("\n")}
+            onApply={(d) => setSeo({ ...seo, title: d.title, description: d.description, keywords: d.keywords, image_alt: d.alt } as any)}
+          />
           <Field label="SEO title"><Input value={seo.title ?? ""} onChange={(e) => setSeo({ ...seo, title: e.target.value })} maxLength={70} /></Field>
           <Field label="Meta description"><Textarea rows={3} maxLength={200} value={seo.description ?? ""} onChange={(e) => setSeo({ ...seo, description: e.target.value })} /></Field>
           <Field label="Keywords"><Input value={seo.keywords ?? ""} onChange={(e) => setSeo({ ...seo, keywords: e.target.value })} placeholder="Comma separated" /></Field>
+          <Field label="Image alt text"><Input value={seo.image_alt ?? ""} maxLength={200} onChange={(e) => setSeo({ ...seo, image_alt: e.target.value })} placeholder="ছবির বর্ণনা (Google Images-এর জন্য)" /></Field>
           <Field label="URL slug"><Input value={seo.slug ?? ""} onChange={(e) => setSeo({ ...seo, slug: e.target.value })} placeholder="auto-generated if empty" /></Field>
         </div>
       ),

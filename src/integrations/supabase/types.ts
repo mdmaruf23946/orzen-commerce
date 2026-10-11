@@ -7223,6 +7223,7 @@ export type Database = {
           entity_id: string
           entity_type: string
           id: string
+          proposed_alt: string | null
           proposed_description: string | null
           proposed_keywords: string | null
           proposed_title: string | null
@@ -7239,6 +7240,7 @@ export type Database = {
           entity_id: string
           entity_type: string
           id?: string
+          proposed_alt?: string | null
           proposed_description?: string | null
           proposed_keywords?: string | null
           proposed_title?: string | null
@@ -7255,6 +7257,7 @@ export type Database = {
           entity_id?: string
           entity_type?: string
           id?: string
+          proposed_alt?: string | null
           proposed_description?: string | null
           proposed_keywords?: string | null
           proposed_title?: string | null
@@ -12282,6 +12285,16 @@ export type Database = {
       resolve_host_kind: { Args: { _host: string }; Returns: Json }
       seed_store_ai_agent_state: {
         Args: { _store_id: string }
+        Returns: undefined
+      }
+      seo_apply_recommendation: {
+        Args: {
+          _alt: string
+          _description: string
+          _id: string
+          _keywords: string
+          _title: string
+        }
         Returns: undefined
       }
       seo_rollback: { Args: { _snapshot: string }; Returns: undefined }

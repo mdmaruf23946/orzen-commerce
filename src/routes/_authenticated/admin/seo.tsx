@@ -13,6 +13,7 @@ import { SocialTab } from "@/components/admin/seo/SocialTab";
 import { SearchTab } from "@/components/admin/seo/SearchTab";
 import { VerificationTab } from "@/components/admin/seo/VerificationTab";
 import { HistoryTab } from "@/components/admin/seo/HistoryTab";
+import { AiOptimizerTab } from "@/components/admin/seo/AiOptimizerTab";
 import { SeoHealth } from "@/components/admin/seo/SeoHealth";
 import type { SeoOverview } from "@/components/admin/seo/shared";
 
@@ -36,6 +37,7 @@ export const Route = createFileRoute("/_authenticated/admin/seo")({
 });
 
 const TABS = [
+  { key: "ai", label: "AI Optimizer" },
   { key: "basic", label: "Basic" },
   { key: "social", label: "Social" },
   { key: "search", label: "Search" },
@@ -49,7 +51,7 @@ function SeoPage() {
   const fetchOverview = useServerFn(getMySeoOverview);
   const saveSeo = useServerFn(updateSeo);
   const qc = useQueryClient();
-  const [tab, setTab] = useState<TabKey>("basic");
+  const [tab, setTab] = useState<TabKey>("ai");
   const [form, setForm] = useState<StoreSeo | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -120,7 +122,8 @@ function SeoPage() {
       {tab === "search" && <SearchTab {...props} />}
       {tab === "verification" && <VerificationTab {...props} />}
       {tab === "history" && <HistoryTab />}
-      <SeoHealth items={health} />
+      {tab === "ai" && <AiOptimizerTab />}
+      {tab !== "ai" && <SeoHealth items={health} />}
     </div>
   );
 }
