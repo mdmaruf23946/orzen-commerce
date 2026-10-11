@@ -67,16 +67,23 @@ export const Route = createFileRoute("/store/$slug/product/$productId")({
     const base = resolveStoreSeo(s, { origin });
     const storeUrl = base.canonical ?? origin ?? "";
     const url = storeUrl ? `${storeUrl.replace(/\/$/, "")}/product/${params.productId}` : null;
-    const desc = stripHtml(p.description ?? "").slice(0, 160) || p.name;
+    const pseo: any = (p.meta as any)?.seo ?? {};
+    const customTitle = String(pseo.title ?? "").trim();
+    const customDesc = String(pseo.description ?? "").trim();
+    const keywords = String(pseo.keywords ?? "").trim();
+    const title = customTitle || `${p.name} — ${s.name}`;
+    const desc = customDesc || stripHtml(p.description ?? "").slice(0, 160) || p.name;
     const image = absUrl(origin, p.primary_image_url);
     const meta: any[] = [
-      { title: `${p.name} — ${s.name}` },
+      { title },
       { name: "description", content: desc },
-      { property: "og:title", content: p.name },
+      { property: "og:title", content: customTitle || p.name },
       { property: "og:description", content: desc },
       { property: "og:type", content: "product" },
       { name: "twitter:card", content: "summary_large_image" },
     ];
+    if (keywords) meta.push({ name: "keywords", content: keywords });
+    if (image) meta.push({ property: "og:image:alt", content: p.name });
     if (url) meta.push({ property: "og:url", content: url });
     if (image) {
       meta.push({ property: "og:image", content: image });
