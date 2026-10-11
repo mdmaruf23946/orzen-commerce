@@ -1,4 +1,6 @@
 import { platformHead, ORG_NODE, WEBSITE_NODE, softwareAppNode } from "@/lib/platform-seo";
+import { getPlatformSeoOverrides } from "@/lib/platform-seo-pages.functions";
+import { effectiveSeo } from "@/lib/platform-seo-pages";
 import { createFileRoute, Link, redirect, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 
@@ -71,12 +73,11 @@ export const Route = createFileRoute("/")({
       // swallow lookup errors — fall through to landing
     }
   },
-  head: () =>
+  loader: async () => ({ seo: await getPlatformSeoOverrides().catch(() => ({})) }),
+  head: ({ loaderData }) =>
     platformHead({
       path: "/",
-      title: "ORZEN — AI eCommerce Platform for Online Stores in Bangladesh",
-      description:
-        "Build your online store with ORZEN: AI sales agent, Messenger & WhatsApp automation, courier delivery, landing pages, custom domain and analytics.",
+      ...effectiveSeo("home", (loaderData as any)?.seo),
       jsonLd: [ORG_NODE, WEBSITE_NODE, softwareAppNode()],
     }),
   component: Landing,
