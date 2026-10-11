@@ -116,6 +116,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         name: "google-site-verification",
         content: "dX3JmX3UsN3QyrwZYiIa85MqhK6eJuaVqGItJ1Wziqk",
       },
+      {
+        name: "google-site-verification",
+        content: "O_xoNQhUPmTQjD8_dqBO066ieNN8HPtCszwb9E_Jjfs",
+      },
       { property: "og:title", content: "ORZEN — Launch your online store in minutes" },
       {
         property: "og:description",
