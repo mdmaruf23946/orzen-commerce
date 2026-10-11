@@ -8,6 +8,15 @@ const BANGLISH_WORDS = new Set(
   ),
 );
 
+// Common English words. Used to spot "broken English" messages like
+// "customise number need" — these are written by Bangla speakers in roman
+// letters, so the reply should be Banglish, not formal English.
+const COMMON_ENGLISH = new Set(
+  "a an the is are was were am be been being i you he she it we they me him her us them my your his its our their this that these those there here what when where who whom which why how can could will would shall should may might must do does did done have has had not no yes and or but if then else so too very just only also of in on at by for with about into over under again once more most other some any each few all both same own than as out up down off to from hello hi hey ok okay please thank yes yeah nope need needs wanted want get got give take make made buy buying sell price cost send sent pay paid payment cash cod bkash nagad number mobile phone address name home inside outside dhaka chittagong sylhet product products item items color colour size red blue black white green new old good bad nice best cheap stock available unavailable now today tomorrow yesterday sir madam help support account login password email page website link photo picture image video call do ship shipping internationally return refund policy exchange warranty guarantee much many long far near available".split(
+    /\s+/,
+  ),
+);
+
 export function detectReplyStyle(text: string | null | undefined): ReplyStyle {
   const t = String(text ?? "");
   if (/[\u0980-\u09FF]/.test(t)) return "bn";
@@ -15,6 +24,11 @@ export function detectReplyStyle(text: string | null | undefined): ReplyStyle {
   if (!words.length) return "bn";
   const hits = words.filter((w) => BANGLISH_WORDS.has(w) && !["order", "delivery", "charge", "thanks", "plz", "pls"].includes(w)).length;
   if (hits >= 1 && hits / words.length >= 0.2) return "banglish";
+  // Mixed / broken-English messages (e.g. "customise number need"): when most
+  // words are not common English, the writer is almost always a Bangla
+  // speaker typing in roman letters — answer in Banglish, not formal English.
+  const englishHits = words.filter((w) => COMMON_ENGLISH.has(w)).length;
+  if (words.length >= 2 && englishHits / words.length < 0.75) return "banglish";
   return "en";
 }
 
