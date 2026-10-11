@@ -112,9 +112,9 @@ export const getSeoAudit = createServerFn({ method: "GET" })
       coverage: { title, description: desc, keywords: kw, alt, image: img },
       missingIds: missing.map((m) => m.id),
       allIds: list.map((p) => p.id),
-      pending: (recs ?? [])
+      pending: ((recs ?? []) as any[])
         .filter((r: any) => byId.has(r.entity_id))
-        .map((r: any) => {
+        .map((r: any): { id: string; entity_id: string; proposed_title: string | null; proposed_description: string | null; proposed_keywords: string | null; proposed_alt: string | null; name: string; image: string | null; current: { title: string; description: string; keywords: string; alt: string } } => {
           const p = byId.get(r.entity_id);
           const seo = p.meta?.seo ?? {};
           return {
