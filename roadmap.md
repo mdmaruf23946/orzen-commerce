@@ -81,3 +81,8 @@
 - [x] Long/English answers fixed on Winner Admin Messenger and merchant Messenger/WhatsApp/Webchat; replies capped at 1-3 short sentences
 - [x] Guarded wrangler deployment (version bb4c0c9e) to orzen.top; identity + parity checks passed; home/login 200, health ok
 - [x] Live chat verified in all three styles (Banglish, Bangla script, English)
+
+## Mixed/broken-English reply style release (2026-10-11)
+- [x] "customise number need" style messages (roman letters, few common English words) now answer in Banglish
+- [x] Real English sentences ("Do you ship internationally?") still answer in English
+- [x] Guarded wrangler deployment (version 2b331d40) to orzen.top; identity + parity checks passed; home/login 200, health ok
