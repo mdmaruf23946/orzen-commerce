@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { Sparkles, Loader2, Check, X } from "lucide-react";
+import { Sparkles, Loader2, Check, X, Package } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -17,6 +17,11 @@ import {
 } from "@/lib/merchant-seo.functions";
 
 type Edit = { title: string; description: string; keywords: string; alt: string };
+
+// Product photos are stored as storage paths; render them through the image proxy.
+function imgSrc(v: string) {
+  return /^(https?:|data:|\/)/.test(v) ? v : `/api/img/${v.replace(/^\/+/, "")}`;
+}
 
 export function AiOptimizerTab() {
   const audit = useServerFn(getSeoAudit);
@@ -59,15 +64,20 @@ export function AiOptimizerTab() {
     if (!todo.length) return toast.info("সব প্রোডাক্টের সাজেশন আগেই তৈরি আছে — নিচে রিভিউ করুন।");
     setProgress({ done: 0, total: todo.length });
     let created = 0, failed = 0;
-    for (let i = 0; i < todo.length; i += 5) {
-      try {
-        const r = await bulk({ data: { productIds: todo.slice(i, i + 5) } });
-        created += r.created;
-        failed += r.failed;
-      } catch {
-        failed += Math.min(5, todo.length - i);
+    // One product per request: each AI draft takes 5–15s, so batches of 5
+    // exceeded the request time limit and only the first one was saved.
+    for (let i = 0; i < todo.length; i++) {
+      let ok = false;
+      for (let attempt = 0; attempt < 2 && !ok; attempt++) {
+        try {
+          const r = await bulk({ data: { productIds: [todo[i]] } });
+          if (r.created || r.skipped) { created += r.created; ok = true; }
+        } catch {
+          /* retry once */
+        }
       }
-      setProgress({ done: Math.min(i + 5, todo.length), total: todo.length });
+      if (!ok) failed++;
+      setProgress({ done: i + 1, total: todo.length });
     }
     setProgress(null);
     await refetch();
@@ -180,7 +190,11 @@ export function AiOptimizerTab() {
           return (
             <article key={r.id} className="space-y-3 rounded-xl border bg-card p-4">
               <div className="flex items-center gap-3">
-                {r.image && <img src={r.image} alt="" className="h-10 w-10 rounded-md object-cover" />}
+                {r.image ? (
+                  <img src={imgSrc(r.image)} alt="" className="h-10 w-10 rounded-md object-cover" />
+                ) : (
+                  <div className="flex h-10 w-10 items-center justify-center rounded-md bg-muted"><Package className="h-5 w-5 text-muted-foreground" /></div>
+                )}
                 <p className="min-w-0 flex-1 truncate text-sm font-medium">{r.name}</p>
               </div>
               <div className="grid gap-3 md:grid-cols-2">
