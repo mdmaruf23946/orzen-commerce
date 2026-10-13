@@ -194,7 +194,7 @@ export const listOrzenCalls = createServerFn({ method: "GET" })
     const storeId = await ownStore(context);
     let q = context.supabase
       .from("calls")
-      .select("id,order_id,customer_name,phone,status,result,duration_sec,note,started_at,ended_at,created_at,orders(invoice_no,status)")
+      .select("id,order_id,customer_name,phone,status,result,duration_sec,note,transcript,conversation_text,started_at,ended_at,created_at,orders(invoice_no,status)")
       .eq("store_id", storeId)
       .eq("provider", "orzen_call")
       .order("created_at", { ascending: false })

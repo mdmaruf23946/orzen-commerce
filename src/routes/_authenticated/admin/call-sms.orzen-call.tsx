@@ -175,8 +175,30 @@ function CallList({ rows, loading, compact }: { rows: any[]; loading: boolean; c
             </div>
             <p className="text-xs text-muted-foreground">{r.phone} · {fmtDate(r.created_at)} · {fmtDur(r.duration_sec)}</p>
             {!compact && r.note && <p className="mt-1 text-xs text-muted-foreground">“{r.note}”</p>}
+            {!compact && (Array.isArray(r.transcript) && r.transcript.length > 0 || r.conversation_text) && (
+              <details className="mt-1.5 rounded-lg border bg-muted/30 p-2">
+                <summary className="cursor-pointer text-xs font-medium text-primary">View conversation</summary>
+                {Array.isArray(r.transcript) && r.transcript.length > 0 ? (
+                  <div className="mt-2 space-y-1.5">
+                    {r.transcript.map((m: any, i: number) => {
+                      const ai = /assistant|agent|ai|bot/i.test(String(m?.role ?? ""));
+                      return (
+                        <div key={i} className={`flex ${ai ? "justify-start" : "justify-end"}`}>
+                          <div className={`max-w-[85%] rounded-lg px-2.5 py-1.5 text-xs ${ai ? "bg-card border" : "bg-primary/10"}`}>
+                            <p className="mb-0.5 text-[10px] font-semibold uppercase text-muted-foreground">{ai ? "AI" : "Customer"}</p>
+                            <p className="whitespace-pre-wrap">{String(m?.text ?? "")}</p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <p className="mt-2 whitespace-pre-wrap text-xs">{r.conversation_text}</p>
+                )}
+              </details>
+            )}
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 self-start sm:self-center">
             <ResultPill result={r.result} />
             <StatusPill status={r.status} />
           </div>
