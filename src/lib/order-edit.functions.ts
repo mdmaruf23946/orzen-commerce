@@ -8,7 +8,7 @@ async function loadPendingOrder(supabase: any, userId: string, orderId: string) 
   const store = await myStoreRow(supabase, userId, "id", "finance");
   if (!store?.id) throw new Error("No store");
   const { data: order, error } = await supabase
-    .from("orders").select("id,status,store_id,delivery_amount,discount_amount")
+    .from("orders").select("id,status,store_id,delivery_amount,discount_amount,paid_amount")
     .eq("id", orderId).eq("store_id", store.id).maybeSingle();
   if (error) throw new Error(error.message);
   if (!order) throw new Error("Order not found");
@@ -87,7 +87,7 @@ export const updateOrderItems = createServerFn({ method: "POST" })
     discount_amount: z.number().min(0).max(10_000_000),
   }).parse(d))
   .handler(async ({ data, context }) => {
-    const { storeId } = await loadPendingOrder(context.supabase, context.userId, data.order_id);
+    const { storeId, order } = await loadPendingOrder(context.supabase, context.userId, data.order_id);
     const ids = data.items.map((i) => i.product_id).filter(Boolean) as string[];
     if (ids.length) {
       const { data: owned } = await context.supabase.from("products").select("id").eq("store_id", storeId).in("id", ids);
@@ -109,7 +109,7 @@ export const updateOrderItems = createServerFn({ method: "POST" })
     // orders.subtotal stores the grand total (items + delivery − discount)
     const grand = Math.max(itemsTotal + data.delivery_amount - data.discount_amount, 0);
     const { error } = await context.supabase.from("orders").update({
-      subtotal: grand, delivery_amount: data.delivery_amount, discount_amount: data.discount_amount,
+      subtotal: grand, due_amount: Math.max(grand - Number(order.paid_amount ?? 0), 0), delivery_amount: data.delivery_amount, discount_amount: data.discount_amount,
     }).eq("id", data.order_id).eq("store_id", storeId);
     if (error) throw new Error(error.message);
     await addTimeline(context.supabase, data.order_id, storeId, "Products / charges edited");
