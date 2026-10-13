@@ -1,18 +1,21 @@
 // Premium order card + shared badges for the Merchant Panel → Orders screen.
 import { useState } from "react";
 import { Link } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { CallButton } from "@/components/admin/calls/CallButton";
 import {
-  Eye, Printer, Truck, MessageCircle, Copy, MoreHorizontal,
+  Eye, Printer, Truck, MessageCircle, Copy,
   ImageOff, ChevronDown, ShieldCheck, MapPin,
 } from "lucide-react";
 import { toast } from "sonner";
 import { COURIERS } from "@/components/admin/couriers/providers";
 import { STATUS_LABEL, STATUS_TONE, type ParcelStatus } from "@/lib/couriers/status";
 import type { AdminOrderRow } from "@/lib/orders-admin.functions";
+import { getCachedFraudCheck } from "@/lib/fraud.functions";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
-  DropdownMenuSeparator,
+  DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
 
 export const money = (n: unknown) => `৳${Number(n ?? 0).toLocaleString("en-BD")}`;
@@ -149,12 +152,51 @@ type Props = {
   onStatus: (status: string) => void;
   selected?: boolean;
   onSelectChange?: (v: boolean) => void;
+  couriers?: { key: string; isDefault?: boolean }[];
+  onCourier?: (key: string) => void;
+  fraudPreview?: boolean;
 };
 
 const STATUSES = ["pending", "confirmed", "processing", "delivered", "cancelled"] as const;
+const BTN = "inline-flex h-8 items-center justify-center gap-1 rounded-lg border px-2.5 text-xs transition-colors duration-150 hover:bg-muted";
 
-export function OrderCard({ order, onView, onFraud, onStatus, selected, onSelectChange }: Props) {
-  const [open, setOpen] = useState(false);
+/** Read-only preview of the last saved fraud report (never triggers a new check). */
+function FraudSummary({ phone }: { phone: string }) {
+  const fn = useServerFn(getCachedFraudCheck);
+  const { data } = useQuery({
+    queryKey: ["fraud-cached", phone],
+    queryFn: () => fn({ data: { phone } }),
+    staleTime: 5 * 60_000,
+    retry: false,
+  });
+  const d: any = data;
+  if (!d) return null;
+  const total = Number(d.total_orders ?? 0);
+  const ok = Number(d.successful ?? 0);
+  const bad = Number(d.cancelled ?? 0);
+  const cancelRate = total > 0 ? Math.round((bad / total) * 100) : 0;
+  const risk = d.risk as "safe" | "medium" | "high" | undefined;
+  const tone =
+    risk === "high" ? "bg-destructive/10 text-destructive"
+    : risk === "medium" ? "bg-amber-500/12 text-amber-700 dark:text-amber-400"
+    : "bg-emerald-500/12 text-emerald-700 dark:text-emerald-400";
+  return (
+    <div className="mt-2.5 flex flex-wrap items-center gap-1.5 rounded-xl bg-muted/50 px-2.5 py-1.5 text-[11px]">
+      <ShieldCheck className="h-3.5 w-3.5 text-muted-foreground" />
+      <span>Total <b>{total}</b></span>
+      <span className="text-emerald-600 dark:text-emerald-400">Delivered <b>{ok}</b></span>
+      <span className="text-destructive">Cancelled <b>{bad}</b></span>
+      {total > 0 && <span className="text-muted-foreground">Cancel {cancelRate}%</span>}
+      {risk && (
+        <span className={`ml-auto rounded-md px-1.5 py-0.5 font-semibold ${tone}`}>
+          {risk === "safe" ? "Safe" : risk === "medium" ? "Medium Risk" : "High Risk"}
+        </span>
+      )}
+    </div>
+  );
+}
+
+export function OrderCard({ order, onView, onFraud, onStatus, selected, onSelectChange, couriers = [], onCourier, fraudPreview }: Props) {
   const first = order.items[0];
 
   function copyAddress() {
@@ -187,7 +229,7 @@ export function OrderCard({ order, onView, onFraud, onStatus, selected, onSelect
 
 
         {/* Center */}
-        <button onClick={() => setOpen((v) => !v)} className="min-w-0 text-left sm:cursor-default" type="button">
+        <div className="min-w-0 text-left">
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
             <span className="font-mono text-[11px] text-muted-foreground">
               {order.invoice_no ?? `#${order.id.slice(0, 8).toUpperCase()}`}
@@ -197,7 +239,26 @@ export function OrderCard({ order, onView, onFraud, onStatus, selected, onSelect
             </span>
           </div>
           <div className="mt-0.5 truncate text-sm font-semibold">{order.customer_name}</div>
-          <div className="truncate text-xs text-muted-foreground">{order.phone}</div>
+          <div className="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
+            <span className="truncate">{order.phone}</span>
+            <CallButton
+              phone={order.phone}
+              customerName={order.customer_name}
+              orderId={order.id}
+              variant="icon"
+              label="Call"
+            />
+            <a
+              href={waLink(order.phone)}
+              target="_blank"
+              rel="noreferrer"
+              aria-label="WhatsApp"
+              title="WhatsApp"
+              className="grid h-7 w-7 shrink-0 place-items-center rounded-lg border text-emerald-600 transition-colors hover:bg-emerald-500/10 dark:text-emerald-400"
+            >
+              <MessageCircle className="h-3.5 w-3.5" />
+            </a>
+          </div>
           <div className="flex min-w-0 items-center gap-1 text-xs text-muted-foreground">
             <MapPin className="h-3 w-3 shrink-0" />
             <span className="truncate">{order.area ? `${order.area} · ` : ""}{order.address}</span>
@@ -209,7 +270,7 @@ export function OrderCard({ order, onView, onFraud, onStatus, selected, onSelect
           <div className="mt-1.5 flex flex-wrap items-center gap-1">
             {order.tags.filter((t) => t !== "new_order").map((t) => <Tag key={t} tag={t} />)}
           </div>
-        </button>
+        </div>
 
         {/* Right */}
         <div className="flex flex-col items-end gap-1.5 text-right">
@@ -230,66 +291,62 @@ export function OrderCard({ order, onView, onFraud, onStatus, selected, onSelect
         </div>
       </div>
 
-      {/* Quick actions */}
-      <div className={`mt-3 flex flex-wrap items-center gap-1.5 border-t pt-2.5 ${open ? "" : "max-sm:hidden"}`}>
+      {fraudPreview && <FraudSummary phone={order.phone} />}
+
+      {/* Exactly 6 actions */}
+      <div className="mt-3 grid grid-cols-3 gap-1.5 border-t pt-2.5 sm:flex sm:flex-wrap sm:items-center">
         <Action onClick={onView} icon={Eye} label="View" primary />
         <Link
           to="/admin/invoice/$orderId"
           params={{ orderId: order.id }}
           target="_blank"
-          className="inline-flex h-8 items-center gap-1 rounded-lg border px-2.5 text-xs transition-colors duration-150 hover:bg-muted"
+          className={BTN}
         >
           <Printer className="h-3.5 w-3.5" /> Invoice
         </Link>
-        <Link
-          to="/admin/courier-orders"
-          search={{ tab: "ready" }}
-          className="inline-flex h-8 items-center gap-1 rounded-lg border px-2.5 text-xs transition-colors duration-150 hover:bg-muted"
-        >
-          <Truck className="h-3.5 w-3.5" /> Send to Courier
-        </Link>
-        <CallButton
-          phone={order.phone}
-          customerName={order.customer_name}
-          orderId={order.id}
-          variant="outline"
-          label="Call with ePBX"
-        />
-        <a
-          href={waLink(order.phone)}
-          target="_blank"
-          rel="noreferrer"
-          className="inline-flex h-8 items-center gap-1 rounded-lg border px-2.5 text-xs transition-colors duration-150 hover:bg-muted"
-        >
-          <MessageCircle className="h-3.5 w-3.5" /> WhatsApp
-        </a>
-        <Action onClick={copyAddress} icon={Copy} label="Copy" />
         <DropdownMenu>
-          <DropdownMenuTrigger className="inline-flex h-8 items-center gap-1 rounded-lg border px-2.5 text-xs transition-colors duration-150 hover:bg-muted">
-            <MoreHorizontal className="h-3.5 w-3.5" />
+          <DropdownMenuTrigger className={BTN}>
+            <Truck className="h-3.5 w-3.5" /> Courier
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-44">
-            {STATUSES.map((s) => (
+          <DropdownMenuContent align="start" className="w-48">
+            <DropdownMenuLabel className="text-[11px]">Send with</DropdownMenuLabel>
+            {couriers.length === 0 ? (
+              <DropdownMenuItem asChild className="text-xs">
+                <Link to="/admin/courier-orders" search={{ tab: "ready" }}>No courier connected</Link>
+              </DropdownMenuItem>
+            ) : (
+              couriers.map((c) => {
+                const m = courierMeta(c.key);
+                return (
+                  <DropdownMenuItem key={c.key} onClick={() => onCourier?.(c.key)} className="text-xs">
+                    <span className="mr-2 h-2 w-2 rounded-full" style={{ backgroundColor: m?.brandColor }} />
+                    {m?.label ?? c.key}
+                    {c.isDefault && <span className="ml-auto text-[10px] text-muted-foreground">Default</span>}
+                  </DropdownMenuItem>
+                );
+              })
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
+        <Action onClick={copyAddress} icon={Copy} label="Copy" />
+        <Action onClick={onFraud} icon={ShieldCheck} label="Fraud Check" />
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            className={`inline-flex h-8 items-center justify-center gap-1 rounded-lg px-2.5 text-xs font-semibold capitalize ring-1 ring-inset transition-colors ${ORDER_STATUS_TONE[order.status] ?? "bg-muted ring-border"}`}
+          >
+            {order.status}
+            <ChevronDown className="h-3 w-3" />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-40">
+            {STATUSES.filter((s) => s !== order.status).map((s) => (
               <DropdownMenuItem key={s} onClick={() => onStatus(s)} className="text-xs capitalize">
-                Mark {s}
+                <span className={`mr-2 h-2 w-2 rounded-full ${ORDER_STATUS_TONE[s]?.split(" ")[0] ?? ""}`} />
+                {s}
               </DropdownMenuItem>
             ))}
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={onFraud} className="text-xs">
-              <ShieldCheck className="mr-1.5 h-3.5 w-3.5" /> Fraud check
-            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
-
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        className="mt-1 flex w-full items-center justify-center gap-1 text-[11px] text-muted-foreground sm:hidden"
-      >
-        {open ? "Less" : "Actions"}
-        <ChevronDown className={`h-3 w-3 transition-transform duration-200 ${open ? "rotate-180" : ""}`} />
-      </button>
     </article>
   );
 }
@@ -301,7 +358,7 @@ function Action({
     <button
       type="button"
       onClick={onClick}
-      className={`inline-flex h-8 items-center gap-1 rounded-lg border px-2.5 text-xs transition-colors duration-150 ${primary ? "border-primary/30 bg-primary/10 text-primary hover:bg-primary/15" : "hover:bg-muted"}`}
+      className={`inline-flex h-8 items-center justify-center gap-1 rounded-lg border px-2.5 text-xs transition-colors duration-150 ${primary ? "border-primary/30 bg-primary/10 text-primary hover:bg-primary/15" : "hover:bg-muted"}`}
     >
       <Icon className="h-3.5 w-3.5" /> {label}
     </button>
