@@ -157,11 +157,11 @@ type Props = {
   fraudPreview?: boolean;
 };
 
-const STATUSES = ["pending", "confirmed", "processing", "delivered", "cancelled"] as const;
+export const STATUSES = ["pending", "confirmed", "processing", "delivered", "cancelled"] as const;
 const BTN = "inline-flex h-8 items-center justify-center gap-1 rounded-lg border px-2.5 text-xs transition-colors duration-150 hover:bg-muted";
 
 /** Read-only preview of the last saved fraud report (never triggers a new check). */
-function FraudSummary({ phone }: { phone: string }) {
+export function FraudSummary({ phone }: { phone: string }) {
   const fn = useServerFn(getCachedFraudCheck);
   const { data } = useQuery({
     queryKey: ["fraud-cached", phone],
