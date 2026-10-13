@@ -111,6 +111,18 @@ export const listEditableProducts = createServerFn({ method: "GET" })
     });
   });
 
+export const listOrderDeliveryZones = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const store = await myStoreRow(context.supabase, context.userId, "id", "finance");
+    if (!store?.id) throw new Error("No store");
+    const { data, error } = await context.supabase.from("delivery_zones")
+      .select("id,name,charge,is_default").eq("store_id", store.id).eq("is_active", true)
+      .order("sort_order", { ascending: true }).order("name", { ascending: true });
+    if (error) throw new Error(error.message);
+    return (data ?? []).map((z: any) => ({ id: z.id as string, name: z.name as string, charge: Number(z.charge ?? 0), is_default: !!z.is_default }));
+  });
+
 export const updateOrderItems = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => z.object({
@@ -121,11 +133,21 @@ export const updateOrderItems = createServerFn({ method: "POST" })
       price: z.number().min(0).max(10_000_000),
       qty: z.number().int().min(1).max(1000),
     })).min(1).max(50),
-    delivery_amount: z.number().min(0).max(100_000),
+    delivery_zone_id: z.string().uuid().nullable().optional(),
     discount_amount: z.number().min(0).max(10_000_000),
   }).parse(d))
-  .handler(async ({ data, context }) => {
-    const { storeId, order } = await loadPendingOrder(context.supabase, context.userId, data.order_id);
+  .handler(async ({ data: input, context }) => {
+    const { storeId, order } = await loadPendingOrder(context.supabase, context.userId, input.order_id);
+    // Delivery charge always comes from the merchant's zone — never typed manually.
+    let delivery = Number(order.delivery_amount ?? 0);
+    let zoneId: string | null | undefined = undefined;
+    if (input.delivery_zone_id) {
+      const { data: z0 } = await context.supabase.from("delivery_zones").select("id,charge")
+        .eq("id", input.delivery_zone_id).eq("store_id", storeId).eq("is_active", true).maybeSingle();
+      if (!z0) throw new Error("ডেলিভারি জোন পাওয়া যায়নি");
+      delivery = Number(z0.charge ?? 0); zoneId = z0.id;
+    }
+    const data = { ...input, delivery_amount: delivery };
     const ids = data.items.map((i) => i.product_id).filter(Boolean) as string[];
     if (ids.length) {
       const { data: owned } = await context.supabase.from("products").select("id").eq("store_id", storeId).in("id", ids);
@@ -148,6 +170,7 @@ export const updateOrderItems = createServerFn({ method: "POST" })
     const grand = Math.max(itemsTotal + data.delivery_amount - data.discount_amount, 0);
     const { error } = await context.supabase.from("orders").update({
       subtotal: grand, due_amount: Math.max(grand - Number(order.paid_amount ?? 0), 0), delivery_amount: data.delivery_amount, discount_amount: data.discount_amount,
+      ...(zoneId !== undefined ? { delivery_zone_id: zoneId } : {}),
     }).eq("id", data.order_id).eq("store_id", storeId);
     if (error) throw new Error(error.message);
     await addTimeline(context.supabase, data.order_id, storeId, "Products / charges edited");
