@@ -358,7 +358,7 @@ function Action({
     <button
       type="button"
       onClick={onClick}
-      className={`inline-flex h-8 items-center gap-1 rounded-lg border px-2.5 text-xs transition-colors duration-150 ${primary ? "border-primary/30 bg-primary/10 text-primary hover:bg-primary/15" : "hover:bg-muted"}`}
+      className={`inline-flex h-8 items-center justify-center gap-1 rounded-lg border px-2.5 text-xs transition-colors duration-150 ${primary ? "border-primary/30 bg-primary/10 text-primary hover:bg-primary/15" : "hover:bg-muted"}`}
     >
       <Icon className="h-3.5 w-3.5" /> {label}
     </button>

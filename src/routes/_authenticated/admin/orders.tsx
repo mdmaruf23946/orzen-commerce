@@ -10,6 +10,8 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { FraudCheckModal } from "@/components/admin/FraudCheckModal";
+import { SendToCourierDialog } from "@/components/admin/couriers/SendToCourierDialog";
+import { getCourierOverview } from "@/lib/courier-parcels.functions";
 import { OrderDetailsDrawer } from "@/components/admin/OrderDetailsDrawer";
 import { useFeature } from "@/components/admin/FeatureGate";
 import { OrderCard, money } from "@/components/admin/orders/OrderCard";
@@ -199,6 +201,14 @@ function OrdersPage() {
   const [fraudFor, setFraudFor] = useState<{ id: string; phone: string } | null>(null);
   const [detailsFor, setDetailsFor] = useState<string | null>(null);
   const { allowed: fraudAllowed } = useFeature("fraud_checker");
+  const [courierFor, setCourierFor] = useState<{ order: AdminOrderRow; key: string } | null>(null);
+  const courierOverviewFn = useServerFn(getCourierOverview);
+  const { data: courierOverview } = useQuery({
+    queryKey: ["courier-overview"],
+    queryFn: () => courierOverviewFn(),
+    staleTime: 60_000,
+  });
+  const connectedCouriers = ((courierOverview as any)?.couriers ?? []) as any[];
 
   const confirm = useServerFn(confirmOrder);
   const schedule = useServerFn(scheduleService);
@@ -603,6 +613,9 @@ function OrdersPage() {
                 selected={selectedIds.includes(o.id)}
                 onSelectChange={physicalView ? (v) => toggleOne(o.id, v) : undefined}
                 onStatus={(s) => setStatus(o.id, s)}
+                couriers={connectedCouriers}
+                onCourier={(key) => setCourierFor({ order: o, key })}
+                fraudPreview={fraudAllowed}
                 onFraud={() =>
                   fraudAllowed
                     ? setFraudFor({ id: o.id, phone: o.phone })
@@ -614,6 +627,16 @@ function OrdersPage() {
         </div>
       )}
 
+      <SendToCourierDialog
+        order={courierFor?.order ?? null}
+        couriers={connectedCouriers}
+        defaultKey={(courierFor?.key ?? null) as any}
+        onOpenChange={(v) => !v && setCourierFor(null)}
+        onSent={() => {
+          setCourierFor(null);
+          qc.invalidateQueries({ queryKey: ["admin", "orders"] });
+        }}
+      />
       {fraudFor && (
         <FraudCheckModal
           open={!!fraudFor}
