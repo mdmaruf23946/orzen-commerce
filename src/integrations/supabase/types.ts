@@ -1998,6 +1998,7 @@ export type Database = {
           answered_at: string | null
           call_type: string
           connection_id: string | null
+          conversation_text: string | null
           created_at: string
           customer_id: string | null
           customer_name: string | null
@@ -2017,6 +2018,7 @@ export type Database = {
           started_at: string
           status: string
           store_id: string
+          transcript: Json | null
           updated_at: string
         }
         Insert: {
@@ -2025,6 +2027,7 @@ export type Database = {
           answered_at?: string | null
           call_type?: string
           connection_id?: string | null
+          conversation_text?: string | null
           created_at?: string
           customer_id?: string | null
           customer_name?: string | null
@@ -2044,6 +2047,7 @@ export type Database = {
           started_at?: string
           status?: string
           store_id: string
+          transcript?: Json | null
           updated_at?: string
         }
         Update: {
@@ -2052,6 +2056,7 @@ export type Database = {
           answered_at?: string | null
           call_type?: string
           connection_id?: string | null
+          conversation_text?: string | null
           created_at?: string
           customer_id?: string | null
           customer_name?: string | null
@@ -2071,6 +2076,7 @@ export type Database = {
           started_at?: string
           status?: string
           store_id?: string
+          transcript?: Json | null
           updated_at?: string
         }
         Relationships: [
