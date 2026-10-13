@@ -3,23 +3,24 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Copy, Check, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { disconnectOrzenCall, getOrzenCallSettings, saveOrzenCallSettings } from "@/lib/orzen-call.functions";
+import { disconnectOrzenCall, getOrzenCallSettings, saveOrzenCallSettings, sendOrzenTestPing } from "@/lib/orzen-call.functions";
 
-export function OrzenCallModal({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) {
+export function OrzenCallSettings() {
+  const open = true;
   const qc = useQueryClient();
   const getFn = useServerFn(getOrzenCallSettings);
   const saveFn = useServerFn(saveOrzenCallSettings);
   const discFn = useServerFn(disconnectOrzenCall);
+  const pingFn = useServerFn(sendOrzenTestPing);
   const q = useQuery({ queryKey: ["orzen-call", "settings"], queryFn: () => getFn(), enabled: open });
   const [url, setUrl] = useState("");
   const [orders, setOrders] = useState(true);
   const [products, setProducts] = useState(true);
-  const [busy, setBusy] = useState<"save" | "disc" | null>(null);
+  const [busy, setBusy] = useState<"save" | "disc" | "ping" | null>(null);
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
@@ -30,7 +31,18 @@ export function OrzenCallModal({ open, onOpenChange }: { open: boolean; onOpenCh
     }
   }, [q.data]);
 
-  const refresh = () => qc.invalidateQueries({ queryKey: ["orzen-call", "settings"] });
+  const refresh = () => qc.invalidateQueries({ queryKey: ["orzen-call"] });
+
+  async function ping() {
+    setBusy("ping");
+    try {
+      const r: any = await pingFn();
+      r.ok ? toast.success(r.message) : toast.error(r.message);
+      await refresh();
+    } finally {
+      setBusy(null);
+    }
+  }
 
   async function save() {
     setBusy("save");
@@ -51,7 +63,6 @@ export function OrzenCallModal({ open, onOpenChange }: { open: boolean; onOpenCh
       await discFn();
       toast.success("Orzen Call disconnected");
       await refresh();
-      onOpenChange(false);
     } finally {
       setBusy(null);
     }
@@ -60,12 +71,11 @@ export function OrzenCallModal({ open, onOpenChange }: { open: boolean; onOpenCh
   const cb = q.data?.callback_url;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle>Orzen Call</DialogTitle>
-          <DialogDescription>AI voice calling — order confirmation calls and product knowledge sync.</DialogDescription>
-        </DialogHeader>
+    <div className="space-y-4 rounded-xl border bg-card p-4 sm:p-5">
+        <div>
+          <p className="font-semibold">Connection & Settings</p>
+          <p className="text-sm text-muted-foreground">AI voice calling — order confirmation calls and product knowledge sync.</p>
+        </div>
         {q.isLoading ? (
           <div className="flex justify-center py-8"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
         ) : (
@@ -105,17 +115,23 @@ export function OrzenCallModal({ open, onOpenChange }: { open: boolean; onOpenCh
             </div>
           </div>
         )}
-        <DialogFooter className="gap-2 sm:justify-between">
+        <div className="flex flex-col-reverse gap-2 border-t pt-4 sm:flex-row sm:justify-between">
           {q.data?.connected ? (
             <Button variant="outline" className="text-destructive" disabled={!!busy} onClick={disconnect}>
               {busy === "disc" && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Disconnect
             </Button>
           ) : <span />}
-          <Button disabled={!!busy || !url.trim()} onClick={save}>
-            {busy === "save" && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Save Settings
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            {q.data?.connected && (
+              <Button variant="outline" disabled={!!busy} onClick={ping}>
+                {busy === "ping" && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Send Test Ping
+              </Button>
+            )}
+            <Button disabled={!!busy || !url.trim()} onClick={save}>
+              {busy === "save" && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Save Settings
+            </Button>
+          </div>
+        </div>
+    </div>
   );
 }
