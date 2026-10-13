@@ -175,6 +175,7 @@ import { Route as AuthenticatedAdminBillingReturnRouteImport } from './routes/_a
 import { Route as AuthenticatedAdminCallSmsAiVoiceAgentRouteImport } from './routes/_authenticated/admin/call-sms.ai-voice-agent'
 import { Route as AuthenticatedAdminCallSmsAppsRouteImport } from './routes/_authenticated/admin/call-sms.apps'
 import { Route as AuthenticatedAdminCallSmsEpbxRouteImport } from './routes/_authenticated/admin/call-sms.epbx'
+import { Route as AuthenticatedAdminCallSmsOrzenCallRouteImport } from './routes/_authenticated/admin/call-sms.orzen-call'
 import { Route as AuthenticatedAdminCouriersIndexRouteImport } from './routes/_authenticated/admin/couriers.index'
 import { Route as AuthenticatedAdminCouriersProviderRouteImport } from './routes/_authenticated/admin/couriers.$provider'
 import { Route as AuthenticatedAdminCouriersAppsRouteImport } from './routes/_authenticated/admin/couriers.apps'
@@ -1208,6 +1209,12 @@ const AuthenticatedAdminCallSmsEpbxRoute =
     path: '/call-sms/epbx',
     getParentRoute: () => AuthenticatedAdminRouteRoute,
   } as any)
+const AuthenticatedAdminCallSmsOrzenCallRoute =
+  AuthenticatedAdminCallSmsOrzenCallRouteImport.update({
+    id: '/call-sms/orzen-call',
+    path: '/call-sms/orzen-call',
+    getParentRoute: () => AuthenticatedAdminRouteRoute,
+  } as any)
 const AuthenticatedAdminCouriersIndexRoute =
   AuthenticatedAdminCouriersIndexRouteImport.update({
     id: '/',
@@ -1952,6 +1959,7 @@ export interface FileRoutesByFullPath {
   '/admin/call-sms/ai-voice-agent': typeof AuthenticatedAdminCallSmsAiVoiceAgentRoute
   '/admin/call-sms/apps': typeof AuthenticatedAdminCallSmsAppsRoute
   '/admin/call-sms/epbx': typeof AuthenticatedAdminCallSmsEpbxRoute
+  '/admin/call-sms/orzen-call': typeof AuthenticatedAdminCallSmsOrzenCallRoute
   '/admin/couriers/$provider': typeof AuthenticatedAdminCouriersProviderRoute
   '/admin/couriers/apps': typeof AuthenticatedAdminCouriersAppsRoute
   '/admin/couriers/overview': typeof AuthenticatedAdminCouriersOverviewRoute
@@ -2206,6 +2214,7 @@ export interface FileRoutesByTo {
   '/admin/call-sms/ai-voice-agent': typeof AuthenticatedAdminCallSmsAiVoiceAgentRoute
   '/admin/call-sms/apps': typeof AuthenticatedAdminCallSmsAppsRoute
   '/admin/call-sms/epbx': typeof AuthenticatedAdminCallSmsEpbxRoute
+  '/admin/call-sms/orzen-call': typeof AuthenticatedAdminCallSmsOrzenCallRoute
   '/admin/couriers/$provider': typeof AuthenticatedAdminCouriersProviderRoute
   '/admin/couriers/apps': typeof AuthenticatedAdminCouriersAppsRoute
   '/admin/couriers/overview': typeof AuthenticatedAdminCouriersOverviewRoute
@@ -2475,6 +2484,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/call-sms/ai-voice-agent': typeof AuthenticatedAdminCallSmsAiVoiceAgentRoute
   '/_authenticated/admin/call-sms/apps': typeof AuthenticatedAdminCallSmsAppsRoute
   '/_authenticated/admin/call-sms/epbx': typeof AuthenticatedAdminCallSmsEpbxRoute
+  '/_authenticated/admin/call-sms/orzen-call': typeof AuthenticatedAdminCallSmsOrzenCallRoute
   '/_authenticated/admin/couriers/$provider': typeof AuthenticatedAdminCouriersProviderRoute
   '/_authenticated/admin/couriers/apps': typeof AuthenticatedAdminCouriersAppsRoute
   '/_authenticated/admin/couriers/overview': typeof AuthenticatedAdminCouriersOverviewRoute
@@ -2744,6 +2754,7 @@ export interface FileRouteTypes {
     | '/admin/call-sms/ai-voice-agent'
     | '/admin/call-sms/apps'
     | '/admin/call-sms/epbx'
+    | '/admin/call-sms/orzen-call'
     | '/admin/couriers/$provider'
     | '/admin/couriers/apps'
     | '/admin/couriers/overview'
@@ -2998,6 +3009,7 @@ export interface FileRouteTypes {
     | '/admin/call-sms/ai-voice-agent'
     | '/admin/call-sms/apps'
     | '/admin/call-sms/epbx'
+    | '/admin/call-sms/orzen-call'
     | '/admin/couriers/$provider'
     | '/admin/couriers/apps'
     | '/admin/couriers/overview'
@@ -3266,6 +3278,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/call-sms/ai-voice-agent'
     | '/_authenticated/admin/call-sms/apps'
     | '/_authenticated/admin/call-sms/epbx'
+    | '/_authenticated/admin/call-sms/orzen-call'
     | '/_authenticated/admin/couriers/$provider'
     | '/_authenticated/admin/couriers/apps'
     | '/_authenticated/admin/couriers/overview'
@@ -4608,6 +4621,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminCallSmsEpbxRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
+    '/_authenticated/admin/call-sms/orzen-call': {
+      id: '/_authenticated/admin/call-sms/orzen-call'
+      path: '/call-sms/orzen-call'
+      fullPath: '/admin/call-sms/orzen-call'
+      preLoaderRoute: typeof AuthenticatedAdminCallSmsOrzenCallRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
     '/_authenticated/admin/couriers/': {
       id: '/_authenticated/admin/couriers/'
       path: '/'
@@ -5519,6 +5539,7 @@ interface AuthenticatedAdminRouteRouteChildren {
   AuthenticatedAdminCallSmsAiVoiceAgentRoute: typeof AuthenticatedAdminCallSmsAiVoiceAgentRoute
   AuthenticatedAdminCallSmsAppsRoute: typeof AuthenticatedAdminCallSmsAppsRoute
   AuthenticatedAdminCallSmsEpbxRoute: typeof AuthenticatedAdminCallSmsEpbxRoute
+  AuthenticatedAdminCallSmsOrzenCallRoute: typeof AuthenticatedAdminCallSmsOrzenCallRoute
   AuthenticatedAdminInvoiceOrderIdRoute: typeof AuthenticatedAdminInvoiceOrderIdRoute
   AuthenticatedAdminLandingBuilderIdRoute: typeof AuthenticatedAdminLandingBuilderIdRoute
   AuthenticatedAdminLandingPagesIdRoute: typeof AuthenticatedAdminLandingPagesIdRoute
@@ -5603,6 +5624,8 @@ const AuthenticatedAdminRouteRouteChildren: AuthenticatedAdminRouteRouteChildren
       AuthenticatedAdminCallSmsAiVoiceAgentRoute,
     AuthenticatedAdminCallSmsAppsRoute: AuthenticatedAdminCallSmsAppsRoute,
     AuthenticatedAdminCallSmsEpbxRoute: AuthenticatedAdminCallSmsEpbxRoute,
+    AuthenticatedAdminCallSmsOrzenCallRoute:
+      AuthenticatedAdminCallSmsOrzenCallRoute,
     AuthenticatedAdminInvoiceOrderIdRoute:
       AuthenticatedAdminInvoiceOrderIdRoute,
     AuthenticatedAdminLandingBuilderIdRoute:
