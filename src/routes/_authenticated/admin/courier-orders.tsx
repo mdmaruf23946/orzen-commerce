@@ -331,52 +331,87 @@ function CourierOrdersPage() {
               <p className="text-sm text-muted-foreground">No confirmed orders waiting to be sent.</p>
             </div>
           ) : (
-            orderRows.map((o) => (
-              <div key={o.id} className="rounded-xl border bg-card p-3 shadow-sm">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-sm font-semibold">
-                    {o.invoice_no ?? `#${String(o.id).slice(0, 8).toUpperCase()}`}
-                  </span>
-                  <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] capitalize text-muted-foreground">
-                    {o.payment_method} · {o.payment_status ?? "unpaid"}
-                  </span>
-                  <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] text-primary">
-                    {courierLabel(o.courier_key ?? defaultKey ?? "—")}
-                  </span>
-                </div>
-                <p className="mt-1 text-sm font-medium">{o.customer_name}</p>
-                <p className="text-xs text-muted-foreground">{o.phone}</p>
-                <p className="mt-0.5 text-xs text-muted-foreground">
-                  {[o.address, o.area].filter(Boolean).join(", ")}
-                </p>
-                <div className="mt-2 flex items-start gap-2">
-                  <ItemThumbs items={o.items as any} />
-                  <p className="line-clamp-2 flex-1 pt-0.5 text-xs text-muted-foreground">
-                    {(o.items ?? []).map((i: any) => `${i.name} × ${i.qty}`).join(", ") || "—"}
-                  </p>
-                </div>
-                <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-xs">
-                  <span>COD: <strong>{money(o.cod_amount)}</strong></span>
-                  <span>Delivery: {money(o.delivery_amount)}</span>
-                </div>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  <Button asChild size="sm" variant="outline">
-                    <Link to="/admin/orders" search={{ q: o.invoice_no ?? undefined } as never}>
-                      View Details
-                    </Link>
-                  </Button>
-                  <Button size="sm" onClick={() => setSendOrder(o)} disabled={connected.length === 0}>
-                    <Send className="mr-1 h-3.5 w-3.5" /> Send to Courier
-                  </Button>
-                  <Button size="sm" variant="outline" onClick={() => printOrder(o, "invoice")}>
-                    <Printer className="mr-1 h-3.5 w-3.5" /> Invoice
-                  </Button>
-                  <Button size="sm" variant="outline" onClick={() => printOrder(o, "label")}>
-                    <Printer className="mr-1 h-3.5 w-3.5" /> Label
-                  </Button>
-                </div>
-              </div>
-            ))
+            orderRows.map((o) => {
+              const items = (o.items ?? []) as any[];
+              const first = items[0];
+              const addr = [o.address, o.area].filter(Boolean).join(", ");
+              return (
+                <article key={o.id} className="rounded-2xl border bg-card p-3 shadow-sm sm:p-4">
+                  <div className="grid grid-cols-[56px_1fr_auto] gap-3">
+                    <div className="relative">
+                      <Thumb url={first?.image ?? first?.image_url ?? first?.primary_image_url} alt={first?.name ?? "Item"} className="h-14 w-14" />
+                      {items.length > 1 && (
+                        <span className="absolute -bottom-1 -right-1 rounded-full bg-primary px-1.5 text-[10px] font-semibold text-primary-foreground">
+                          +{items.length - 1}
+                        </span>
+                      )}
+                    </div>
+                    <div className="min-w-0">
+                      <div className="font-mono text-[11px] text-muted-foreground">
+                        {o.invoice_no ?? `#${String(o.id).slice(0, 8).toUpperCase()}`}
+                        {o.created_at && (
+                          <span className="ml-2 font-sans">
+                            {new Date(o.created_at).toLocaleString("en-GB", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
+                          </span>
+                        )}
+                      </div>
+                      <div className="truncate text-sm font-semibold">{o.customer_name}</div>
+                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <span className="truncate">{o.phone}</span>
+                        <CallButton phone={o.phone} customerName={o.customer_name} orderId={o.id} variant="icon" label="Call" />
+                        <a href={waHref(o.phone)} target="_blank" rel="noreferrer" aria-label="WhatsApp" className="grid h-7 w-7 shrink-0 place-items-center rounded-lg border text-emerald-600 hover:bg-emerald-500/10 dark:text-emerald-400">
+                          <MessageCircle className="h-3.5 w-3.5" />
+                        </a>
+                      </div>
+                      <div className="flex min-w-0 items-center gap-1 text-xs text-muted-foreground">
+                        <MapPin className="h-3 w-3 shrink-0" />
+                        <span className="truncate">{addr || "—"}</span>
+                      </div>
+                      <div className="mt-1 truncate text-xs">
+                        {first ? `${first.name} × ${first.qty}` : "—"}
+                        {items.length > 1 && <span className="text-muted-foreground"> +{items.length - 1} more</span>}
+                      </div>
+                    </div>
+                    <div className="flex flex-col items-end gap-1 text-right">
+                      <div className="text-base font-bold leading-tight">{money(o.cod_amount)}</div>
+                      <div className="text-[10px] text-muted-foreground">COD</div>
+                      <div className="text-[10px] text-muted-foreground">Delivery {money(o.delivery_amount)}</div>
+                      <span className="rounded-md bg-muted px-2 py-0.5 text-[10px] font-semibold uppercase">
+                        {o.payment_method === "cod" ? "COD" : o.payment_status === "paid" ? "Paid" : "Unpaid"}
+                      </span>
+                      {(o.courier_key ?? defaultKey) && (
+                        <span className="inline-flex items-center gap-1 rounded-md bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary">
+                          <Truck className="h-3 w-3" /> {courierLabel(o.courier_key ?? defaultKey)}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="mt-3 grid grid-cols-2 gap-1.5 border-t pt-2.5 sm:flex sm:flex-wrap">
+                    <button
+                      type="button"
+                      onClick={() => (connected.length ? setSendOrder(o) : toast.error("আগে একটি কুরিয়ার কানেক্ট করুন"))}
+                      className="col-span-2 inline-flex h-9 items-center justify-center gap-1.5 rounded-lg bg-primary px-3 text-xs font-semibold text-primary-foreground hover:bg-primary/90 sm:h-8"
+                    >
+                      <Send className="h-3.5 w-3.5" /> Send to Courier
+                    </button>
+                    <div className="col-span-2 grid grid-cols-4 gap-1.5 sm:flex">
+                      <Link to="/admin/orders" search={{ q: o.invoice_no ?? undefined } as never} className={ACT}>
+                        <Eye className="h-3.5 w-3.5" /> View
+                      </Link>
+                      <button type="button" className={ACT} onClick={() => printOrder(o, "invoice")}>
+                        <Printer className="h-3.5 w-3.5" /> Invoice
+                      </button>
+                      <button type="button" className={ACT} onClick={() => printOrder(o, "label")}>
+                        <Tag className="h-3.5 w-3.5" /> Label
+                      </button>
+                      <button type="button" className={ACT} onClick={() => copyText(`${o.customer_name}\n${o.phone}\n${addr}`, "Address copied")}>
+                        <Copy className="h-3.5 w-3.5" /> Copy
+                      </button>
+                    </div>
+                  </div>
+                </article>
+              );
+            })
           )}
         </TabsContent>
 
