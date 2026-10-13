@@ -16,6 +16,10 @@ export type CallSmsProvider = {
   sections: CallSmsProviderSection[];
   /** Section that holds the connect/setup form. */
   setupSection: string;
+  /** Optional card tag (defaults to kind label). */
+  tag?: string;
+  /** Setup opens as a modal on the Apps hub instead of a page. */
+  modal?: boolean;
 };
 
 export const CALL_SMS_HUB_PATH = "/admin/call-sms/apps";
@@ -39,6 +43,17 @@ export const CALL_SMS_PROVIDERS: CallSmsProvider[] = [
       { key: "calls", icon: History, label: "Call History" },
       { key: "recordings", icon: Mic, label: "Recordings" },
     ],
+  },
+  {
+    id: "orzen-call",
+    name: "Orzen Call",
+    kind: "call",
+    tag: "Call / AI Voice",
+    path: "/admin/call-sms/apps",
+    description: "AI Voice Calling: Automatic COD order confirmation calls, live customer dialogue, product inquiry & order auto-sync.",
+    setupSection: "setup",
+    modal: true,
+    sections: [{ key: "setup", icon: Plug, label: "Setup" }],
   },
 ];
 

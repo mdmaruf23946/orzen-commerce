@@ -1,0 +1,1 @@
+GRANT EXECUTE ON FUNCTION public.orzen_call_post(uuid,text,text,jsonb) TO service_role;

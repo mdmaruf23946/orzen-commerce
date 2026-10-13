@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { FeatureGate } from "@/components/admin/FeatureGate";
 import { CALL_SMS_PROVIDERS } from "@/lib/call-sms-providers";
 import { useProviderConnections } from "@/lib/use-call-sms-connections";
+import { useState } from "react";
+import { OrzenCallModal } from "@/components/admin/calls/OrzenCallModal";
 
 export const Route = createFileRoute("/_authenticated/admin/call-sms/apps")({
   component: AppsHub,
@@ -23,6 +25,7 @@ export const Route = createFileRoute("/_authenticated/admin/call-sms/apps")({
 
 function AppsHub() {
   const { connected, isLoading } = useProviderConnections();
+  const [open, setOpen] = useState(false);
   return (
     <FeatureGate feature="call_center">
       <div className="space-y-4">
@@ -37,7 +40,7 @@ function AppsHub() {
                   <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary"><Icon className="h-5 w-5" /></div>
                   <div className="min-w-0 flex-1">
                     <p className="font-semibold">{p.name}</p>
-                    <p className="text-xs text-muted-foreground">{p.kind === "sms" ? "SMS" : p.kind === "call" ? "Call" : "Call & SMS"}</p>
+                    <p className="text-xs text-muted-foreground">{p.tag ?? (p.kind === "sms" ? "SMS" : p.kind === "call" ? "Call" : "Call & SMS")}</p>
                   </div>
                   <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs ${on ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}>
                     {on ? <CheckCircle2 className="h-3 w-3" /> : <Circle className="h-3 w-3" />}
@@ -45,13 +48,18 @@ function AppsHub() {
                   </span>
                 </div>
                 <p className="text-sm text-muted-foreground">{p.description}</p>
-                <Button asChild size="sm" variant={on ? "outline" : "default"} className="mt-auto">
-                  <Link to={p.path} search={{ tab: on ? "overview" : p.setupSection } as any}>{on ? "Manage" : "Connect / Setup"}</Link>
-                </Button>
+                {p.modal ? (
+                  <Button size="sm" variant={on ? "outline" : "default"} className="mt-auto" onClick={() => setOpen(true)}>{on ? "Manage" : "Connect / Setup"}</Button>
+                ) : (
+                  <Button asChild size="sm" variant={on ? "outline" : "default"} className="mt-auto">
+                    <Link to={p.path} search={{ tab: on ? "overview" : p.setupSection } as any}>{on ? "Manage" : "Connect / Setup"}</Link>
+                  </Button>
+                )}
               </div>
             );
           })}
         </div>
+        <OrzenCallModal open={open} onOpenChange={setOpen} />
       </div>
     </FeatureGate>
   );
