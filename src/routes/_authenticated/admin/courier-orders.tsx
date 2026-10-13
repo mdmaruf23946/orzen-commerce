@@ -3,7 +3,22 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { toast } from "sonner";
-import { ExternalLink, Printer, RefreshCw, Send, Settings2, Truck, X } from "lucide-react";
+import { Copy, ExternalLink, Eye, MapPin, MessageCircle, Printer, RefreshCw, Send, Settings2, Tag, Truck, X } from "lucide-react";
+import { CallButton } from "@/components/admin/calls/CallButton";
+import { Thumb } from "@/components/admin/orders/OrderCard";
+
+const ACT =
+  "inline-flex h-8 items-center justify-center gap-1 rounded-lg border px-2.5 text-xs transition-colors hover:bg-muted disabled:pointer-events-none";
+
+function waHref(phone: string) {
+  let d = String(phone ?? "").replace(/\D/g, "");
+  if (d.startsWith("0")) d = "88" + d;
+  return `https://wa.me/${d}`;
+}
+
+function copyText(text: string, ok: string) {
+  navigator.clipboard.writeText(text).then(() => toast.success(ok), () => toast.error("Copy failed"));
+}
 import { FeatureGate } from "@/components/admin/FeatureGate";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -465,9 +480,11 @@ function CourierOrdersPage() {
               </div>
             ) : (
               <div className="space-y-2">
-                {rows.map((p) => (
-                  <div key={p.id} className="rounded-xl border bg-card p-3 shadow-sm">
-                    <div className="flex items-start gap-3">
+                {rows.map((p) => {
+                  const it = ((p as any).items ?? []) as any[];
+                  return (
+                  <article key={p.id} className="rounded-2xl border bg-card p-3 shadow-sm sm:p-4">
+                    <div className="grid grid-cols-[auto_56px_1fr_auto] gap-3">
                       <Checkbox
                         className="mt-1"
                         checked={selected.includes(p.id)}
@@ -475,53 +492,74 @@ function CourierOrdersPage() {
                           setSelected((s) => (v ? [...s, p.id] : s.filter((x) => x !== p.id)))
                         }
                       />
-                      <ItemThumbs items={(p as any).items} max={2} />
-                      <button className="min-w-0 flex-1 text-left" onClick={() => setOpenId(p.id)}>
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span className="truncate text-sm font-medium">{p.recipient_name}</span>
-                          <StatusPill status={p.status} />
-                          <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">
-                            {courierLabel(p.courier_key)}
+                      <div className="relative">
+                        <Thumb url={it[0]?.image} alt={it[0]?.name ?? "Item"} className="h-14 w-14" />
+                        {it.length > 1 && (
+                          <span className="absolute -bottom-1 -right-1 rounded-full bg-primary px-1.5 text-[10px] font-semibold text-primary-foreground">+{it.length - 1}</span>
+                        )}
+                      </div>
+                      <button className="min-w-0 text-left" onClick={() => setOpenId(p.id)}>
+                        <div className="flex items-center gap-1.5">
+                          <span className="truncate font-mono text-xs font-semibold">
+                            {p.tracking_code ?? "No tracking yet"}
                           </span>
                         </div>
-                        <p className="mt-0.5 truncate text-xs text-muted-foreground">
-                          {p.recipient_phone} · {p.recipient_address}
-                        </p>
-                        <p className="mt-0.5 text-xs text-muted-foreground">
-                          COD {money(p.cod_amount)}
-                          {p.tracking_code ? ` · ${p.tracking_code}` : ""}
-                        </p>
-                        <p className="mt-0.5 text-[10px] text-muted-foreground">
-                          Updated {new Date(p.last_synced_at ?? p.updated_at ?? p.created_at).toLocaleString()}
-                        </p>
-                        {p.last_error && (
-                          <p className="mt-1 line-clamp-2 text-xs text-destructive">{p.last_error}</p>
-                        )}
+                        <div className="truncate text-sm font-semibold">{p.recipient_name}</div>
+                        <div className="truncate text-xs text-muted-foreground">{p.recipient_phone}</div>
+                        <div className="flex min-w-0 items-center gap-1 text-xs text-muted-foreground">
+                          <MapPin className="h-3 w-3 shrink-0" />
+                          <span className="truncate">{p.recipient_address}</span>
+                        </div>
+                        <div className="mt-0.5 text-[10px] text-muted-foreground">
+                          Updated {new Date(p.last_synced_at ?? p.updated_at ?? p.created_at).toLocaleString("en-GB", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
+                        </div>
+                      </button>
+                      <div className="flex flex-col items-end gap-1 text-right">
+                        <div className="text-base font-bold leading-tight">{money(p.cod_amount)}</div>
+                        <div className="text-[10px] text-muted-foreground">COD</div>
+                        <StatusPill status={p.status} />
+                        <span className="inline-flex items-center gap-1 rounded-md bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary">
+                          <Truck className="h-3 w-3" /> {courierLabel(p.courier_key)}
+                        </span>
+                      </div>
+                    </div>
+                    {p.last_error && (
+                      <p className="mt-2 line-clamp-2 rounded-lg bg-destructive/10 px-2 py-1 text-xs text-destructive">{p.last_error}</p>
+                    )}
+                    <div className="mt-3 grid grid-cols-3 gap-1.5 border-t pt-2.5 sm:flex sm:flex-wrap">
+                      {p.tracking_url ? (
+                        <a href={p.tracking_url} target="_blank" rel="noreferrer" className={`${ACT} border-primary/30 bg-primary/10 text-primary`}>
+                          <ExternalLink className="h-3.5 w-3.5" /> Track
+                        </a>
+                      ) : (
+                        <button type="button" className={`${ACT} opacity-50`} disabled>
+                          <ExternalLink className="h-3.5 w-3.5" /> Track
+                        </button>
+                      )}
+                      <button type="button" className={ACT} onClick={() => bulkRefresh.mutate([p.id])}>
+                        <RefreshCw className="h-3.5 w-3.5" /> Sync
+                      </button>
+                      <button type="button" className={ACT} onClick={() => print([p.id], "label")}>
+                        <Tag className="h-3.5 w-3.5" /> Label
+                      </button>
+                      <button type="button" className={ACT} onClick={() => print([p.id], "invoice")}>
+                        <Printer className="h-3.5 w-3.5" /> Invoice
+                      </button>
+                      <button
+                        type="button"
+                        className={ACT}
+                        disabled={!p.tracking_code}
+                        onClick={() => copyText(p.tracking_code, "Tracking copied")}
+                      >
+                        <Copy className="h-3.5 w-3.5" /> Copy ID
+                      </button>
+                      <button type="button" className={ACT} onClick={() => setOpenId(p.id)}>
+                        <Eye className="h-3.5 w-3.5" /> Details
                       </button>
                     </div>
-                    <div className="mt-2 flex flex-wrap gap-2 pl-7">
-                      {p.tracking_url && (
-                        <Button asChild size="sm" variant="outline">
-                          <a href={p.tracking_url} target="_blank" rel="noreferrer">
-                            Track <ExternalLink className="ml-1 h-3 w-3" />
-                          </a>
-                        </Button>
-                      )}
-                      <Button size="sm" variant="outline" onClick={() => bulkRefresh.mutate([p.id])}>
-                        <RefreshCw className="mr-1 h-3.5 w-3.5" /> Sync Status
-                      </Button>
-                      <Button size="sm" variant="outline" onClick={() => print([p.id], "label")}>
-                        Label
-                      </Button>
-                      <Button size="sm" variant="outline" onClick={() => print([p.id], "invoice")}>
-                        Invoice
-                      </Button>
-                      <Button size="sm" variant="ghost" onClick={() => setOpenId(p.id)}>
-                        Details
-                      </Button>
-                    </div>
-                  </div>
-                ))}
+                  </article>
+                  );
+                })}
               </div>
             )}
           </TabsContent>
