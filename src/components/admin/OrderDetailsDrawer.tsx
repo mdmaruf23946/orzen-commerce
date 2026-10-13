@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import {
   Package, User, ScrollText, Truck, ShieldCheck, Phone, MapPin,
-  Trash2, Printer, ImageOff,
+  Trash2, Printer, ImageOff, Pencil, Lock,
 } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { getOrderDetails, addInternalNote, deleteInternalNote } from "@/lib/business.functions";
@@ -23,6 +23,7 @@ import { CallHistoryList } from "@/components/admin/calls/CallHistoryList";
 import { getCallsForOrder } from "@/lib/call-center.functions";
 
 import { toast } from "sonner";
+import { EditCustomerDialog, EditItemsDialog } from "@/components/admin/orders/OrderEditDialogs";
 
 function resolveProductImageUrl(url: string | null | undefined): string | null {
   if (!url) return null;
@@ -69,6 +70,8 @@ export function OrderDetailsDrawer({ open, onOpenChange, orderId }: Props) {
   const [courier, setCourier] = useState({ name: "", tracking: "", status: "" });
   const [savingCourier, setSavingCourier] = useState(false);
   const [savingAllowDup, setSavingAllowDup] = useState(false);
+  const [editCustomer, setEditCustomer] = useState(false);
+  const [editItems, setEditItems] = useState(false);
 
   const { data, isLoading } = useQuery({
     queryKey: ["order-drawer", orderId],
@@ -125,6 +128,20 @@ export function OrderDetailsDrawer({ open, onOpenChange, orderId }: Props) {
   const kind: string = order?.order_type ?? "physical";
   const isPhysical = kind === "physical";
   const fulfil: any = order?.fulfillment_meta ?? {};
+  const canEdit = order?.status === "pending" && !order?.courier_tracking_id;
+  const refresh = () => {
+    qc.invalidateQueries({ queryKey: ["order-drawer", orderId] });
+    qc.invalidateQueries({ queryKey: ["admin", "orders"] });
+  };
+  const editBtn = (onClick: () => void) => canEdit ? (
+    <button type="button" onClick={onClick} className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs font-normal hover:bg-muted">
+      <Pencil className="h-3 w-3" /> Edit
+    </button>
+  ) : (
+    <span title="শুধু Pending অর্ডার এডিট করা যায়" className="inline-flex items-center gap-1 text-[11px] font-normal text-muted-foreground">
+      <Lock className="h-3 w-3" /> Locked
+    </span>
+  );
 
   // orders.subtotal already holds the grand total (items + delivery − discount)
   // for storefront, quick and chat orders — never add delivery to it again.
@@ -139,6 +156,12 @@ export function OrderDetailsDrawer({ open, onOpenChange, orderId }: Props) {
 
   return (
     <>
+      {order && (
+        <>
+          <EditCustomerDialog open={editCustomer} onOpenChange={setEditCustomer} order={order} isPhysical={isPhysical} onSaved={refresh} />
+          <EditItemsDialog open={editItems} onOpenChange={setEditItems} order={order} items={items} isPhysical={isPhysical} onSaved={refresh} />
+        </>
+      )}
       <Sheet open={open} onOpenChange={onOpenChange}>
         <SheetContent
           side="right"
@@ -175,7 +198,7 @@ export function OrderDetailsDrawer({ open, onOpenChange, orderId }: Props) {
           ) : (
             <div className="space-y-3 p-4">
               {/* Products */}
-              <Section icon={Package} title="Product">
+              <Section icon={Package} title="Product" action={editBtn(() => setEditItems(true))}>
                 <ul className="divide-y">
                   {items.map((it, i) => (
                     <li key={i} className="space-y-3 py-3">
@@ -204,7 +227,7 @@ export function OrderDetailsDrawer({ open, onOpenChange, orderId }: Props) {
               </Section>
 
               {/* Customer */}
-              <Section icon={User} title="Customer">
+              <Section icon={User} title="Customer" action={editBtn(() => setEditCustomer(true))}>
                 <div className="space-y-1 text-sm">
                   <div className="font-medium">{order.customer_name}</div>
                   <a href={`tel:${order.phone}`} className="flex items-center gap-1.5 text-xs text-primary">
@@ -434,16 +457,19 @@ function Section({
   icon: Icon,
   title,
   children,
+  action,
 }: {
   icon: any;
   title: string;
   children: React.ReactNode;
+  action?: React.ReactNode;
 }) {
   return (
     <details open className="group rounded-xl border bg-card">
       <summary className="flex cursor-pointer items-center gap-2 px-3 py-2 text-sm font-medium">
         <Icon className="h-4 w-4 text-muted-foreground" />
         <span className="flex-1">{title}</span>
+        {action && <span onClick={(e) => e.preventDefault()}>{action}</span>}
       </summary>
       <div className="border-t px-3 py-3">{children}</div>
     </details>
