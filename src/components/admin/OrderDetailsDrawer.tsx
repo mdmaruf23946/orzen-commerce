@@ -24,6 +24,7 @@ import { getCallsForOrder } from "@/lib/call-center.functions";
 
 import { toast } from "sonner";
 import { EditCustomerDialog, EditItemsDialog } from "@/components/admin/orders/OrderEditDialogs";
+import { OrderEditHistory } from "@/components/admin/orders/OrderEditHistory";
 
 function resolveProductImageUrl(url: string | null | undefined): string | null {
   if (!url) return null;
@@ -132,6 +133,7 @@ export function OrderDetailsDrawer({ open, onOpenChange, orderId }: Props) {
   const refresh = () => {
     qc.invalidateQueries({ queryKey: ["order-drawer", orderId] });
     qc.invalidateQueries({ queryKey: ["admin", "orders"] });
+    qc.invalidateQueries({ queryKey: ["order-edit-history", orderId] });
   };
   const editBtn = (onClick: () => void) => canEdit ? (
     <button type="button" onClick={onClick} className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs font-normal hover:bg-muted">
@@ -259,6 +261,10 @@ export function OrderDetailsDrawer({ open, onOpenChange, orderId }: Props) {
               </Section>
 
 
+
+              <Section icon={ScrollText} title="Edit History">
+                <OrderEditHistory orderId={orderId} enabled={open} />
+              </Section>
 
               {/* Order info */}
               <Section icon={ScrollText} title="Order">

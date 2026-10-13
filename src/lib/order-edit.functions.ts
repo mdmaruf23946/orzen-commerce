@@ -2,7 +2,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
-import { myStoreRow } from "@/lib/store-access";
+import { myStoreRow, resolveStoreAccess } from "@/lib/store-access";
 
 async function loadPendingOrder(supabase: any, userId: string, orderId: string) {
   const store = await myStoreRow(supabase, userId, "id", "finance");
@@ -17,6 +17,41 @@ async function loadPendingOrder(supabase: any, userId: string, orderId: string) 
   if (parcel) throw new Error("অর্ডারটি কুরিয়ারে পাঠানো হয়েছে — এডিট করা যাবে না");
   return { storeId: store.id as string, order };
 }
+
+async function logEdit(context: any, orderId: string, kind: "customer" | "items", before: any, after: any) {
+  try {
+    const access: any = await resolveStoreAccess(context.supabase, context.userId, context.claims);
+    if (!access?.storeId) return;
+    const email = context.claims?.email as string | undefined;
+    await context.supabase.from("staff_activity_log").insert({
+      store_id: access.storeId,
+      actor_user_id: access.isOwner ? context.userId : null,
+      actor_staff_id: access.staff?.id ?? null,
+      actor_name: access.isOwner ? (email ? `Merchant (${email})` : "Merchant (owner)") : (access.staff?.name ?? "Employee"),
+      actor_kind: access.isOwner ? "owner" : "employee",
+      section: "orders",
+      action: kind === "customer" ? "order.customer_edited" : "order.items_edited",
+      entity_type: "order",
+      entity_id: orderId,
+      summary: kind === "customer" ? "Customer info edited" : "Products / charges edited",
+      meta: { before, after },
+    });
+  } catch { /* never block the edit */ }
+}
+
+export const listOrderEditHistory = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ order_id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const store = await myStoreRow(context.supabase, context.userId, "id", "finance");
+    if (!store?.id) throw new Error("No store");
+    const { data: rows } = await context.supabase.from("staff_activity_log")
+      .select("id,actor_name,actor_kind,action,summary,meta,created_at")
+      .eq("store_id", store.id).eq("entity_type", "order").eq("entity_id", data.order_id)
+      .in("action", ["order.customer_edited", "order.items_edited"])
+      .order("created_at", { ascending: false }).limit(50);
+    return (rows ?? []) as any[];
+  });
 
 async function addTimeline(supabase: any, orderId: string, storeId: string, note: string) {
   try {
@@ -37,6 +72,7 @@ export const updateOrderCustomer = createServerFn({ method: "POST" })
   }).parse(d))
   .handler(async ({ data, context }) => {
     const { storeId } = await loadPendingOrder(context.supabase, context.userId, data.order_id);
+    const { data: prev } = await context.supabase.from("orders").select("customer_name,phone,email,address,area,notes").eq("id", data.order_id).maybeSingle();
     const { error } = await context.supabase.from("orders").update({
       customer_name: data.customer_name,
       phone: data.phone,
@@ -47,6 +83,8 @@ export const updateOrderCustomer = createServerFn({ method: "POST" })
     }).eq("id", data.order_id).eq("store_id", storeId);
     if (error) throw new Error(error.message);
     await addTimeline(context.supabase, data.order_id, storeId, "Customer info edited");
+    const after = { customer_name: data.customer_name, phone: data.phone, email: data.email || null, address: data.address, area: data.area || null, notes: data.notes || null };
+    await logEdit(context, data.order_id, "customer", prev ?? {}, after);
     return { ok: true };
   });
 
@@ -113,5 +151,9 @@ export const updateOrderItems = createServerFn({ method: "POST" })
     }).eq("id", data.order_id).eq("store_id", storeId);
     if (error) throw new Error(error.message);
     await addTimeline(context.supabase, data.order_id, storeId, "Products / charges edited");
+    const fmt = (rows: any[]) => rows.map((r) => ({ name: r.name_snapshot ?? r.name, qty: r.qty, price: Number(r.price_snapshot ?? r.price) }));
+    await logEdit(context, data.order_id, "items",
+      { items: fmt(oldItems ?? []), delivery: Number(order.delivery_amount ?? 0), discount: Number(order.discount_amount ?? 0) },
+      { items: fmt(data.items), delivery: data.delivery_amount, discount: data.discount_amount, total: grand });
     return { ok: true, total: grand };
   });
