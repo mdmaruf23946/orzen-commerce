@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { updateOrderCustomer, updateOrderItems, listEditableProducts } from "@/lib/order-edit.functions";
+import { updateOrderCustomer, updateOrderItems, listEditableProducts, listOrderDeliveryZones } from "@/lib/order-edit.functions";
 
 export function EditCustomerDialog({ open, onOpenChange, order, isPhysical, onSaved }: {
   open: boolean; onOpenChange: (v: boolean) => void; order: any; isPhysical: boolean; onSaved: () => void;
