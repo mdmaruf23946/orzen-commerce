@@ -445,19 +445,15 @@ function CourierOrdersPage() {
                       <button type="button" className={ACT} onClick={() => fraudAllowed ? setFraudFor({ id: o.id, phone: o.phone }) : toast.error("Fraud Checker আপনার প্যাকেজে নেই")}>
                         <ShieldCheck className="h-3.5 w-3.5" /> Fraud
                       </button>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger className={`inline-flex h-8 items-center justify-center gap-1 rounded-lg px-2.5 text-xs font-semibold capitalize ring-1 ring-inset ${ORDER_STATUS_TONE[o.status] ?? "bg-muted ring-border"}`}>
-                          {o.status} <ChevronDown className="h-3 w-3" />
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-40">
-                          {STATUSES.filter((st) => st !== o.status).map((st) => (
-                            <DropdownMenuItem key={st} onClick={() => changeStatus(o.id, st)} className="text-xs capitalize">
-                              <span className={`mr-2 h-2 w-2 rounded-full ${ORDER_STATUS_TONE[st]?.split(" ")[0] ?? ""}`} />
-                              {st}
-                            </DropdownMenuItem>
-                          ))}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                      <button
+                        type="button"
+                        className={`${ACT} text-destructive hover:bg-destructive/10`}
+                        onClick={() => {
+                          if (window.confirm("এই অর্ডারটি ক্যানসেল করবেন? কুরিয়ারে পাঠানোর পর আর ক্যানসেল করা যাবে না।")) changeStatus(o.id, "cancelled");
+                        }}
+                      >
+                        <X className="h-3.5 w-3.5" /> Cancel
+                      </button>
                     </div>
                   </div>
                 </article>
