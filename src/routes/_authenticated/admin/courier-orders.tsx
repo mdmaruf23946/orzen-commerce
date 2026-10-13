@@ -3,7 +3,12 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Copy, ExternalLink, Eye, MapPin, MessageCircle, Printer, RefreshCw, Send, Settings2, Tag, Truck, X } from "lucide-react";
+import { Copy, ExternalLink, Eye, MapPin, MessageCircle, Printer, RefreshCw, Send, Settings2, Tag, Truck, X, ShieldCheck, ChevronDown } from "lucide-react";
+import { FraudSummary, STATUSES, ORDER_STATUS_TONE } from "@/components/admin/orders/OrderCard";
+import { FraudCheckModal } from "@/components/admin/FraudCheckModal";
+import { useFeature } from "@/components/admin/FeatureGate";
+import { updateOrderStatus } from "@/lib/admin.functions";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { CallButton } from "@/components/admin/calls/CallButton";
 import { Thumb } from "@/components/admin/orders/OrderCard";
 
@@ -153,6 +158,17 @@ function CourierOrdersPage() {
 
   const rows = (parcelData?.rows ?? []) as any[];
   const orderRows = (orders ?? []) as any[];
+  const [fraudFor, setFraudFor] = useState<{ id: string; phone: string } | null>(null);
+  const { allowed: fraudAllowed } = useFeature("fraud_checker");
+  const updateStatus = useServerFn(updateOrderStatus);
+  async function changeStatus(id: string, status: string) {
+    try {
+      await updateStatus({ data: { id, status: status as any } });
+      toast.success("Status updated");
+      qc.invalidateQueries({ queryKey: ["sendable-orders"] });
+      qc.invalidateQueries({ queryKey: ["admin", "orders"] });
+    } catch (e) { toast.error((e as Error).message); }
+  }
 
   function invalidate() {
     qc.invalidateQueries({ queryKey: ["parcels"] });
@@ -391,6 +407,9 @@ function CourierOrdersPage() {
                       <div className="text-base font-bold leading-tight">{money(o.cod_amount)}</div>
                       <div className="text-[10px] text-muted-foreground">COD</div>
                       <div className="text-[10px] text-muted-foreground">Delivery {money(o.delivery_amount)}</div>
+                      <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold capitalize ring-1 ring-inset ${ORDER_STATUS_TONE[o.status] ?? "bg-muted ring-border"}`}>
+                        <span className="h-1.5 w-1.5 rounded-full bg-current" /> {o.status}
+                      </span>
                       <span className="rounded-md bg-muted px-2 py-0.5 text-[10px] font-semibold uppercase">
                         {o.payment_method === "cod" ? "COD" : o.payment_status === "paid" ? "Paid" : "Unpaid"}
                       </span>
@@ -401,6 +420,7 @@ function CourierOrdersPage() {
                       )}
                     </div>
                   </div>
+                  {fraudAllowed && o.phone && <FraudSummary phone={o.phone} />}
                   <div className="mt-3 grid grid-cols-2 gap-1.5 border-t pt-2.5 sm:flex sm:flex-wrap">
                     <button
                       type="button"
@@ -409,7 +429,7 @@ function CourierOrdersPage() {
                     >
                       <Send className="h-3.5 w-3.5" /> Send to Courier
                     </button>
-                    <div className="col-span-2 grid grid-cols-4 gap-1.5 sm:flex">
+                    <div className="col-span-2 grid grid-cols-3 gap-1.5 sm:flex sm:flex-wrap">
                       <Link to="/admin/orders" search={{ q: o.invoice_no ?? undefined } as never} className={ACT}>
                         <Eye className="h-3.5 w-3.5" /> View
                       </Link>
@@ -422,6 +442,22 @@ function CourierOrdersPage() {
                       <button type="button" className={ACT} onClick={() => copyText(`${o.customer_name}\n${o.phone}\n${addr}`, "Address copied")}>
                         <Copy className="h-3.5 w-3.5" /> Copy
                       </button>
+                      <button type="button" className={ACT} onClick={() => fraudAllowed ? setFraudFor({ id: o.id, phone: o.phone }) : toast.error("Fraud Checker আপনার প্যাকেজে নেই")}>
+                        <ShieldCheck className="h-3.5 w-3.5" /> Fraud
+                      </button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger className={`inline-flex h-8 items-center justify-center gap-1 rounded-lg px-2.5 text-xs font-semibold capitalize ring-1 ring-inset ${ORDER_STATUS_TONE[o.status] ?? "bg-muted ring-border"}`}>
+                          {o.status} <ChevronDown className="h-3 w-3" />
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-40">
+                          {STATUSES.filter((st) => st !== o.status).map((st) => (
+                            <DropdownMenuItem key={st} onClick={() => changeStatus(o.id, st)} className="text-xs capitalize">
+                              <span className={`mr-2 h-2 w-2 rounded-full ${ORDER_STATUS_TONE[st]?.split(" ")[0] ?? ""}`} />
+                              {st}
+                            </DropdownMenuItem>
+                          ))}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                   </div>
                 </article>
@@ -584,6 +620,10 @@ function CourierOrdersPage() {
           navigate({ search: (prev: { tab?: string }) => ({ ...prev, tab: "sent" }) });
         }}
       />
+
+      {fraudFor && (
+        <FraudCheckModal open={!!fraudFor} onOpenChange={(v) => !v && setFraudFor(null)} phone={fraudFor.phone} orderId={fraudFor.id} />
+      )}
 
       <ParcelDrawer id={openId} onClose={() => setOpenId(null)} onChanged={invalidate} onPrint={print} />
     </div>
