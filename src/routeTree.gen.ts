@@ -249,6 +249,7 @@ import { Route as ApiPublicMessengerBuyRouteImport } from './routes/api/public/m
 import { Route as ApiPublicMessengerProcessRouteImport } from './routes/api/public/messenger/process'
 import { Route as ApiPublicMessengerWebhookRouteImport } from './routes/api/public/messenger/webhook'
 import { Route as ApiPublicMetaOauthCallbackRouteImport } from './routes/api/public/meta/oauth-callback'
+import { Route as ApiPublicOrzenCallCallbackRouteImport } from './routes/api/public/orzen-call/callback'
 import { Route as ApiPublicPlatformMetaConsentRouteImport } from './routes/api/public/platform-meta/consent'
 import { Route as ApiPublicPlatformMetaTrackRouteImport } from './routes/api/public/platform-meta/track'
 import { Route as ApiPublicTiktokTrackRouteImport } from './routes/api/public/tiktok/track'
@@ -1640,6 +1641,12 @@ const ApiPublicMetaOauthCallbackRoute =
     path: '/api/public/meta/oauth-callback',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicOrzenCallCallbackRoute =
+  ApiPublicOrzenCallCallbackRouteImport.update({
+    id: '/api/public/orzen-call/callback',
+    path: '/api/public/orzen-call/callback',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicPlatformMetaConsentRoute =
   ApiPublicPlatformMetaConsentRouteImport.update({
     id: '/api/public/platform-meta/consent',
@@ -2008,6 +2015,7 @@ export interface FileRoutesByFullPath {
   '/api/public/messenger/process': typeof ApiPublicMessengerProcessRoute
   '/api/public/messenger/webhook': typeof ApiPublicMessengerWebhookRoute
   '/api/public/meta/oauth-callback': typeof ApiPublicMetaOauthCallbackRoute
+  '/api/public/orzen-call/callback': typeof ApiPublicOrzenCallCallbackRoute
   '/api/public/platform-meta/consent': typeof ApiPublicPlatformMetaConsentRoute
   '/api/public/platform-meta/track': typeof ApiPublicPlatformMetaTrackRoute
   '/api/public/tiktok/track': typeof ApiPublicTiktokTrackRoute
@@ -2261,6 +2269,7 @@ export interface FileRoutesByTo {
   '/api/public/messenger/process': typeof ApiPublicMessengerProcessRoute
   '/api/public/messenger/webhook': typeof ApiPublicMessengerWebhookRoute
   '/api/public/meta/oauth-callback': typeof ApiPublicMetaOauthCallbackRoute
+  '/api/public/orzen-call/callback': typeof ApiPublicOrzenCallCallbackRoute
   '/api/public/platform-meta/consent': typeof ApiPublicPlatformMetaConsentRoute
   '/api/public/platform-meta/track': typeof ApiPublicPlatformMetaTrackRoute
   '/api/public/tiktok/track': typeof ApiPublicTiktokTrackRoute
@@ -2529,6 +2538,7 @@ export interface FileRoutesById {
   '/api/public/messenger/process': typeof ApiPublicMessengerProcessRoute
   '/api/public/messenger/webhook': typeof ApiPublicMessengerWebhookRoute
   '/api/public/meta/oauth-callback': typeof ApiPublicMetaOauthCallbackRoute
+  '/api/public/orzen-call/callback': typeof ApiPublicOrzenCallCallbackRoute
   '/api/public/platform-meta/consent': typeof ApiPublicPlatformMetaConsentRoute
   '/api/public/platform-meta/track': typeof ApiPublicPlatformMetaTrackRoute
   '/api/public/tiktok/track': typeof ApiPublicTiktokTrackRoute
@@ -2797,6 +2807,7 @@ export interface FileRouteTypes {
     | '/api/public/messenger/process'
     | '/api/public/messenger/webhook'
     | '/api/public/meta/oauth-callback'
+    | '/api/public/orzen-call/callback'
     | '/api/public/platform-meta/consent'
     | '/api/public/platform-meta/track'
     | '/api/public/tiktok/track'
@@ -3050,6 +3061,7 @@ export interface FileRouteTypes {
     | '/api/public/messenger/process'
     | '/api/public/messenger/webhook'
     | '/api/public/meta/oauth-callback'
+    | '/api/public/orzen-call/callback'
     | '/api/public/platform-meta/consent'
     | '/api/public/platform-meta/track'
     | '/api/public/tiktok/track'
@@ -3317,6 +3329,7 @@ export interface FileRouteTypes {
     | '/api/public/messenger/process'
     | '/api/public/messenger/webhook'
     | '/api/public/meta/oauth-callback'
+    | '/api/public/orzen-call/callback'
     | '/api/public/platform-meta/consent'
     | '/api/public/platform-meta/track'
     | '/api/public/tiktok/track'
@@ -3411,6 +3424,7 @@ export interface RootRouteChildren {
   ApiPublicMessengerProcessRoute: typeof ApiPublicMessengerProcessRoute
   ApiPublicMessengerWebhookRoute: typeof ApiPublicMessengerWebhookRoute
   ApiPublicMetaOauthCallbackRoute: typeof ApiPublicMetaOauthCallbackRoute
+  ApiPublicOrzenCallCallbackRoute: typeof ApiPublicOrzenCallCallbackRoute
   ApiPublicPlatformMetaConsentRoute: typeof ApiPublicPlatformMetaConsentRoute
   ApiPublicPlatformMetaTrackRoute: typeof ApiPublicPlatformMetaTrackRoute
   ApiPublicTiktokTrackRoute: typeof ApiPublicTiktokTrackRoute
@@ -5112,6 +5126,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicMetaOauthCallbackRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/orzen-call/callback': {
+      id: '/api/public/orzen-call/callback'
+      path: '/api/public/orzen-call/callback'
+      fullPath: '/api/public/orzen-call/callback'
+      preLoaderRoute: typeof ApiPublicOrzenCallCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/platform-meta/consent': {
       id: '/api/public/platform-meta/consent'
       path: '/api/public/platform-meta/consent'
@@ -5986,6 +6007,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicMessengerProcessRoute: ApiPublicMessengerProcessRoute,
   ApiPublicMessengerWebhookRoute: ApiPublicMessengerWebhookRoute,
   ApiPublicMetaOauthCallbackRoute: ApiPublicMetaOauthCallbackRoute,
+  ApiPublicOrzenCallCallbackRoute: ApiPublicOrzenCallCallbackRoute,
   ApiPublicPlatformMetaConsentRoute: ApiPublicPlatformMetaConsentRoute,
   ApiPublicPlatformMetaTrackRoute: ApiPublicPlatformMetaTrackRoute,
   ApiPublicTiktokTrackRoute: ApiPublicTiktokTrackRoute,
