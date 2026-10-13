@@ -3,7 +3,22 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { toast } from "sonner";
-import { ExternalLink, Printer, RefreshCw, Send, Settings2, Truck, X } from "lucide-react";
+import { Copy, ExternalLink, Eye, MapPin, MessageCircle, Printer, RefreshCw, Send, Settings2, Tag, Truck, X } from "lucide-react";
+import { CallButton } from "@/components/admin/calls/CallButton";
+import { Thumb } from "@/components/admin/orders/OrderCard";
+
+const ACT =
+  "inline-flex h-8 items-center justify-center gap-1 rounded-lg border px-2.5 text-xs transition-colors hover:bg-muted disabled:pointer-events-none";
+
+function waHref(phone: string) {
+  let d = String(phone ?? "").replace(/\D/g, "");
+  if (d.startsWith("0")) d = "88" + d;
+  return `https://wa.me/${d}`;
+}
+
+function copyText(text: string, ok: string) {
+  navigator.clipboard.writeText(text).then(() => toast.success(ok), () => toast.error("Copy failed"));
+}
 import { FeatureGate } from "@/components/admin/FeatureGate";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
