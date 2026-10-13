@@ -68,8 +68,10 @@ export function EditItemsDialog({ open, onOpenChange, order, items, isPhysical, 
   const listFn = useServerFn(listEditableProducts);
   const { data: products = [] } = useQuery({ queryKey: ["order-edit-products"], queryFn: () => listFn(), enabled: open, staleTime: 60_000 });
   const byId = useMemo(() => new Map(products.map((p) => [p.id, p])), [products]);
+  const zonesFn = useServerFn(listOrderDeliveryZones);
+  const { data: zones = [] } = useQuery({ queryKey: ["order-edit-zones"], queryFn: () => zonesFn(), enabled: open && isPhysical, staleTime: 60_000 });
   const [lines, setLines] = useState<Line[]>([]);
-  const [delivery, setDelivery] = useState(0);
+  const [zoneId, setZoneId] = useState("");
   const [discount, setDiscount] = useState(0);
   const [busy, setBusy] = useState(false);
 
@@ -79,10 +81,12 @@ export function EditItemsDialog({ open, onOpenChange, order, items, isPhysical, 
       key: String(i), product_id: it.product_id ?? null, base: it.name_snapshot, variant: "",
       price: Number(it.price_snapshot ?? 0), qty: Number(it.qty ?? 1),
     })));
-    setDelivery(Number(order?.delivery_amount ?? 0));
+    setZoneId(order?.delivery_zone_id ?? "");
     setDiscount(Number(order?.discount_amount ?? 0));
   }, [open, items, order]);
 
+  const zone = zones.find((z) => z.id === zoneId);
+  const delivery = isPhysical ? (zone ? zone.charge : Number(order?.delivery_amount ?? 0)) : Number(order?.delivery_amount ?? 0);
   const upd = (k: string, patch: Partial<Line>) => setLines((ls) => ls.map((l) => (l.key === k ? { ...l, ...patch } : l)));
   const itemsTotal = lines.reduce((s, l) => s + l.price * l.qty, 0);
   const total = Math.max(itemsTotal + delivery - discount, 0);
@@ -106,7 +110,7 @@ export function EditItemsDialog({ open, onOpenChange, order, items, isPhysical, 
     setBusy(true);
     try {
       await save({ data: {
-        order_id: order.id, delivery_amount: delivery, discount_amount: discount,
+        order_id: order.id, delivery_zone_id: isPhysical && zone ? zone.id : null, discount_amount: discount,
         items: lines.map((l) => ({ product_id: l.product_id, name: l.variant ? `${l.base} — ${l.variant}` : l.base, price: l.price, qty: l.qty })),
       } });
       toast.success("পণ্যের তথ্য সেভ হয়েছে");
@@ -116,29 +120,29 @@ export function EditItemsDialog({ open, onOpenChange, order, items, isPhysical, 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
-        <DialogHeader><DialogTitle>Edit Products</DialogTitle></DialogHeader>
-        <div className="space-y-3">
+      <DialogContent className="max-h-[90vh] w-[calc(100vw-1.5rem)] max-w-lg overflow-y-auto overflow-x-hidden rounded-lg p-4 sm:p-6">
+        <DialogHeader><DialogTitle className="pr-6 text-left">Edit Products</DialogTitle></DialogHeader>
+        <div className="min-w-0 space-y-3">
           {lines.map((l) => {
             const p = l.product_id ? byId.get(l.product_id) : null;
             return (
-              <div key={l.key} className="space-y-2 rounded-lg border p-3">
-                <div className="flex items-center gap-2">
+              <div key={l.key} className="min-w-0 space-y-2 rounded-lg border p-3">
+                <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
                   <select
-                    className="h-9 min-w-0 flex-1 rounded-md border bg-background px-2 text-sm"
+                    className="h-9 w-full min-w-0 truncate rounded-md border bg-background px-2 text-sm"
                     value={l.product_id ?? ""}
                     onChange={(e) => changeProduct(l.key, e.target.value)}
                   >
                     {!p && <option value="">{l.base}</option>}
                     {products.map((x) => <option key={x.id} value={x.id}>{x.name} ({x.type})</option>)}
                   </select>
-                  <Button size="icon" variant="ghost" onClick={() => setLines((ls) => ls.filter((x) => x.key !== l.key))} aria-label="Remove">
+                  <Button size="icon" variant="ghost" className="shrink-0" onClick={() => setLines((ls) => ls.filter((x) => x.key !== l.key))} aria-label="Remove">
                     <Trash2 className="h-4 w-4 text-destructive" />
                   </Button>
                 </div>
                 {p && p.variants.length > 0 && (
                   <select
-                    className="h-9 w-full rounded-md border bg-background px-2 text-sm"
+                    className="h-9 w-full min-w-0 rounded-md border bg-background px-2 text-sm"
                     value={p.variants.find((v) => v.label === l.variant)?.id ?? ""}
                     onChange={(e) => changeVariant(l, e.target.value)}
                   >
@@ -146,33 +150,51 @@ export function EditItemsDialog({ open, onOpenChange, order, items, isPhysical, 
                     {p.variants.map((v) => <option key={v.id} value={v.id}>{v.label} · ৳{v.price}</option>)}
                   </select>
                 )}
-                <div className="flex items-center gap-2">
-                  <div className="flex items-center rounded-md border">
+                <div className="flex flex-wrap items-center gap-2">
+                  <div className="flex shrink-0 items-center rounded-md border">
                     <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => upd(l.key, { qty: Math.max(1, l.qty - 1) })}><Minus className="h-3 w-3" /></Button>
                     <span className="w-8 text-center text-sm">{l.qty}</span>
                     <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => upd(l.key, { qty: l.qty + 1 })}><Plus className="h-3 w-3" /></Button>
                   </div>
-                  <span className="text-xs text-muted-foreground">৳</span>
-                  <Input type="number" min={0} className="h-8 w-24" value={l.price} onChange={(e) => upd(l.key, { price: Number(e.target.value) || 0 })} />
-                  <span className="ml-auto text-sm font-semibold">৳{(l.price * l.qty).toFixed(0)}</span>
+                  <div className="flex min-w-0 items-center gap-1">
+                    <span className="text-xs text-muted-foreground">৳</span>
+                    <Input type="number" min={0} className="h-8 w-20" value={l.price} onChange={(e) => upd(l.key, { price: Number(e.target.value) || 0 })} />
+                  </div>
+                  <span className="ml-auto shrink-0 text-sm font-semibold">৳{(l.price * l.qty).toFixed(0)}</span>
                 </div>
                 {p && p.type === "physical" && <div className="text-[11px] text-muted-foreground">Stock: {p.stock}</div>}
               </div>
             );
           })}
           <Button variant="outline" size="sm" onClick={addLine} disabled={!products.length}><Plus className="mr-1 h-3 w-3" /> Add product</Button>
-          <div className="grid grid-cols-2 gap-3">
-            {isPhysical && <div className="space-y-1"><Label>Delivery charge</Label><Input type="number" min={0} value={delivery} onChange={(e) => setDelivery(Number(e.target.value) || 0)} /></div>}
-            <div className="space-y-1"><Label>Discount</Label><Input type="number" min={0} value={discount} onChange={(e) => setDiscount(Number(e.target.value) || 0)} /></div>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            {isPhysical && (
+              <div className="min-w-0 space-y-1">
+                <Label>Delivery zone</Label>
+                {zones.length ? (
+                  <select
+                    className="h-9 w-full min-w-0 rounded-md border bg-background px-2 text-sm"
+                    value={zoneId}
+                    onChange={(e) => setZoneId(e.target.value)}
+                  >
+                    {!zoneId && <option value="">জোন বাছুন (বর্তমান ৳{delivery.toFixed(0)})</option>}
+                    {zones.map((z) => <option key={z.id} value={z.id}>{z.name} — ৳{z.charge}</option>)}
+                  </select>
+                ) : (
+                  <p className="text-xs text-muted-foreground">কোনো ডেলিভারি জোন যোগ করা নেই — Delivery Zones পেজ থেকে যোগ করুন।</p>
+                )}
+              </div>
+            )}
+            <div className="min-w-0 space-y-1"><Label>Discount</Label><Input type="number" min={0} value={discount} onChange={(e) => setDiscount(Number(e.target.value) || 0)} /></div>
           </div>
           <div className="space-y-1 rounded-lg bg-muted/40 p-3 text-sm">
-            <div className="flex justify-between"><span>Subtotal</span><span>৳{itemsTotal.toFixed(0)}</span></div>
-            {isPhysical && <div className="flex justify-between"><span>Delivery</span><span>৳{delivery.toFixed(0)}</span></div>}
-            {discount > 0 && <div className="flex justify-between"><span>Discount</span><span>− ৳{discount.toFixed(0)}</span></div>}
-            <div className="flex justify-between border-t pt-1 font-semibold"><span>Total</span><span>৳{total.toFixed(0)}</span></div>
+            <div className="flex justify-between gap-2"><span>Subtotal</span><span>৳{itemsTotal.toFixed(0)}</span></div>
+            {isPhysical && <div className="flex justify-between gap-2"><span>Delivery</span><span>৳{delivery.toFixed(0)}</span></div>}
+            {discount > 0 && <div className="flex justify-between gap-2"><span>Discount</span><span>− ৳{discount.toFixed(0)}</span></div>}
+            <div className="flex justify-between gap-2 border-t pt-1 font-semibold"><span>Total</span><span>৳{total.toFixed(0)}</span></div>
           </div>
         </div>
-        <DialogFooter>
+        <DialogFooter className="gap-2">
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
           <Button onClick={submit} disabled={busy}>{busy ? "Saving…" : "Save"}</Button>
         </DialogFooter>
