@@ -12263,6 +12263,10 @@ export type Database = {
         Returns: number
       }
       next_subscription_no: { Args: { _store_id: string }; Returns: string }
+      orzen_call_post: {
+        Args: { _data: Json; _event: string; _flag: string; _store: string }
+        Returns: undefined
+      }
       platform_routing_hosts: { Args: never; Returns: Json }
       rate_limit_cleanup: { Args: never; Returns: undefined }
       rate_limit_hit: {
