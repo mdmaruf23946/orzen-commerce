@@ -2,7 +2,7 @@
 // while it is connected for the store; otherwise it shows only on the
 // "Call & SMS Apps" hub with a Connect button. Provider features never mix.
 // SMS = standard mobile-number SMS only (not Messenger/WhatsApp/chat).
-import { Bot, Hash, Headset, History, LayoutDashboard, Mic, Plug, SlidersHorizontal, Workflow, type LucideIcon } from "lucide-react";
+import { BookOpen, ListChecks, RefreshCw, Bot, Hash, Headset, History, LayoutDashboard, Mic, Plug, SlidersHorizontal, Workflow, type LucideIcon } from "lucide-react";
 
 export type CallSmsProviderSection = { key: string; label: string; icon: LucideIcon };
 
@@ -49,11 +49,17 @@ export const CALL_SMS_PROVIDERS: CallSmsProvider[] = [
     name: "Orzen Call",
     kind: "call",
     tag: "Call / AI Voice",
-    path: "/admin/call-sms/apps",
+    path: "/admin/call-sms/orzen-call",
     description: "AI Voice Calling: Automatic COD order confirmation calls, live customer dialogue, product inquiry & order auto-sync.",
     setupSection: "setup",
-    modal: true,
-    sections: [{ key: "setup", icon: Plug, label: "Setup" }],
+    sections: [
+      { key: "overview", icon: LayoutDashboard, label: "Overview" },
+      { key: "calls", icon: History, label: "Call History" },
+      { key: "queue", icon: ListChecks, label: "Order Call Queue" },
+      { key: "sync", icon: RefreshCw, label: "Product Sync" },
+      { key: "guide", icon: BookOpen, label: "Integration Guide" },
+      { key: "setup", icon: Plug, label: "Setup" },
+    ],
   },
 ];
 

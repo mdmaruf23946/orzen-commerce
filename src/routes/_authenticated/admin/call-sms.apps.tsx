@@ -5,8 +5,6 @@ import { Button } from "@/components/ui/button";
 import { FeatureGate } from "@/components/admin/FeatureGate";
 import { CALL_SMS_PROVIDERS } from "@/lib/call-sms-providers";
 import { useProviderConnections } from "@/lib/use-call-sms-connections";
-import { useState } from "react";
-import { OrzenCallModal } from "@/components/admin/calls/OrzenCallModal";
 
 export const Route = createFileRoute("/_authenticated/admin/call-sms/apps")({
   component: AppsHub,
@@ -25,7 +23,6 @@ export const Route = createFileRoute("/_authenticated/admin/call-sms/apps")({
 
 function AppsHub() {
   const { connected, isLoading } = useProviderConnections();
-  const [open, setOpen] = useState(false);
   return (
     <FeatureGate feature="call_center">
       <div className="space-y-4">
@@ -48,9 +45,7 @@ function AppsHub() {
                   </span>
                 </div>
                 <p className="text-sm text-muted-foreground">{p.description}</p>
-                {p.modal ? (
-                  <Button size="sm" variant={on ? "outline" : "default"} className="mt-auto" onClick={() => setOpen(true)}>{on ? "Manage" : "Connect / Setup"}</Button>
-                ) : (
+                {(
                   <Button asChild size="sm" variant={on ? "outline" : "default"} className="mt-auto">
                     <Link to={p.path} search={{ tab: on ? "overview" : p.setupSection } as any}>{on ? "Manage" : "Connect / Setup"}</Link>
                   </Button>
@@ -59,7 +54,6 @@ function AppsHub() {
             );
           })}
         </div>
-        <OrzenCallModal open={open} onOpenChange={setOpen} />
       </div>
     </FeatureGate>
   );
