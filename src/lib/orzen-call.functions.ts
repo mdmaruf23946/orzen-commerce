@@ -209,12 +209,40 @@ export const listOrzenCalls = createServerFn({ method: "GET" })
     const s = data.search.replace(/[%,()]/g, "");
     if (s) q = q.or(`phone.ilike.%${s}%,customer_name.ilike.%${s}%`);
     const { data: rows } = await q;
-    return ((rows ?? []) as any[]).map((r) => ({
-      ...r,
-      invoice_no: r.orders?.invoice_no ?? null,
-      order_status: r.orders?.status ?? null,
+    // One card per order (or per phone when no order): latest call wins, older
+    // calls stay attached as history so nothing is lost.
+    const groups = new Map<string, any>();
+    for (const r of (rows ?? []) as any[]) {
+      const key = r.order_id ? `o:${r.order_id}` : `p:${String(r.phone ?? "").replace(/\D/g, "").slice(-10)}`;
+      const g = groups.get(key);
+      if (!g) groups.set(key, { ...r, history: [r] });
+      else g.history.push(r);
+    }
+    const list = [...groups.values()];
+    const orderIds = list.map((g) => g.order_id).filter(Boolean) as string[];
+    const details = await orderDetails(context.supabase, storeId, orderIds);
+    return list.map((g) => ({
+      ...g,
+      attempts: g.history.length,
+      invoice_no: g.orders?.invoice_no ?? null,
+      order_status: g.orders?.status ?? null,
+      order: g.order_id ? details[g.order_id] ?? null : null,
     }));
   });
+
+async function orderDetails(sb: any, storeId: string, ids: string[]) {
+  const out: Record<string, any> = {};
+  if (!ids.length) return out;
+  const [{ data: orders }, { data: items }] = await Promise.all([
+    sb.from("orders").select("id,invoice_no,status,address,area,payment_method,subtotal,created_at").eq("store_id", storeId).in("id", ids),
+    sb.from("order_items").select("order_id,name_snapshot,price_snapshot,qty,products(primary_image_url)").in("order_id", ids),
+  ]);
+  for (const o of orders ?? []) out[o.id] = { ...o, total: Number(o.subtotal ?? 0), items: [] };
+  for (const i of (items ?? []) as any[]) {
+    out[i.order_id]?.items.push({ name: i.name_snapshot, qty: Number(i.qty ?? 1), price: Number(i.price_snapshot ?? 0), image: i.products?.primary_image_url ?? null });
+  }
+  return out;
+}
 
 export const getOrzenSyncStatus = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
@@ -234,6 +262,7 @@ export const getOrzenSyncStatus = createServerFn({ method: "GET" })
       .eq("status", "pending")
       .order("created_at", { ascending: false })
       .limit(15);
+    const qd = await orderDetails(context.supabase, storeId, (recent ?? []).map((o: any) => o.id));
     return {
       products: products ?? 0,
       pending_orders: pending ?? 0,
@@ -242,7 +271,7 @@ export const getOrzenSyncStatus = createServerFn({ method: "GET" })
       last_full_sync_count: (info.last_full_sync_count as number) ?? null,
       last_test: (info.last_test as string) ?? null,
       last_test_ok: (info.last_test_ok as boolean) ?? null,
-      queue: recent ?? [],
+      queue: (recent ?? []).map((o: any) => ({ ...o, order: qd[o.id] ?? null })),
     };
   });
 
