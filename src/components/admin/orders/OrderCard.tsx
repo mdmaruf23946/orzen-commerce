@@ -119,7 +119,7 @@ export function ParcelBadge({ status }: { status?: string | null }) {
   const s = status as ParcelStatus;
   return (
     <span className={`rounded-md px-2 py-0.5 text-[10px] font-semibold ${STATUS_TONE[s] ?? "bg-muted text-muted-foreground"}`}>
-      {STATUS_LABEL[s] ?? status}
+      {ORDER_LABEL[s] ?? status}
     </span>
   );
 }
@@ -158,7 +158,7 @@ type Props = {
 };
 
 export const STATUSES = ["pending", "no_response", "on_hold", "incomplete", "confirmed", "processing", "delivered", "cancelled"] as const;
-const STATUS_LABEL: Record<string, string> = {
+const ORDER_LABEL: Record<string, string> = {
   pending: "Pending", no_response: "No Response", on_hold: "On Hold", incomplete: "Incomplete",
   confirmed: "Confirmed", processing: "Processing", delivered: "Delivered", cancelled: "Cancelled",
 };
@@ -297,7 +297,7 @@ export function OrderCard({ order, onView, onFraud, onStatus, selected, onSelect
           <PaymentBadge order={order} />
           <StatusBadge status={order.status} />
           {order.followup_status && (
-            <span className="rounded-md bg-amber-500/12 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700 dark:text-amber-400">{STATUS_LABEL[order.followup_status]}</span>
+            <span className="rounded-md bg-amber-500/12 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700 dark:text-amber-400">{ORDER_LABEL[order.followup_status]}</span>
           )}
           <VoiceBadge v={order.voice_verification} />
           <div className="flex flex-wrap justify-end gap-1">
@@ -327,21 +327,21 @@ export function OrderCard({ order, onView, onFraud, onStatus, selected, onSelect
             title={order.locked ? "কুরিয়ার গ্রহণ করেছে — অর্ডার লক" : undefined}
             className={`inline-flex h-8 items-center justify-center gap-1 rounded-lg px-2.5 text-xs font-semibold ring-1 ring-inset ${ORDER_STATUS_TONE[order.status] ?? "bg-muted ring-border"}`}
           >
-            {order.locked && <Lock className="h-3 w-3" />} {order.locked ? "Locked" : STATUS_LABEL[cur] ?? cur}
+            {order.locked && <Lock className="h-3 w-3" />} {order.locked ? "Locked" : ORDER_LABEL[cur] ?? cur}
           </span>
         ) : (
           <DropdownMenu>
             <DropdownMenuTrigger
               className={`inline-flex h-8 items-center justify-center gap-1 rounded-lg px-2.5 text-xs font-semibold ring-1 ring-inset transition-colors ${ORDER_STATUS_TONE[order.status] ?? "bg-muted ring-border"}`}
             >
-              {STATUS_LABEL[cur] ?? cur}
+              {ORDER_LABEL[cur] ?? cur}
               <ChevronDown className="h-3 w-3" />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-40">
               {nextStatuses(cur).map((s) => (
                 <DropdownMenuItem key={s} onClick={() => onStatus(s)} className="text-xs">
                   <span className={`mr-2 h-2 w-2 rounded-full ${ORDER_STATUS_TONE[s]?.split(" ")[0] ?? "bg-muted-foreground"}`} />
-                  {STATUS_LABEL[s]}
+                  {ORDER_LABEL[s]}
                 </DropdownMenuItem>
               ))}
             </DropdownMenuContent>

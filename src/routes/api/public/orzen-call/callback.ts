@@ -100,7 +100,7 @@ export const Route = createFileRoute("/api/public/orzen-call/callback")({
           const o = await findOrder();
           if (!o) return Response.json({ ok: false, error: "order not found" }, { status: 404 });
           if (o.status === next) return Response.json({ ok: true, order_id: o.id, status: next, unchanged: true });
-          const patch: Record<string, unknown> = { status: next };
+          const patch: Record<string, unknown> = { status: next, status_source: "ai_call" };
           if (next === "confirmed") patch.confirmed_at = now;
           const { error } = await supabaseAdmin.from("orders").update(patch as never).eq("id", o.id).eq("store_id", store);
           if (error) return Response.json({ ok: false, error: "update failed" }, { status: 500 });
