@@ -182,6 +182,22 @@ export const getCourierOverview = createServerFn({ method: "POST" })
     return { defaultKey: defaultCourier(store), couriers };
   });
 
+/** Pick the merchant's Default Courier (only one; must be connected). null clears it. */
+export const setDefaultCourier = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ courierKey: z.enum(COURIER_KEYS).nullable() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    await assertPlan(supabase, userId, "courier");
+    const store = await getStore(supabase, userId);
+    const all = { ...((store.couriers ?? {}) as Record<string, any>) };
+    if (data.courierKey && !all[data.courierKey]?.enabled) throw new Error("এই কুরিয়ারটি কানেক্ট করা নেই");
+    for (const k of Object.keys(all)) all[k] = { ...(all[k] ?? {}), is_default: k === data.courierKey };
+    const { error } = await supabase.from("stores").update({ couriers: all } as never).eq("id", store.id);
+    if (error) throw new Error(error.message);
+    return { ok: true, defaultKey: data.courierKey };
+  });
+
 /** One-click: build the parcel from an order and push it to the courier. */
 export const sendOrderToCourier = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -787,6 +803,10 @@ export async function dispatchParcel(
       .eq("store_id", store.id)
       .maybeSingle();
     if (!order) throw new Error("Order not found");
+    const digits = String(order.phone ?? "").replace(/\D/g, "");
+    if (digits.length < 10) throw new Error("কাস্টমারের ফোন নম্বর সঠিক নয় — আগে অর্ডারে ঠিক করুন");
+    if (String(order.address ?? "").trim().length < 3) throw new Error("ডেলিভারি ঠিকানা নেই — আগে অর্ডারে ঠিকানা দিন");
+    if (!String(order.customer_name ?? "").trim()) throw new Error("কাস্টমারের নাম নেই");
     // Duplicate guard: never create a second live parcel for the same order.
     const { data: existingRows } = await supabase
       .from("courier_parcels")

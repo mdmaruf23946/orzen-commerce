@@ -51,6 +51,7 @@ import {
   syncActiveParcels,
   getParcelPrintData,
   getParcelLabel,
+  sendOrderToCourier,
 } from "@/lib/courier-parcels.functions";
 
 export const Route = createFileRoute("/_authenticated/admin/courier-orders")({
@@ -174,6 +175,29 @@ function CourierOrdersPage() {
     qc.invalidateQueries({ queryKey: ["parcels"] });
     qc.invalidateQueries({ queryKey: ["parcel-counts"] });
     qc.invalidateQueries({ queryKey: ["sendable-orders"] });
+  }
+
+  // Only a courier the merchant explicitly marked Default enables one-click send.
+  const explicitDefault = (connected.find((c) => c.isDefault)?.key ?? null) as CourierKey | null;
+  const sendFn = useServerFn(sendOrderToCourier);
+  const [sendingId, setSendingId] = useState<string | null>(null);
+  async function quickSend(orderId: string, courierKey: CourierKey) {
+    if (sendingId) return;
+    setSendingId(orderId);
+    try {
+      const r: any = await sendFn({ data: { orderId, courierKey } });
+      toast.success(
+        r?.alreadySent
+          ? "এই অর্ডারটি আগেই কুরিয়ারে পাঠানো হয়েছে"
+          : `${courierLabel(courierKey)}-এ পাঠানো হয়েছে${r?.trackingCode ? ` · ${r.trackingCode}` : ""}`,
+      );
+      invalidate();
+    } catch (e) {
+      toast.error(`পাঠানো যায়নি: ${(e as Error).message}`);
+      invalidate();
+    } finally {
+      setSendingId(null);
+    }
   }
 
   function tabCount(t: TabDef) {
@@ -422,13 +446,49 @@ function CourierOrdersPage() {
                   </div>
                   {fraudAllowed && o.phone && <FraudSummary phone={o.phone} />}
                   <div className="mt-3 grid grid-cols-2 gap-1.5 border-t pt-2.5 sm:flex sm:flex-wrap">
-                    <button
-                      type="button"
-                      onClick={() => (connected.length ? setSendOrder(o) : toast.error("আগে একটি কুরিয়ার কানেক্ট করুন"))}
-                      className="col-span-2 inline-flex h-9 items-center justify-center gap-1.5 rounded-lg bg-primary px-3 text-xs font-semibold text-primary-foreground hover:bg-primary/90 sm:h-8"
-                    >
-                      <Send className="h-3.5 w-3.5" /> Send to Courier
-                    </button>
+                    {connected.length === 0 ? (
+                      <Link
+                        to="/admin/couriers/apps"
+                        className="col-span-2 inline-flex h-9 items-center justify-center gap-1.5 rounded-lg bg-primary px-3 text-xs font-semibold text-primary-foreground hover:bg-primary/90 sm:h-8"
+                      >
+                        <Truck className="h-3.5 w-3.5" /> Connect a Courier
+                      </Link>
+                    ) : (
+                      <div className="col-span-2 flex">
+                        <button
+                          type="button"
+                          disabled={sendingId === o.id}
+                          onClick={() => (explicitDefault ? quickSend(o.id, explicitDefault) : setSendOrder(o))}
+                          className="inline-flex h-9 flex-1 items-center justify-center gap-1.5 rounded-l-lg bg-primary px-3 text-xs font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-60 sm:h-8"
+                        >
+                          {sendingId === o.id ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
+                          {sendingId === o.id ? "Sending…" : explicitDefault ? `Send to ${courierLabel(explicitDefault)}` : "Send to Courier"}
+                        </button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <button
+                              type="button"
+                              disabled={sendingId === o.id}
+                              aria-label="Change courier"
+                              className="inline-flex h-9 items-center justify-center rounded-r-lg border-l border-primary-foreground/20 bg-primary px-2 text-primary-foreground hover:bg-primary/90 disabled:opacity-60 sm:h-8"
+                            >
+                              <ChevronDown className="h-3.5 w-3.5" />
+                            </button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            {connected.map((c) => (
+                              <DropdownMenuItem key={c.key} onClick={() => quickSend(o.id, c.key)}>
+                                <Truck className="mr-2 h-3.5 w-3.5" /> Send via {courierLabel(c.key)}
+                                {c.isDefault && <span className="ml-2 text-[10px] text-primary">Default</span>}
+                              </DropdownMenuItem>
+                            ))}
+                            <DropdownMenuItem onClick={() => setSendOrder(o)}>
+                              <Settings2 className="mr-2 h-3.5 w-3.5" /> More options…
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    )}
                     <div className="col-span-2 grid grid-cols-3 gap-1.5 sm:flex sm:flex-wrap">
                       <Link to="/admin/orders" search={{ q: o.invoice_no ?? undefined } as never} className={ACT}>
                         <Eye className="h-3.5 w-3.5" /> View
