@@ -71,6 +71,13 @@
       "when": 1791985997511,
       "tag": "0009_orders_followup_status_and_courier_lock",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1791987981816,
+      "tag": "0010_checkout_drafts",
+      "breakpoints": true
     }
   ]
 }
