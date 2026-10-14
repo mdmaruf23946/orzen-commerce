@@ -22,6 +22,13 @@ const Body = z.object({
   note: z.string().max(1000).optional(),
 });
 
+function mapFollowup(s: string | undefined): "no_response" | "on_hold" | null {
+  const v = (s ?? "").toLowerCase().replace(/[\s-]/g, "_");
+  if (["no_response", "no_answer", "unanswered", "not_answered", "busy", "missed", "unreachable", "switched_off"].includes(v)) return "no_response";
+  if (["on_hold", "hold", "call_later", "callback", "later", "postponed"].includes(v)) return "on_hold";
+  return null;
+}
+
 function mapStatus(s: string | undefined): "confirmed" | "cancelled" | "pending" | null {
   const v = (s ?? "").toLowerCase();
   if (["confirmed", "confirm", "verified", "yes"].includes(v)) return "confirmed";
@@ -80,6 +87,14 @@ export const Route = createFileRoute("/api/public/orzen-call/callback")({
 
         // (2) Order status change only — no call record.
         if (event === "order.status_changed") {
+          const follow = mapFollowup(body.status);
+          if (follow) {
+            const o = await findOrder();
+            if (!o) return Response.json({ ok: false, error: "order not found" }, { status: 404 });
+            if (o.status !== "pending") return Response.json({ ok: true, order_id: o.id, skipped: true, status: o.status });
+            await supabaseAdmin.from("orders").update({ followup_status: follow, status_source: "ai_call" } as never).eq("id", o.id).eq("store_id", store).eq("status", "pending");
+            return Response.json({ ok: true, order_id: o.id, status: follow });
+          }
           const next = mapStatus(body.status);
           if (!next) return Response.json({ ok: false, error: "invalid status" }, { status: 400 });
           const o = await findOrder();
@@ -125,9 +140,18 @@ export const Route = createFileRoute("/api/public/orzen-call/callback")({
           : await supabaseAdmin.from("calls").insert(callRow as never);
         if (logErr) console.error("[orzen-call] log failed", logErr.message);
 
+        if (o && !decided && o.status === "pending") {
+          // Not reached / asked to call later → No Response / On Hold (never Confirmed without explicit consent).
+          const follow = mapFollowup(body.status) ?? (callStatus !== "completed" ? "no_response" : null);
+          if (follow) {
+            await supabaseAdmin.from("orders").update({ followup_status: follow, status_source: "ai_call" } as never)
+              .eq("id", o.id).eq("store_id", store).eq("status", "pending");
+            return Response.json({ ok: true, logged: !logErr, order_id: o.id, status: follow });
+          }
+        }
         if (!o || !decided) return Response.json({ ok: true, logged: !logErr, order_id: o?.id ?? null, call_status: callStatus });
         if (o.status !== "pending") return Response.json({ ok: true, logged: !logErr, skipped: true, status: o.status });
-        const patch: Record<string, unknown> = { status: next };
+        const patch: Record<string, unknown> = { status: next, status_source: "ai_call" };
         if (next === "confirmed") patch.confirmed_at = now;
         await supabaseAdmin.from("orders").update(patch as never).eq("id", o.id).eq("store_id", store).eq("status", "pending");
         return Response.json({ ok: true, logged: !logErr, order_id: o.id, status: next });

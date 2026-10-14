@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { CallButton } from "@/components/admin/calls/CallButton";
 import {
-  Eye, Printer, Truck, MessageCircle, Copy,
+  Eye, Printer, Truck, Lock, MessageCircle, Copy,
   ImageOff, ChevronDown, ShieldCheck, MapPin,
 } from "lucide-react";
 import { toast } from "sonner";
