@@ -1,3 +1,4 @@
+import { listCheckoutDrafts, dismissCheckoutDraft, type CheckoutDraft } from "@/lib/checkout-drafts.functions";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -155,6 +156,49 @@ function matchesTab(o: AdminOrderRow, tab: TabKey) {
 }
 
 /** Plan label for a subscription order (used by the Subscription tab filters). */
+function AbandonedCheckouts({ drafts, onDismiss }: { drafts: CheckoutDraft[]; onDismiss: (id: string) => void }) {
+  return (
+    <section className="space-y-2">
+      <p className="text-xs font-medium text-muted-foreground">
+        Customers who filled in checkout but left without ordering ({drafts.length})
+      </p>
+      {drafts.map((d) => {
+        const ph = (d.phone ?? "").replace(/\D/g, "");
+        const wa = ph ? (ph.startsWith("0") ? "88" + ph : ph) : "";
+        return (
+          <div key={d.id} className="rounded-xl border bg-card p-3 text-sm">
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                <p className="truncate font-semibold">{d.customer_name || "No name given"}</p>
+                <p className="text-xs text-muted-foreground">{d.phone || "No phone"}{d.email ? ` · ${d.email}` : ""}</p>
+                {(d.address || d.area) && <p className="mt-0.5 text-xs text-muted-foreground">{[d.address, d.area].filter(Boolean).join(", ")}</p>}
+              </div>
+              <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium">Incomplete</span>
+            </div>
+            <div className="mt-2 space-y-1">
+              {(d.items ?? []).map((i: any, k: number) => (
+                <div key={k} className="flex items-center gap-2 text-xs">
+                  {i.image ? <img src={i.image} alt="" className="h-8 w-8 rounded object-cover" /> : <div className="h-8 w-8 rounded bg-muted" />}
+                  <span className="min-w-0 flex-1 truncate">{i.name}{i.variant ? ` (${i.variant})` : ""}</span>
+                  <span className="shrink-0">{i.qty} × {money(Number(i.price) || 0)}</span>
+                </div>
+              ))}
+            </div>
+            <div className="mt-2 flex flex-wrap items-center justify-between gap-2 border-t pt-2">
+              <span className="text-xs text-muted-foreground">{new Date(d.updated_at).toLocaleString()} · {money(Number(d.total) || 0)}</span>
+              <div className="flex gap-1.5">
+                {ph && <Button asChild size="sm" variant="outline"><a href={`tel:${d.phone}`}>Call</a></Button>}
+                {wa && <Button asChild size="sm" variant="outline"><a href={`https://wa.me/${wa}`} target="_blank" rel="noreferrer">WhatsApp</a></Button>}
+                <Button size="sm" variant="ghost" onClick={() => onDismiss(d.id)}>Remove</Button>
+              </div>
+            </div>
+          </div>
+        );
+      })}
+    </section>
+  );
+}
+
 function subPlanName(o: AdminOrderRow): string {
   return (o.fulfillment as any)?.plan_name ?? o.items?.[0]?.name ?? "";
 }
@@ -179,6 +223,13 @@ function OrdersPage() {
     retry: 1,
   });
   const dataError = ordersError ?? countsError;
+  const listDrafts = useServerFn(listCheckoutDrafts);
+  const dismissDraft = useServerFn(dismissCheckoutDraft);
+  const { data: drafts = [], refetch: refetchDrafts } = useQuery({
+    queryKey: ["admin", "orders", "checkout-drafts"],
+    queryFn: () => listDrafts(),
+    refetchInterval: 60_000,
+  });
 
   const type = scope as TypeKey;
   const [tab, setTab] = useState<TabKey>("all");
@@ -441,11 +492,18 @@ function OrdersPage() {
           >
             {t.label}
             <span className={`rounded-full px-1.5 text-[10px] ${tab === t.key ? "bg-primary-foreground/20" : "bg-muted"}`}>
-              {counts[t.key] ?? 0}
+              {(counts[t.key] ?? 0) + (t.key === "incomplete" || t.key === "all" ? drafts.length : 0)}
             </span>
           </button>
         ))}
       </div>
+      )}
+
+      {physicalView && tab === "incomplete" && drafts.length > 0 && (
+        <AbandonedCheckouts drafts={drafts} onDismiss={async (id) => {
+          try { await dismissDraft({ data: { id } }); refetchDrafts(); toast.success("Removed"); }
+          catch (e) { toast.error((e as Error).message); }
+        }} />
       )}
 
       {/* Search + filters */}
