@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Minus, Plus, Trash2 } from "lucide-react";
+import { Check, ChevronDown, ImageOff, Minus, Plus, Search, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -74,6 +74,7 @@ export function EditItemsDialog({ open, onOpenChange, order, items, isPhysical, 
   const [zoneId, setZoneId] = useState("");
   const [discount, setDiscount] = useState(0);
   const [busy, setBusy] = useState(false);
+  const [pickFor, setPickFor] = useState<string | null>(null);
 
   useEffect(() => {
     if (!open) return;
