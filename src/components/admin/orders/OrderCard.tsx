@@ -119,7 +119,7 @@ export function ParcelBadge({ status }: { status?: string | null }) {
   const s = status as ParcelStatus;
   return (
     <span className={`rounded-md px-2 py-0.5 text-[10px] font-semibold ${STATUS_TONE[s] ?? "bg-muted text-muted-foreground"}`}>
-      {ORDER_LABEL[s] ?? status}
+      {STATUS_LABEL[s] ?? status}
     </span>
   );
 }
