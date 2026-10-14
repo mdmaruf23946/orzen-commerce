@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { writeOrderContact } from "@/lib/order-proof";
 import { getStoreBySlug, listStoreOnlineGateways, startOnlineCheckout, placeOrder, validateCoupon, getStoreDeliveryZones, listProductsByIds } from "@/lib/storefront.functions";
+import { saveCheckoutDraft, completeCheckoutDraft } from "@/lib/checkout-drafts.functions";
 import { readCart, readSelection, removeSelected, type CartItem } from "@/lib/cart";
 import { reconcileStoredCart, type CartNotice } from "@/lib/cart-reconcile";
 import { CartNotices } from "@/components/storefront/CartNotices";
@@ -167,6 +168,38 @@ function CheckoutPage() {
       setZoneId(def.id);
     }
   }, [zones, zoneId]);
+
+  // Autosave whatever the shopper typed so abandoned checkouts show up as
+  // "Incomplete" orders for the merchant.
+  const saveDraft = useServerFn(saveCheckoutDraft);
+  const [draftId, setDraftId] = useState<string | null>(null);
+  useEffect(() => {
+    const key = `orzen-checkout-draft:${slug}`;
+    let id = localStorage.getItem(key);
+    if (!id) { id = crypto.randomUUID(); localStorage.setItem(key, id); }
+    setDraftId(id);
+  }, [slug]);
+  useEffect(() => {
+    if (!draftId || !store?.id || !items.length) return;
+    if (![name, phone, email, address].some((v) => v.trim())) return;
+    const t = setTimeout(() => {
+      saveDraft({
+        data: {
+          id: draftId, storeId: store.id,
+          name: name.trim(), phone: phone.trim(), email: email.trim(), address: address.trim(), area: area.trim(),
+          items: items.slice(0, 50).map((i: any) => ({
+            productId: String(i.productId).slice(0, 64), name: String(i.name ?? "").slice(0, 200),
+            qty: Math.max(1, Math.min(999, Math.round(i.qty))), price: Math.max(0, Number(i.price) || 0),
+            image: i.image ? String(i.image).slice(0, 500) : undefined,
+            variant: i.variantLabel ? String(i.variantLabel).slice(0, 200) : undefined,
+          })),
+          total: items.reduce((a, i) => a + i.qty * i.price, 0),
+        },
+      }).catch(() => {});
+    }, 1200);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draftId, store?.id, items, name, phone, email, address, area]);
 
 
   if (!store) return null;
@@ -361,6 +394,10 @@ function CheckoutPage() {
 
       // Remember the contact used, so the order page can prove ownership later.
       writeOrderContact(res.orderId, phone || email.trim());
+      if (draftId) {
+        completeDraft({ data: { id: draftId, storeId: store!.id, orderId: res.orderId } }).catch(() => {});
+        localStorage.removeItem(`orzen-checkout-draft:${slug}`);
+      }
 
 
       if (isOnlineMethod) {
