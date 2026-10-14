@@ -18,7 +18,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { FraudCheckModal, RiskBadge } from "@/components/admin/FraudCheckModal";
 import { ServiceWorkflowPanel } from "@/components/admin/service/ServiceWorkflowPanel";
 import { SubscriptionOrderPanel } from "@/components/admin/subscriptions/SubscriptionOrderPanel";
-import { CallButton } from "@/components/admin/calls/CallButton";
 import { CallHistoryList } from "@/components/admin/calls/CallHistoryList";
 import { getCallsForOrder } from "@/lib/call-center.functions";
 
