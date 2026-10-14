@@ -5,7 +5,9 @@ import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import {
   PhoneCall, CheckCircle2, XCircle, PhoneMissed, AlertTriangle, Percent, Clock, Timer, Package, RefreshCw, Loader2, Send, Search, Activity,
+  MessageCircle, MapPin, Eye, FileText, Copy,
 } from "lucide-react";
+import { Thumb, StatusBadge } from "@/components/admin/orders/OrderCard";
 import { AdminPageHeader } from "@/components/admin/page/AdminPageHeader";
 import { FeatureGate } from "@/components/admin/FeatureGate";
 import { Button } from "@/components/ui/button";
@@ -159,50 +161,114 @@ function ResultPill({ result }: { result: string | null }) {
   return <span className={`text-xs font-medium ${tone}`}>{RESULT_LABEL[result as CallResult] ?? result}</span>;
 }
 
+function waLink(phone: string) {
+  const d = String(phone ?? "").replace(/\D/g, "");
+  return `https://wa.me/${d.startsWith("880") ? d : `88${d.replace(/^0?/, "0")}`}`;
+}
+
+function Conversation({ r }: { r: any }) {
+  if (Array.isArray(r.transcript) && r.transcript.length > 0) {
+    return (
+      <div className="mt-2 space-y-1.5">
+        {r.transcript.map((m: any, i: number) => {
+          const ai = /assistant|agent|ai|bot/i.test(String(m?.role ?? ""));
+          return (
+            <div key={i} className={`flex ${ai ? "justify-start" : "justify-end"}`}>
+              <div className={`max-w-[85%] rounded-lg px-2.5 py-1.5 text-xs ${ai ? "border bg-card" : "bg-primary/10"}`}>
+                <p className="mb-0.5 text-[10px] font-semibold uppercase text-muted-foreground">{ai ? "AI" : "Customer"}</p>
+                <p className="whitespace-pre-wrap">{String(m?.text ?? "")}</p>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
+  return r.conversation_text ? <p className="mt-2 whitespace-pre-wrap text-xs">{r.conversation_text}</p> : null;
+}
+
+function OrderBrief({ order, phone, name, invoice, date }: { order: any; phone: string; name: string; invoice?: string | null; date: string }) {
+  const first = order?.items?.[0];
+  return (
+    <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] gap-3">
+      <Thumb url={first?.image} alt={first?.name ?? "Product"} className="h-14 w-14 sm:h-16 sm:w-16" />
+      <div className="min-w-0">
+        <div className="flex flex-wrap items-center gap-x-2 text-[11px] text-muted-foreground">
+          {invoice && <span className="font-mono">#{invoice}</span>}
+          <span>{fmtDate(date)}</span>
+        </div>
+        <p className="truncate text-sm font-semibold">{name || phone}</p>
+        <div className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground">
+          <span className="truncate">{phone}</span>
+          <a href={`tel:${phone}`} aria-label="Call" className="rounded-md p-1 text-primary hover:bg-muted"><PhoneCall className="h-3.5 w-3.5" /></a>
+          <a href={waLink(phone)} target="_blank" rel="noreferrer" aria-label="WhatsApp" className="rounded-md p-1 text-emerald-600 hover:bg-muted"><MessageCircle className="h-3.5 w-3.5" /></a>
+        </div>
+        {order?.address && <p className="mt-0.5 flex items-start gap-1 text-xs text-muted-foreground"><MapPin className="mt-0.5 h-3 w-3 shrink-0" /><span className="line-clamp-1">{order.address}{order.area ? `, ${order.area}` : ""}</span></p>}
+        {first && (
+          <p className="mt-1 line-clamp-1 text-xs">
+            {first.name} × {first.qty}{order.items.length > 1 ? ` +${order.items.length - 1} more` : ""}
+          </p>
+        )}
+      </div>
+      <div className="flex flex-col items-end gap-1 text-right">
+        {order && <span className="text-sm font-bold">৳{Math.round(order.total).toLocaleString("en-IN")}</span>}
+        {order?.payment_method && <span className="rounded-md bg-muted px-1.5 py-0.5 text-[10px] font-semibold uppercase">{order.payment_method}</span>}
+        {order?.status && <StatusBadge status={order.status} />}
+      </div>
+    </div>
+  );
+}
+
+function OrderActions({ order, copyText }: { order: any; copyText: string }) {
+  const BTN = "inline-flex h-8 items-center gap-1 rounded-lg border px-2.5 text-xs hover:bg-muted";
+  return (
+    <div className="mt-3 flex flex-wrap gap-1.5">
+      {order && (
+        <>
+          <Link to="/admin/orders" search={{ q: order.invoice_no } as any} className={BTN}><Eye className="h-3.5 w-3.5" />View</Link>
+          <Link to="/admin/invoice/$orderId" params={{ orderId: order.id }} className={BTN}><FileText className="h-3.5 w-3.5" />Invoice</Link>
+        </>
+      )}
+      <button type="button" className={BTN} onClick={() => navigator.clipboard?.writeText(copyText).then(() => toast.success("Copied"), () => toast.error("Copy failed"))}>
+        <Copy className="h-3.5 w-3.5" />Copy
+      </button>
+    </div>
+  );
+}
+
+function copyFor(name: string, phone: string, order: any) {
+  const items = (order?.items ?? []).map((i: any) => `${i.name} × ${i.qty}`).join(", ");
+  return [name, phone, order?.address ? `${order.address}${order.area ? `, ${order.area}` : ""}` : "", items].filter(Boolean).join("\n");
+}
+
 function CallList({ rows, loading, compact }: { rows: any[]; loading: boolean; compact?: boolean }) {
   if (loading) return <div className="flex justify-center py-6"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>;
   if (!rows.length) return <p className="py-6 text-center text-sm text-muted-foreground">No calls found.</p>;
   return (
-    <div className="divide-y">
+    <div className="space-y-2.5">
       {rows.map((r) => (
-        <div key={r.id} className="flex flex-col gap-1 py-2.5 sm:flex-row sm:items-center sm:justify-between">
-          <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="truncate text-sm font-medium">{r.customer_name || r.phone}</span>
-              {r.invoice_no && (
-                <Link to="/admin/orders" search={{ q: r.invoice_no } as any} className="text-xs text-primary hover:underline">#{r.invoice_no}</Link>
-              )}
-            </div>
-            <p className="text-xs text-muted-foreground">{r.phone} · {fmtDate(r.created_at)} · {fmtDur(r.duration_sec)}</p>
-            {!compact && r.note && <p className="mt-1 text-xs text-muted-foreground">“{r.note}”</p>}
-            {!compact && (Array.isArray(r.transcript) && r.transcript.length > 0 || r.conversation_text) && (
-              <details className="mt-1.5 rounded-lg border bg-muted/30 p-2">
-                <summary className="cursor-pointer text-xs font-medium text-primary">View conversation</summary>
-                {Array.isArray(r.transcript) && r.transcript.length > 0 ? (
-                  <div className="mt-2 space-y-1.5">
-                    {r.transcript.map((m: any, i: number) => {
-                      const ai = /assistant|agent|ai|bot/i.test(String(m?.role ?? ""));
-                      return (
-                        <div key={i} className={`flex ${ai ? "justify-start" : "justify-end"}`}>
-                          <div className={`max-w-[85%] rounded-lg px-2.5 py-1.5 text-xs ${ai ? "bg-card border" : "bg-primary/10"}`}>
-                            <p className="mb-0.5 text-[10px] font-semibold uppercase text-muted-foreground">{ai ? "AI" : "Customer"}</p>
-                            <p className="whitespace-pre-wrap">{String(m?.text ?? "")}</p>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <p className="mt-2 whitespace-pre-wrap text-xs">{r.conversation_text}</p>
-                )}
-              </details>
-            )}
-          </div>
-          <div className="flex items-center gap-2 self-start sm:self-center">
+        <article key={r.id} className="rounded-2xl border bg-card p-3 shadow-sm sm:p-4">
+          <OrderBrief order={r.order} phone={r.phone} name={r.customer_name} invoice={r.invoice_no} date={r.created_at} />
+          <div className="mt-2.5 flex flex-wrap items-center gap-2 rounded-xl bg-muted/50 px-2.5 py-1.5 text-[11px]">
             <ResultPill result={r.result} />
             <StatusPill status={r.status} />
+            <span className="text-muted-foreground">⏱ {fmtDur(r.duration_sec)}</span>
+            {r.attempts > 1 && <span className="ml-auto text-muted-foreground">{r.attempts} calls</span>}
           </div>
-        </div>
+          {!compact && r.note && <p className="mt-2 text-xs text-muted-foreground">“{r.note}”</p>}
+          {!compact && r.history?.some((h: any) => (Array.isArray(h.transcript) && h.transcript.length) || h.conversation_text) && (
+            <details className="mt-2 rounded-lg border bg-muted/30 p-2">
+              <summary className="cursor-pointer text-xs font-medium text-primary">View conversation{r.attempts > 1 ? ` (${r.attempts} calls)` : ""}</summary>
+              {r.history.map((h: any, i: number) => (
+                <div key={h.id} className={i ? "mt-3 border-t pt-2" : ""}>
+                  {r.attempts > 1 && <p className="text-[10px] text-muted-foreground">{fmtDate(h.created_at)} · {fmtDur(h.duration_sec)}</p>}
+                  <Conversation r={h} />
+                </div>
+              ))}
+            </details>
+          )}
+          {!compact && <OrderActions order={r.order} copyText={copyFor(r.customer_name, r.phone, r.order)} />}
+        </article>
       ))}
     </div>
   );
@@ -258,17 +324,18 @@ function OrderQueue({ connected }: { connected: boolean }) {
       </div>
       {q.isLoading ? <div className="flex justify-center py-6"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div> :
         !(q.data?.queue.length) ? <p className="py-6 text-center text-sm text-muted-foreground">No pending orders right now.</p> : (
-        <div className="divide-y">
+        <div className="space-y-2.5">
           {q.data.queue.map((o: any) => (
-            <div key={o.id} className="flex items-center justify-between gap-2 py-2.5">
-              <div className="min-w-0">
-                <p className="truncate text-sm font-medium">#{o.invoice_no} · {o.customer_name}</p>
-                <p className="text-xs text-muted-foreground">{o.phone} · {fmtDate(o.created_at)}{o.voice_verification ? ` · ${VV[o.voice_verification] ?? o.voice_verification}` : ""}</p>
+            <article key={o.id} className="rounded-2xl border bg-card p-3 shadow-sm sm:p-4">
+              <OrderBrief order={o.order} phone={o.phone} name={o.customer_name} invoice={o.invoice_no} date={o.created_at} />
+              {o.voice_verification && <p className="mt-2 text-[11px] text-muted-foreground">{VV[o.voice_verification] ?? o.voice_verification}</p>}
+              <div className="flex flex-wrap items-end justify-between gap-2">
+                <OrderActions order={o.order} copyText={copyFor(o.customer_name, o.phone, o.order)} />
+                <Button size="sm" disabled={!connected || busy === o.id} onClick={() => resend(o.id)}>
+                  {busy === o.id ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> : <Send className="mr-1 h-3.5 w-3.5" />}Send again
+                </Button>
               </div>
-              <Button size="sm" variant="outline" disabled={!connected || busy === o.id} onClick={() => resend(o.id)}>
-                {busy === o.id ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> : <Send className="mr-1 h-3.5 w-3.5" />}Send again
-              </Button>
-            </div>
+            </article>
           ))}
         </div>
       )}
