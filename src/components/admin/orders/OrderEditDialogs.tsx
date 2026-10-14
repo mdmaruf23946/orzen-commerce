@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Minus, Plus, Trash2 } from "lucide-react";
+import { Check, ChevronDown, ImageOff, Minus, Plus, Search, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -74,6 +74,7 @@ export function EditItemsDialog({ open, onOpenChange, order, items, isPhysical, 
   const [zoneId, setZoneId] = useState("");
   const [discount, setDiscount] = useState(0);
   const [busy, setBusy] = useState(false);
+  const [pickFor, setPickFor] = useState<string | null>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -126,16 +127,21 @@ export function EditItemsDialog({ open, onOpenChange, order, items, isPhysical, 
           {lines.map((l) => {
             const p = l.product_id ? byId.get(l.product_id) : null;
             return (
-              <div key={l.key} className="min-w-0 space-y-2 rounded-lg border p-3">
-                <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
-                  <select
-                    className="h-9 w-full min-w-0 truncate rounded-md border bg-background px-2 text-sm"
-                    value={l.product_id ?? ""}
-                    onChange={(e) => changeProduct(l.key, e.target.value)}
+              <div key={l.key} className="min-w-0 space-y-3 rounded-xl border bg-card p-3">
+                <div className="flex min-w-0 items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setPickFor(l.key)}
+                    className="flex min-w-0 flex-1 items-center gap-3 rounded-lg text-left transition-colors hover:bg-muted/50"
                   >
-                    {!p && <option value="">{l.base}</option>}
-                    {products.map((x) => <option key={x.id} value={x.id}>{x.name} ({x.type})</option>)}
-                  </select>
+                    <Thumb url={p?.image} alt={l.base} className="h-14 w-14" />
+                    <div className="min-w-0 flex-1">
+                      <div className="line-clamp-2 text-sm font-medium leading-snug">{l.base}</div>
+                      <div className="mt-0.5 flex items-center gap-1 text-xs text-primary">
+                        পণ্য বদলান <ChevronDown className="h-3 w-3" />
+                      </div>
+                    </div>
+                  </button>
                   <Button size="icon" variant="ghost" className="shrink-0" onClick={() => setLines((ls) => ls.filter((x) => x.key !== l.key))} aria-label="Remove">
                     <Trash2 className="h-4 w-4 text-destructive" />
                   </Button>
@@ -150,16 +156,13 @@ export function EditItemsDialog({ open, onOpenChange, order, items, isPhysical, 
                     {p.variants.map((v) => <option key={v.id} value={v.id}>{v.label} · ৳{v.price}</option>)}
                   </select>
                 )}
-                <div className="flex flex-wrap items-center gap-2">
+                <div className="flex items-center gap-2">
                   <div className="flex shrink-0 items-center rounded-md border">
                     <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => upd(l.key, { qty: Math.max(1, l.qty - 1) })}><Minus className="h-3 w-3" /></Button>
                     <span className="w-8 text-center text-sm">{l.qty}</span>
                     <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => upd(l.key, { qty: l.qty + 1 })}><Plus className="h-3 w-3" /></Button>
                   </div>
-                  <div className="flex min-w-0 items-center gap-1">
-                    <span className="text-xs text-muted-foreground">৳</span>
-                    <Input type="number" min={0} className="h-8 w-20" value={l.price} onChange={(e) => upd(l.key, { price: Number(e.target.value) || 0 })} />
-                  </div>
+                  <span className="text-xs text-muted-foreground">× ৳{l.price.toFixed(0)}</span>
                   <span className="ml-auto shrink-0 text-sm font-semibold">৳{(l.price * l.qty).toFixed(0)}</span>
                 </div>
                 {p && p.type === "physical" && <div className="text-[11px] text-muted-foreground">Stock: {p.stock}</div>}
@@ -167,6 +170,13 @@ export function EditItemsDialog({ open, onOpenChange, order, items, isPhysical, 
             );
           })}
           <Button variant="outline" size="sm" onClick={addLine} disabled={!products.length}><Plus className="mr-1 h-3 w-3" /> Add product</Button>
+          <ProductPicker
+            open={pickFor !== null}
+            onOpenChange={(v) => !v && setPickFor(null)}
+            products={products}
+            selectedId={lines.find((x) => x.key === pickFor)?.product_id ?? null}
+            onPick={(id) => { if (pickFor) changeProduct(pickFor, id); setPickFor(null); }}
+          />
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             {isPhysical && (
               <div className="min-w-0 space-y-1">
@@ -198,6 +208,72 @@ export function EditItemsDialog({ open, onOpenChange, order, items, isPhysical, 
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
           <Button onClick={submit} disabled={busy}>{busy ? "Saving…" : "Save"}</Button>
         </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function imgUrl(url: string | null | undefined) {
+  if (!url) return null;
+  return url.startsWith("http") ? url : `/api/img/${url}`;
+}
+
+function Thumb({ url, alt, className = "" }: { url?: string | null; alt: string; className?: string }) {
+  const [err, setErr] = useState(false);
+  const src = imgUrl(url);
+  return (
+    <div className={`shrink-0 overflow-hidden rounded-lg border bg-muted ${className}`}>
+      {src && !err ? (
+        <img src={src} alt={alt} loading="lazy" className="h-full w-full object-cover" onError={() => setErr(true)} />
+      ) : (
+        <div className="grid h-full w-full place-items-center"><ImageOff className="h-4 w-4 text-muted-foreground" /></div>
+      )}
+    </div>
+  );
+}
+
+type PickProduct = { id: string; name: string; price: number; stock: number; type: string; image: string | null };
+
+function ProductPicker({ open, onOpenChange, products, selectedId, onPick }: {
+  open: boolean; onOpenChange: (v: boolean) => void; products: PickProduct[]; selectedId: string | null; onPick: (id: string) => void;
+}) {
+  const [q, setQ] = useState("");
+  useEffect(() => { if (open) setQ(""); }, [open]);
+  const list = useMemo(() => {
+    const s = q.trim().toLowerCase();
+    return s ? products.filter((p) => p.name.toLowerCase().includes(s)) : products;
+  }, [q, products]);
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="flex max-h-[85vh] w-[calc(100vw-1.5rem)] max-w-md flex-col gap-3 overflow-hidden rounded-xl p-4">
+        <DialogHeader><DialogTitle className="pr-6 text-left">পণ্য বাছুন</DialogTitle></DialogHeader>
+        <div className="relative">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input autoFocus value={q} onChange={(e) => setQ(e.target.value)} placeholder="পণ্যের নাম লিখে খুঁজুন…" className="h-10 pl-9" />
+        </div>
+        <div className="-mx-1 min-h-0 flex-1 space-y-1 overflow-y-auto px-1">
+          {list.length === 0 && <p className="py-8 text-center text-sm text-muted-foreground">কোনো পণ্য পাওয়া যায়নি</p>}
+          {list.map((p) => {
+            const active = p.id === selectedId;
+            const out = p.type === "physical" && p.stock <= 0;
+            return (
+              <button key={p.id} type="button" onClick={() => onPick(p.id)}
+                className={`flex w-full items-center gap-3 rounded-lg border p-2 text-left transition-colors ${active ? "border-primary bg-primary/5" : "border-transparent hover:bg-muted/60"}`}>
+                <Thumb url={p.image} alt={p.name} className="h-12 w-12" />
+                <div className="min-w-0 flex-1">
+                  <div className="line-clamp-2 text-sm font-medium leading-snug">{p.name}</div>
+                  <div className="mt-0.5 flex items-center gap-2 text-xs text-muted-foreground">
+                    <span className="font-semibold text-foreground">৳{p.price.toFixed(0)}</span>
+                    {p.type === "physical"
+                      ? <span className={out ? "text-destructive" : ""}>{out ? "স্টক নেই" : `Stock ${p.stock}`}</span>
+                      : <span className="capitalize">{p.type}</span>}
+                  </div>
+                </div>
+                {active && <Check className="h-4 w-4 shrink-0 text-primary" />}
+              </button>
+            );
+          })}
+        </div>
       </DialogContent>
     </Dialog>
   );

@@ -148,13 +148,25 @@ export const updateOrderItems = createServerFn({ method: "POST" })
       delivery = Number(z0.charge ?? 0); zoneId = z0.id;
     }
     const data = { ...input, delivery_amount: delivery };
+    const { data: oldItems } = await context.supabase.from("order_items").select("product_id,name_snapshot,price_snapshot,qty").eq("order_id", data.order_id);
     const ids = data.items.map((i) => i.product_id).filter(Boolean) as string[];
     if (ids.length) {
-      const { data: owned } = await context.supabase.from("products").select("id").eq("store_id", storeId).in("id", ids);
-      const ok = new Set((owned ?? []).map((r: any) => r.id));
-      if (ids.some((id) => !ok.has(id))) throw new Error("Invalid product");
+      const { data: owned } = await context.supabase.from("products").select("id,price,variants").eq("store_id", storeId).in("id", ids);
+      const allowed = new Map<string, Set<number>>();
+      for (const r of (owned ?? []) as any[]) {
+        const s = new Set<number>([Number(r.price ?? 0)]);
+        for (const v of Array.isArray(r.variants?.items) ? r.variants.items : []) if (v?.price != null && Number(v.price) > 0) s.add(Number(v.price));
+        allowed.set(r.id, s);
+      }
+      for (const o of (oldItems ?? []) as any[]) if (o.product_id && allowed.has(o.product_id)) allowed.get(o.product_id)!.add(Number(o.price_snapshot));
+      for (const i of data.items) {
+        if (!i.product_id) continue;
+        const s = allowed.get(i.product_id);
+        if (!s) throw new Error("Invalid product");
+        // Price is never typed manually — must match the catalog (or the original order line).
+        if (!s.has(Number(i.price))) throw new Error("পণ্যের দাম পরিবর্তন করা যাবে না");
+      }
     }
-    const { data: oldItems } = await context.supabase.from("order_items").select("product_id,name_snapshot,price_snapshot,qty").eq("order_id", data.order_id);
     const { error: delErr } = await context.supabase.from("order_items").delete().eq("order_id", data.order_id);
     if (delErr) throw new Error(delErr.message);
     const { error: insErr } = await context.supabase.from("order_items").insert(data.items.map((i) => ({
