@@ -167,6 +167,11 @@ export const listAdminOrders = createServerFn({ method: "GET" })
       if (row.order_id && !parcelByOrder[row.order_id]) parcelByOrder[row.order_id] = row;
     }
 
+    const ACCEPTED = new Set(["pickup_completed", "in_transit", "delivered", "partial_delivered", "returned", "hold"]);
+    const lockedOrders = new Set(
+      (parcels ?? []).filter((p: any) => p.order_id && ACCEPTED.has(p.status)).map((p: any) => p.order_id),
+    );
+
     // Repeat-customer detection across this store's history.
     const phoneCount: Record<string, number> = {};
     for (const o of list) phoneCount[(o as any).phone] = (phoneCount[(o as any).phone] ?? 0) + 1;
@@ -192,6 +197,8 @@ export const listAdminOrders = createServerFn({ method: "GET" })
       return {
         id: raw.id,
         voice_verification: raw.voice_verification ?? null,
+        followup_status: raw.followup_status ?? null,
+        locked: lockedOrders.has(raw.id),
         invoice_no: raw.invoice_no,
         customer_name: raw.customer_name,
         phone: raw.phone,
