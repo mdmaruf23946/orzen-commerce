@@ -212,3 +212,69 @@ export function EditItemsDialog({ open, onOpenChange, order, items, isPhysical, 
     </Dialog>
   );
 }
+
+function imgUrl(url: string | null | undefined) {
+  if (!url) return null;
+  return url.startsWith("http") ? url : `/api/img/${url}`;
+}
+
+function Thumb({ url, alt, className = "" }: { url?: string | null; alt: string; className?: string }) {
+  const [err, setErr] = useState(false);
+  const src = imgUrl(url);
+  return (
+    <div className={`shrink-0 overflow-hidden rounded-lg border bg-muted ${className}`}>
+      {src && !err ? (
+        <img src={src} alt={alt} loading="lazy" className="h-full w-full object-cover" onError={() => setErr(true)} />
+      ) : (
+        <div className="grid h-full w-full place-items-center"><ImageOff className="h-4 w-4 text-muted-foreground" /></div>
+      )}
+    </div>
+  );
+}
+
+type PickProduct = { id: string; name: string; price: number; stock: number; type: string; image: string | null };
+
+function ProductPicker({ open, onOpenChange, products, selectedId, onPick }: {
+  open: boolean; onOpenChange: (v: boolean) => void; products: PickProduct[]; selectedId: string | null; onPick: (id: string) => void;
+}) {
+  const [q, setQ] = useState("");
+  useEffect(() => { if (open) setQ(""); }, [open]);
+  const list = useMemo(() => {
+    const s = q.trim().toLowerCase();
+    return s ? products.filter((p) => p.name.toLowerCase().includes(s)) : products;
+  }, [q, products]);
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="flex max-h-[85vh] w-[calc(100vw-1.5rem)] max-w-md flex-col gap-3 overflow-hidden rounded-xl p-4">
+        <DialogHeader><DialogTitle className="pr-6 text-left">পণ্য বাছুন</DialogTitle></DialogHeader>
+        <div className="relative">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input autoFocus value={q} onChange={(e) => setQ(e.target.value)} placeholder="পণ্যের নাম লিখে খুঁজুন…" className="h-10 pl-9" />
+        </div>
+        <div className="-mx-1 min-h-0 flex-1 space-y-1 overflow-y-auto px-1">
+          {list.length === 0 && <p className="py-8 text-center text-sm text-muted-foreground">কোনো পণ্য পাওয়া যায়নি</p>}
+          {list.map((p) => {
+            const active = p.id === selectedId;
+            const out = p.type === "physical" && p.stock <= 0;
+            return (
+              <button key={p.id} type="button" onClick={() => onPick(p.id)}
+                className={`flex w-full items-center gap-3 rounded-lg border p-2 text-left transition-colors ${active ? "border-primary bg-primary/5" : "border-transparent hover:bg-muted/60"}`}>
+                <Thumb url={p.image} alt={p.name} className="h-12 w-12" />
+                <div className="min-w-0 flex-1">
+                  <div className="line-clamp-2 text-sm font-medium leading-snug">{p.name}</div>
+                  <div className="mt-0.5 flex items-center gap-2 text-xs text-muted-foreground">
+                    <span className="font-semibold text-foreground">৳{p.price.toFixed(0)}</span>
+                    {p.type === "physical"
+                      ? <span className={out ? "text-destructive" : ""}>{out ? "স্টক নেই" : `Stock ${p.stock}`}</span>
+                      : <span className="capitalize">{p.type}</span>}
+                  </div>
+                </div>
+                {active && <Check className="h-4 w-4 shrink-0 text-primary" />}
+              </button>
+            );
+          })}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
