@@ -2163,6 +2163,54 @@ export type Database = {
           },
         ]
       }
+      checkout_drafts: {
+        Row: {
+          address: string | null
+          area: string | null
+          converted_order_id: string | null
+          created_at: string
+          customer_name: string | null
+          dismissed: boolean
+          email: string | null
+          id: string
+          items: Json
+          phone: string | null
+          store_id: string
+          total: number
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          area?: string | null
+          converted_order_id?: string | null
+          created_at?: string
+          customer_name?: string | null
+          dismissed?: boolean
+          email?: string | null
+          id: string
+          items?: Json
+          phone?: string | null
+          store_id: string
+          total?: number
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          area?: string | null
+          converted_order_id?: string | null
+          created_at?: string
+          customer_name?: string | null
+          dismissed?: boolean
+          email?: string | null
+          id?: string
+          items?: Json
+          phone?: string | null
+          store_id?: string
+          total?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       contact_requests: {
         Row: {
           created_at: string
