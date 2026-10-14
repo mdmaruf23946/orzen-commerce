@@ -140,19 +140,32 @@ export const getOrzenCallOverview = createServerFn({ method: "GET" })
     const since = new Date(Date.now() - data.days * 86400_000).toISOString();
     const { data: rows } = await context.supabase
       .from("calls")
-      .select("status,result,duration_sec,created_at")
+      .select("status,result,duration_sec,created_at,order_id,phone,orders(status)")
       .eq("store_id", storeId)
       .eq("provider", "orzen_call")
       .gte("created_at", since)
+      .order("created_at", { ascending: false })
       .limit(5000);
     const list = (rows ?? []) as any[];
-    const confirmed = list.filter((r) => SUCCESS_RESULTS.includes(r.result)).length;
-    const cancelled = list.filter((r) => CANCEL_RESULTS.includes(r.result)).length;
+    // Outcome counts are per order (current order status, else latest call result),
+    // so repeated test calls on one order count once.
+    const outcome = (r: any): "confirmed" | "cancelled" | null => {
+      const os = r.orders?.status;
+      if (os) return ["confirmed", "processing", "delivered"].includes(os) ? "confirmed" : os === "cancelled" ? "cancelled" : null;
+      return SUCCESS_RESULTS.includes(r.result) ? "confirmed" : CANCEL_RESULTS.includes(r.result) ? "cancelled" : null;
+    };
+    const latest = new Map<string, any>();
+    for (const r of list) {
+      const key = r.order_id ? `o:${r.order_id}` : `p:${String(r.phone ?? "").replace(/\D/g, "").slice(-10)}`;
+      if (!latest.has(key)) latest.set(key, r);
+    }
+    const uniq = [...latest.values()];
+    const confirmed = uniq.filter((r) => outcome(r) === "confirmed").length;
+    const cancelled = uniq.filter((r) => outcome(r) === "cancelled").length;
     const missed = list.filter((r) => MISSED.includes(r.status)).length;
     const failed = list.filter((r) => r.status === "failed").length;
     const answered = list.filter((r) => ["answered", "completed"].includes(r.status)).length;
     const dur = list.reduce((a, r) => a + Number(r.duration_sec ?? 0), 0);
-    // daily buckets for the chart
     const byDay: Record<string, { day: string; total: number; confirmed: number; cancelled: number }> = {};
     for (let i = data.days - 1; i >= 0; i--) {
       const d = new Date(Date.now() - i * 86400_000).toISOString().slice(0, 10);
@@ -160,10 +173,14 @@ export const getOrzenCallOverview = createServerFn({ method: "GET" })
     }
     for (const r of list) {
       const b = byDay[String(r.created_at).slice(0, 10)];
+      if (b) b.total++;
+    }
+    for (const r of uniq) {
+      const b = byDay[String(r.created_at).slice(0, 10)];
       if (!b) continue;
-      b.total++;
-      if (SUCCESS_RESULTS.includes(r.result)) b.confirmed++;
-      if (CANCEL_RESULTS.includes(r.result)) b.cancelled++;
+      const o = outcome(r);
+      if (o === "confirmed") b.confirmed++;
+      if (o === "cancelled") b.cancelled++;
     }
     const decided = confirmed + cancelled;
     return {
@@ -173,7 +190,7 @@ export const getOrzenCallOverview = createServerFn({ method: "GET" })
       cancelled,
       missed,
       failed,
-      success_rate: list.length ? Math.round((confirmed / list.length) * 100) : 0,
+      success_rate: uniq.length ? Math.round((confirmed / uniq.length) * 100) : 0,
       confirm_rate: decided ? Math.round((confirmed / decided) * 100) : 0,
       avg_duration: answered ? Math.round(dur / answered) : 0,
       total_duration: dur,
