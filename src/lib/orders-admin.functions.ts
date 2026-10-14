@@ -66,6 +66,8 @@ export type AdminOrderRow = {
   tracking: string | null;
   tags: string[];
   voice_verification: "verified" | "cancelled" | "needs_agent" | "unanswered" | null;
+  followup_status: "incomplete" | "no_response" | "on_hold" | null;
+  locked: boolean;
 };
 
 
@@ -85,7 +87,7 @@ export const listAdminOrders = createServerFn({ method: "GET" })
     let ordersQ = supabase
       .from("orders")
       .select(
-        "id,invoice_no,customer_name,phone,email,address,area,status,payment_method,payment_status,payment_gateway_name,source,notes,created_at,allow_duplicate,subtotal,delivery_amount,discount_amount,courier_name,courier_code,courier_status,courier_tracking_id,order_type,confirmation_status,confirmed_at,fulfillment_meta,voice_verification",
+        "id,invoice_no,customer_name,phone,email,address,area,status,payment_method,payment_status,payment_gateway_name,source,notes,created_at,allow_duplicate,subtotal,delivery_amount,discount_amount,courier_name,courier_code,courier_status,courier_tracking_id,order_type,confirmation_status,confirmed_at,fulfillment_meta,voice_verification,followup_status",
       )
       .eq("store_id", sid);
     if (input?.product_type) {

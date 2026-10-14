@@ -552,7 +552,7 @@ export const updateOrderStatus = createServerFn({ method: "POST" })
     // Auto Create Courier Parcel: when an order is confirmed and a connected
     // courier has automation.autoParcel enabled, create + send the parcel.
     let parcel: { ok: boolean; courier?: string; error?: string } | null = null;
-    if (data.status === "confirmed") {
+    if (data.status === "processing") {
       try {
         const { data: full } = await supabase
           .from("stores")
