@@ -126,16 +126,21 @@ export function EditItemsDialog({ open, onOpenChange, order, items, isPhysical, 
           {lines.map((l) => {
             const p = l.product_id ? byId.get(l.product_id) : null;
             return (
-              <div key={l.key} className="min-w-0 space-y-2 rounded-lg border p-3">
-                <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
-                  <select
-                    className="h-9 w-full min-w-0 truncate rounded-md border bg-background px-2 text-sm"
-                    value={l.product_id ?? ""}
-                    onChange={(e) => changeProduct(l.key, e.target.value)}
+              <div key={l.key} className="min-w-0 space-y-3 rounded-xl border bg-card p-3">
+                <div className="flex min-w-0 items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setPickFor(l.key)}
+                    className="flex min-w-0 flex-1 items-center gap-3 rounded-lg text-left transition-colors hover:bg-muted/50"
                   >
-                    {!p && <option value="">{l.base}</option>}
-                    {products.map((x) => <option key={x.id} value={x.id}>{x.name} ({x.type})</option>)}
-                  </select>
+                    <Thumb url={p?.image} alt={l.base} className="h-14 w-14" />
+                    <div className="min-w-0 flex-1">
+                      <div className="line-clamp-2 text-sm font-medium leading-snug">{l.base}</div>
+                      <div className="mt-0.5 flex items-center gap-1 text-xs text-primary">
+                        পণ্য বদলান <ChevronDown className="h-3 w-3" />
+                      </div>
+                    </div>
+                  </button>
                   <Button size="icon" variant="ghost" className="shrink-0" onClick={() => setLines((ls) => ls.filter((x) => x.key !== l.key))} aria-label="Remove">
                     <Trash2 className="h-4 w-4 text-destructive" />
                   </Button>
@@ -150,16 +155,13 @@ export function EditItemsDialog({ open, onOpenChange, order, items, isPhysical, 
                     {p.variants.map((v) => <option key={v.id} value={v.id}>{v.label} · ৳{v.price}</option>)}
                   </select>
                 )}
-                <div className="flex flex-wrap items-center gap-2">
+                <div className="flex items-center gap-2">
                   <div className="flex shrink-0 items-center rounded-md border">
                     <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => upd(l.key, { qty: Math.max(1, l.qty - 1) })}><Minus className="h-3 w-3" /></Button>
                     <span className="w-8 text-center text-sm">{l.qty}</span>
                     <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => upd(l.key, { qty: l.qty + 1 })}><Plus className="h-3 w-3" /></Button>
                   </div>
-                  <div className="flex min-w-0 items-center gap-1">
-                    <span className="text-xs text-muted-foreground">৳</span>
-                    <Input type="number" min={0} className="h-8 w-20" value={l.price} onChange={(e) => upd(l.key, { price: Number(e.target.value) || 0 })} />
-                  </div>
+                  <span className="text-xs text-muted-foreground">× ৳{l.price.toFixed(0)}</span>
                   <span className="ml-auto shrink-0 text-sm font-semibold">৳{(l.price * l.qty).toFixed(0)}</span>
                 </div>
                 {p && p.type === "physical" && <div className="text-[11px] text-muted-foreground">Stock: {p.stock}</div>}
@@ -167,6 +169,13 @@ export function EditItemsDialog({ open, onOpenChange, order, items, isPhysical, 
             );
           })}
           <Button variant="outline" size="sm" onClick={addLine} disabled={!products.length}><Plus className="mr-1 h-3 w-3" /> Add product</Button>
+          <ProductPicker
+            open={pickFor !== null}
+            onOpenChange={(v) => !v && setPickFor(null)}
+            products={products}
+            selectedId={lines.find((x) => x.key === pickFor)?.product_id ?? null}
+            onPick={(id) => { if (pickFor) changeProduct(pickFor, id); setPickFor(null); }}
+          />
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             {isPhysical && (
               <div className="min-w-0 space-y-1">
