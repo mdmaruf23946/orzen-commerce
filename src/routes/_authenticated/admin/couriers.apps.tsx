@@ -1,4 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+import { toast } from "sonner";
+import { Check, Star } from "lucide-react";
+import { getCourierOverview, setDefaultCourier } from "@/lib/courier-parcels.functions";
 import { COURIERS } from "@/components/admin/couriers/providers";
 import { BrandBadge } from "@/components/admin/couriers/BrandBadge";
 import { StatusBadge } from "@/components/admin/marketing/ui";
@@ -20,6 +25,55 @@ export const Route = createFileRoute("/_authenticated/admin/couriers/apps")({
   component: HubPage,
 });
 
+function DefaultCourierCard() {
+  const fetchOverview = useServerFn(getCourierOverview);
+  const setFn = useServerFn(setDefaultCourier);
+  const qc = useQueryClient();
+  const { data } = useQuery({ queryKey: ["courier-overview"], queryFn: () => fetchOverview() });
+  const list = (data?.couriers ?? []) as Array<{ key: string; isDefault: boolean }>;
+  const current = list.find((c) => c.isDefault)?.key ?? "";
+  const save = useMutation({
+    mutationFn: (k: string) => setFn({ data: { courierKey: (k || null) as any } }),
+    onSuccess: () => {
+      toast.success("Default Courier সেভ হয়েছে");
+      qc.invalidateQueries({ queryKey: ["courier-overview"] });
+      qc.invalidateQueries({ queryKey: ["admin", "store"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+  return (
+    <div className="rounded-xl border bg-card p-4">
+      <div className="flex items-center gap-2">
+        <Star className="h-4 w-4 text-primary" />
+        <h2 className="font-medium">Default Courier</h2>
+      </div>
+      <p className="mt-1 text-xs text-muted-foreground">
+        Courier Orders-এ "Send to Courier" চাপলে অর্ডার সরাসরি এই কুরিয়ারে যাবে।
+      </p>
+      {list.length === 0 ? (
+        <p className="mt-3 text-sm text-muted-foreground">আগে নিচ থেকে একটি কুরিয়ার কানেক্ট করুন।</p>
+      ) : (
+        <div className="mt-3 flex flex-wrap gap-2">
+          {list.map((c) => {
+            const m = COURIERS.find((x) => x.key === c.key);
+            const on = current === c.key;
+            return (
+              <Button key={c.key} size="sm" variant={on ? "default" : "outline"} disabled={save.isPending} onClick={() => !on && save.mutate(c.key)}>
+                {on && <Check className="mr-1 h-3.5 w-3.5" />} {m?.label ?? c.key}
+              </Button>
+            );
+          })}
+          {current && (
+            <Button size="sm" variant="ghost" disabled={save.isPending} onClick={() => save.mutate("")}>
+              Clear
+            </Button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function HubPage() {
   const { connected } = useCourierConnections();
   const { logo, wordmark } = useCourierBrandAssets();
@@ -31,6 +85,7 @@ function HubPage() {
           Connect a courier to get its own menu in the sidebar. Each courier is saved separately.
         </p>
       </div>
+      <DefaultCourierCard />
       <div className="grid gap-3">
         {COURIERS.map((m) => {
           const on = !!connected[m.key];
