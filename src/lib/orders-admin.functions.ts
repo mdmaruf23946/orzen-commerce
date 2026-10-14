@@ -68,6 +68,8 @@ export type AdminOrderRow = {
   voice_verification: "verified" | "cancelled" | "needs_agent" | "unanswered" | null;
   followup_status: "incomplete" | "no_response" | "on_hold" | null;
   locked: boolean;
+  followup_status: "incomplete" | "no_response" | "on_hold" | null;
+  locked: boolean;
 };
 
 
