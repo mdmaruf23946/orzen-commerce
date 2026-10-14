@@ -74,19 +74,19 @@ function OrdersErrorComponent({ error, reset }: { error: any; reset: () => void;
 }
 
 type TabKey =
-  | "all" | "pending" | "confirmed" | "processing"
-  | "courier" | "in_transit" | "delivered" | "cancelled" | "returned";
+  | "all" | "pending" | "incomplete" | "no_response" | "on_hold"
+  | "confirmed" | "processing" | "delivered" | "cancelled";
 
 const TABS: { key: TabKey; label: string }[] = [
   { key: "all", label: "All" },
   { key: "pending", label: "Pending" },
+  { key: "incomplete", label: "Incomplete" },
+  { key: "no_response", label: "No Response" },
+  { key: "on_hold", label: "On Hold" },
   { key: "confirmed", label: "Confirmed" },
   { key: "processing", label: "Processing" },
-  { key: "courier", label: "Courier" },
-  { key: "in_transit", label: "In Transit" },
   { key: "delivered", label: "Delivered" },
   { key: "cancelled", label: "Cancelled" },
-  { key: "returned", label: "Returned" },
 ];
 
 const TYPE_TABS = [
@@ -140,17 +140,16 @@ function matchesTypeTab(o: AdminOrderRow, type: Exclude<TypeKey, "all" | "physic
   return true;
 }
 
-const COURIER_SENT = new Set(["pending", "pickup_requested", "pickup_completed"]);
-
 function matchesTab(o: AdminOrderRow, tab: TabKey) {
   const p = o.parcel?.status;
+  const f = o.followup_status;
   switch (tab) {
     case "all": return true;
-    case "courier": return !!p && COURIER_SENT.has(p);
-    case "in_transit": return p === "in_transit";
-    case "returned": return p === "returned" || p === "partial_delivered";
+    case "pending": return o.status === "pending" && !f;
+    case "incomplete": case "no_response": case "on_hold":
+      return o.status === "pending" && f === tab;
     case "delivered": return o.status === "delivered" || p === "delivered";
-    case "cancelled": return o.status === "cancelled" || p === "cancelled";
+    case "cancelled": return o.status === "cancelled";
     default: return o.status === tab;
   }
 }
