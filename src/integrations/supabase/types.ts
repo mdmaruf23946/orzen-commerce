@@ -5553,6 +5553,7 @@ export type Database = {
           email: string | null
           external_order_id: string | null
           fingerprint: string | null
+          followup_status: string | null
           fulfillment_meta: Json
           id: string
           idempotency_key: string | null
@@ -5571,6 +5572,8 @@ export type Database = {
           phone: string
           source: string
           status: Database["public"]["Enums"]["order_status"]
+          status_changed_at: string | null
+          status_source: string | null
           store_id: string
           subtotal: number
           txn_id: string | null
@@ -5606,6 +5609,7 @@ export type Database = {
           email?: string | null
           external_order_id?: string | null
           fingerprint?: string | null
+          followup_status?: string | null
           fulfillment_meta?: Json
           id?: string
           idempotency_key?: string | null
@@ -5624,6 +5628,8 @@ export type Database = {
           phone: string
           source?: string
           status?: Database["public"]["Enums"]["order_status"]
+          status_changed_at?: string | null
+          status_source?: string | null
           store_id: string
           subtotal?: number
           txn_id?: string | null
@@ -5659,6 +5665,7 @@ export type Database = {
           email?: string | null
           external_order_id?: string | null
           fingerprint?: string | null
+          followup_status?: string | null
           fulfillment_meta?: Json
           id?: string
           idempotency_key?: string | null
@@ -5677,6 +5684,8 @@ export type Database = {
           phone?: string
           source?: string
           status?: Database["public"]["Enums"]["order_status"]
+          status_changed_at?: string | null
+          status_source?: string | null
           store_id?: string
           subtotal?: number
           txn_id?: string | null
@@ -12269,6 +12278,7 @@ export type Database = {
         Returns: number
       }
       next_subscription_no: { Args: { _store_id: string }; Returns: string }
+      order_courier_locked: { Args: { _order: string }; Returns: boolean }
       orzen_call_post: {
         Args: { _data: Json; _event: string; _flag: string; _store: string }
         Returns: undefined

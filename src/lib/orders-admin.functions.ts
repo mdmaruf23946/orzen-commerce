@@ -66,6 +66,8 @@ export type AdminOrderRow = {
   tracking: string | null;
   tags: string[];
   voice_verification: "verified" | "cancelled" | "needs_agent" | "unanswered" | null;
+  followup_status: "incomplete" | "no_response" | "on_hold" | null;
+  locked: boolean;
 };
 
 
@@ -85,7 +87,7 @@ export const listAdminOrders = createServerFn({ method: "GET" })
     let ordersQ = supabase
       .from("orders")
       .select(
-        "id,invoice_no,customer_name,phone,email,address,area,status,payment_method,payment_status,payment_gateway_name,source,notes,created_at,allow_duplicate,subtotal,delivery_amount,discount_amount,courier_name,courier_code,courier_status,courier_tracking_id,order_type,confirmation_status,confirmed_at,fulfillment_meta,voice_verification",
+        "id,invoice_no,customer_name,phone,email,address,area,status,payment_method,payment_status,payment_gateway_name,source,notes,created_at,allow_duplicate,subtotal,delivery_amount,discount_amount,courier_name,courier_code,courier_status,courier_tracking_id,order_type,confirmation_status,confirmed_at,fulfillment_meta,voice_verification,followup_status",
       )
       .eq("store_id", sid);
     if (input?.product_type) {
@@ -163,6 +165,11 @@ export const listAdminOrders = createServerFn({ method: "GET" })
       if (row.order_id && !parcelByOrder[row.order_id]) parcelByOrder[row.order_id] = row;
     }
 
+    const ACCEPTED = new Set(["pickup_completed", "in_transit", "delivered", "partial_delivered", "returned", "hold"]);
+    const lockedOrders = new Set(
+      (parcels ?? []).filter((p: any) => p.order_id && ACCEPTED.has(p.status)).map((p: any) => p.order_id),
+    );
+
     // Repeat-customer detection across this store's history.
     const phoneCount: Record<string, number> = {};
     for (const o of list) phoneCount[(o as any).phone] = (phoneCount[(o as any).phone] ?? 0) + 1;
@@ -188,6 +195,8 @@ export const listAdminOrders = createServerFn({ method: "GET" })
       return {
         id: raw.id,
         voice_verification: raw.voice_verification ?? null,
+        followup_status: raw.followup_status ?? null,
+        locked: lockedOrders.has(raw.id),
         invoice_no: raw.invoice_no,
         customer_name: raw.customer_name,
         phone: raw.phone,

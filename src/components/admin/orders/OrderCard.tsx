@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { CallButton } from "@/components/admin/calls/CallButton";
 import {
-  Eye, Printer, Truck, MessageCircle, Copy,
+  Eye, Printer, Truck, Lock, MessageCircle, Copy,
   ImageOff, ChevronDown, ShieldCheck, MapPin,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -157,7 +157,19 @@ type Props = {
   fraudPreview?: boolean;
 };
 
-export const STATUSES = ["pending", "confirmed", "processing", "delivered", "cancelled"] as const;
+export const STATUSES = ["pending", "no_response", "on_hold", "incomplete", "confirmed", "processing", "delivered", "cancelled"] as const;
+const ORDER_LABEL: Record<string, string> = {
+  pending: "Pending", no_response: "No Response", on_hold: "On Hold", incomplete: "Incomplete",
+  confirmed: "Confirmed", processing: "Processing", delivered: "Delivered", cancelled: "Cancelled",
+};
+/** Statuses the merchant may pick next from the current one (backend enforces the same). */
+function nextStatuses(cur: string): string[] {
+  if (cur === "pending" || cur === "no_response" || cur === "on_hold" || cur === "incomplete")
+    return ["pending", "no_response", "on_hold", "incomplete", "confirmed", "cancelled"].filter((s) => s !== cur);
+  if (cur === "confirmed") return ["processing", "cancelled"];
+  if (cur === "processing") return ["confirmed", "cancelled"];
+  return [];
+}
 const BTN = "inline-flex h-8 items-center justify-center gap-1 rounded-lg border px-2.5 text-xs transition-colors duration-150 hover:bg-muted";
 
 /** Read-only preview of the last saved fraud report (never triggers a new check). */
@@ -198,6 +210,7 @@ export function FraudSummary({ phone }: { phone: string }) {
 
 export function OrderCard({ order, onView, onFraud, onStatus, selected, onSelectChange, couriers = [], onCourier, fraudPreview }: Props) {
   const first = order.items[0];
+  const cur = order.status === "pending" && order.followup_status ? order.followup_status : order.status;
 
   function copyAddress() {
     const text = `${order.customer_name}\n${order.phone}\n${order.address}${order.area ? `, ${order.area}` : ""}`;
@@ -283,6 +296,9 @@ export function OrderCard({ order, onView, onFraud, onStatus, selected, onSelect
           )}
           <PaymentBadge order={order} />
           <StatusBadge status={order.status} />
+          {order.followup_status && (
+            <span className="rounded-md bg-amber-500/12 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700 dark:text-amber-400">{ORDER_LABEL[order.followup_status]}</span>
+          )}
           <VoiceBadge v={order.voice_verification} />
           <div className="flex flex-wrap justify-end gap-1">
             <CourierBadge order={order} />
@@ -304,48 +320,33 @@ export function OrderCard({ order, onView, onFraud, onStatus, selected, onSelect
         >
           <Printer className="h-3.5 w-3.5" /> Invoice
         </Link>
-        <DropdownMenu>
-          <DropdownMenuTrigger className={BTN}>
-            <Truck className="h-3.5 w-3.5" /> Courier
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" className="w-48">
-            <DropdownMenuLabel className="text-[11px]">Send with</DropdownMenuLabel>
-            {couriers.length === 0 ? (
-              <DropdownMenuItem asChild className="text-xs">
-                <Link to="/admin/courier-orders" search={{ tab: "ready" }}>No courier connected</Link>
-              </DropdownMenuItem>
-            ) : (
-              couriers.map((c) => {
-                const m = courierMeta(c.key);
-                return (
-                  <DropdownMenuItem key={c.key} onClick={() => onCourier?.(c.key)} className="text-xs">
-                    <span className="mr-2 h-2 w-2 rounded-full" style={{ backgroundColor: m?.brandColor }} />
-                    {m?.label ?? c.key}
-                    {c.isDefault && <span className="ml-auto text-[10px] text-muted-foreground">Default</span>}
-                  </DropdownMenuItem>
-                );
-              })
-            )}
-          </DropdownMenuContent>
-        </DropdownMenu>
         <Action onClick={copyAddress} icon={Copy} label="Copy" />
         <Action onClick={onFraud} icon={ShieldCheck} label="Fraud Check" />
-        <DropdownMenu>
-          <DropdownMenuTrigger
-            className={`inline-flex h-8 items-center justify-center gap-1 rounded-lg px-2.5 text-xs font-semibold capitalize ring-1 ring-inset transition-colors ${ORDER_STATUS_TONE[order.status] ?? "bg-muted ring-border"}`}
+        {order.locked || nextStatuses(cur).length === 0 ? (
+          <span
+            title={order.locked ? "কুরিয়ার গ্রহণ করেছে — অর্ডার লক" : undefined}
+            className={`inline-flex h-8 items-center justify-center gap-1 rounded-lg px-2.5 text-xs font-semibold ring-1 ring-inset ${ORDER_STATUS_TONE[order.status] ?? "bg-muted ring-border"}`}
           >
-            {order.status}
-            <ChevronDown className="h-3 w-3" />
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-40">
-            {STATUSES.filter((s) => s !== order.status).map((s) => (
-              <DropdownMenuItem key={s} onClick={() => onStatus(s)} className="text-xs capitalize">
-                <span className={`mr-2 h-2 w-2 rounded-full ${ORDER_STATUS_TONE[s]?.split(" ")[0] ?? ""}`} />
-                {s}
-              </DropdownMenuItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
+            {order.locked && <Lock className="h-3 w-3" />} {order.locked ? "Locked" : ORDER_LABEL[cur] ?? cur}
+          </span>
+        ) : (
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              className={`inline-flex h-8 items-center justify-center gap-1 rounded-lg px-2.5 text-xs font-semibold ring-1 ring-inset transition-colors ${ORDER_STATUS_TONE[order.status] ?? "bg-muted ring-border"}`}
+            >
+              {ORDER_LABEL[cur] ?? cur}
+              <ChevronDown className="h-3 w-3" />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-40">
+              {nextStatuses(cur).map((s) => (
+                <DropdownMenuItem key={s} onClick={() => onStatus(s)} className="text-xs">
+                  <span className={`mr-2 h-2 w-2 rounded-full ${ORDER_STATUS_TONE[s]?.split(" ")[0] ?? "bg-muted-foreground"}`} />
+                  {ORDER_LABEL[s]}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
       </div>
     </article>
   );

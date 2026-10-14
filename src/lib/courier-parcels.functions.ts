@@ -125,7 +125,7 @@ export const listSendableOrders = createServerFn({ method: "POST" })
         "id,invoice_no,customer_name,phone,address,area,subtotal,delivery_amount,discount_amount,payment_method,payment_status,status,created_at",
       )
       .eq("store_id", store.id)
-      .in("status", ["confirmed", "processing"])
+      .eq("status", "processing")
       .order("created_at", { ascending: false })
       .limit(data.limit ?? 50);
     const list = (orders ?? []).filter((o: any) => !used.has(o.id));
