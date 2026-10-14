@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import {
   Package, User, ScrollText, Truck, ShieldCheck, Phone, MapPin,
-  Trash2, Printer, ImageOff, Pencil, Lock,
+  Trash2, Printer, ImageOff, Pencil, Lock, MessageCircle, Copy, ClipboardList,
 } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { getOrderDetails, addInternalNote, deleteInternalNote } from "@/lib/business.functions";
@@ -182,15 +182,6 @@ export function OrderDetailsDrawer({ open, onOpenChange, orderId }: Props) {
                   <Printer className="h-3 w-3" /> Invoice
                 </Link>
               )}
-              {isPhysical && (
-                <Link
-                  to="/admin/courier-orders"
-                  search={{ tab: "ready" }}
-                  className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs font-normal hover:bg-muted"
-                >
-                  <Truck className="h-3 w-3" /> Send to Courier
-                </Link>
-              )}
             </SheetTitle>
 
           </SheetHeader>
@@ -256,8 +247,16 @@ export function OrderDetailsDrawer({ open, onOpenChange, orderId }: Props) {
               </Section>
 
               {/* Calls */}
-              <Section icon={Phone} title="Calls">
-                <OrderCallsPanel orderId={orderId} phone={order.phone} customerName={order.customer_name} enabled={open} />
+              <Section icon={Phone} title="Contact">
+                <OrderCallsPanel
+                  orderId={orderId} phone={order.phone} customerName={order.customer_name} enabled={open}
+                  copyText={[
+                    order.customer_name, order.phone, isPhysical ? [order.address, order.area].filter(Boolean).join(", ") : null,
+                    items.map((it) => `${it.name_snapshot} x${it.qty}`).join(", "),
+                    `Total: ৳${total.toFixed(0)}`,
+                  ].filter(Boolean).join("\n")}
+                />
+
               </Section>
 
 
@@ -521,18 +520,37 @@ function CustomerStats({ phone, enabled }: { phone: string; enabled: boolean }) 
 
 /** Compact call block: one-click call + this order's call history. */
 function OrderCallsPanel({
-  orderId, phone, customerName, enabled,
-}: { orderId: string; phone: string; customerName?: string | null; enabled: boolean }) {
+  orderId, phone, enabled, copyText,
+}: { orderId: string; phone: string; customerName?: string | null; enabled: boolean; copyText?: string }) {
   const listFn = useServerFn(getCallsForOrder);
   const { data } = useQuery({
     queryKey: ["order-calls", orderId],
     queryFn: () => listFn({ data: { orderId } }),
     enabled: enabled && !!orderId,
   });
+  const digits = phone.replace(/\D/g, "");
+  const wa = digits.startsWith("880") ? digits : digits.startsWith("0") ? `88${digits}` : digits;
+  const calls = (data ?? []) as any[];
+  const btn = "inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border px-3 text-sm font-medium hover:bg-muted";
   return (
     <div className="space-y-2">
-      <CallButton phone={phone} customerName={customerName} orderId={orderId} label="Call with ePBX" />
-      <CallHistoryList calls={(data ?? []) as any} empty="No calls for this order yet" />
+      <div className="grid grid-cols-2 gap-2">
+        <a href={`tel:${phone}`} className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg bg-primary px-3 text-sm font-semibold text-primary-foreground hover:bg-primary/90">
+          <Phone className="h-4 w-4" /> Call
+        </a>
+        <a href={`https://wa.me/${wa}`} target="_blank" rel="noreferrer" className={btn}>
+          <MessageCircle className="h-4 w-4" /> WhatsApp
+        </a>
+        <button type="button" className={btn} onClick={() => { navigator.clipboard.writeText(phone); toast.success("ফোন নম্বর কপি হয়েছে"); }}>
+          <Copy className="h-4 w-4" /> Copy phone
+        </button>
+        {copyText && (
+          <button type="button" className={btn} onClick={() => { navigator.clipboard.writeText(copyText); toast.success("অর্ডারের তথ্য কপি হয়েছে"); }}>
+            <ClipboardList className="h-4 w-4" /> Copy info
+          </button>
+        )}
+      </div>
+      {calls.length > 0 && <CallHistoryList calls={calls} empty="" />}
     </div>
   );
 }
