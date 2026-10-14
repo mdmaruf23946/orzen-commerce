@@ -250,8 +250,7 @@ function CallList({ rows, loading, compact }: { rows: any[]; loading: boolean; c
         <article key={r.id} className="rounded-2xl border bg-card p-3 shadow-sm sm:p-4">
           <OrderBrief order={r.order} phone={r.phone} name={r.customer_name} invoice={r.invoice_no} date={r.created_at} />
           <div className="mt-2.5 flex flex-wrap items-center gap-2 rounded-xl bg-muted/50 px-2.5 py-1.5 text-[11px]">
-            <ResultPill result={r.result} />
-            <StatusPill status={r.status} />
+            {!r.order?.status && (r.result ? <ResultPill result={r.result} /> : <StatusPill status={r.status} />)}
             <span className="text-muted-foreground">⏱ {fmtDur(r.duration_sec)}</span>
             {r.attempts > 1 && <span className="ml-auto text-muted-foreground">{r.attempts} calls</span>}
           </div>
