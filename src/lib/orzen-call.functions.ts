@@ -190,7 +190,7 @@ export const getOrzenCallOverview = createServerFn({ method: "GET" })
       cancelled,
       missed,
       failed,
-      success_rate: list.length ? Math.round((confirmed / list.length) * 100) : 0,
+      success_rate: uniq.length ? Math.round((confirmed / uniq.length) * 100) : 0,
       confirm_rate: decided ? Math.round((confirmed / decided) * 100) : 0,
       avg_duration: answered ? Math.round(dur / answered) : 0,
       total_duration: dur,
