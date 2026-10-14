@@ -172,6 +172,7 @@ function CheckoutPage() {
   // Autosave whatever the shopper typed so abandoned checkouts show up as
   // "Incomplete" orders for the merchant.
   const saveDraft = useServerFn(saveCheckoutDraft);
+  const completeDraft = useServerFn(completeCheckoutDraft);
   const [draftId, setDraftId] = useState<string | null>(null);
   useEffect(() => {
     const key = `orzen-checkout-draft:${slug}`;
