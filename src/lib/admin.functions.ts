@@ -502,7 +502,10 @@ export const updateOrderStatus = createServerFn({ method: "POST" })
     z
       .object({
         id: z.string().uuid(),
-        status: z.enum(["pending", "confirmed", "processing", "delivered", "cancelled"]),
+        status: z.enum([
+          "pending", "incomplete", "no_response", "on_hold",
+          "confirmed", "processing", "delivered", "cancelled",
+        ]),
       })
       .parse(d),
   )
@@ -510,12 +513,28 @@ export const updateOrderStatus = createServerFn({ method: "POST" })
     const { supabase, userId } = context;
     const store = await myStoreRow(supabase, userId, "id");
     if (!store) throw new Error("No store");
+    const { data: locked } = await supabase.rpc("order_courier_locked" as never, { _order: data.id } as never);
+    if (locked) throw new Error("কুরিয়ার অর্ডারটি গ্রহণ করেছে — এখন স্ট্যাটাস কুরিয়ার ট্র্যাকিং থেকে আসবে।");
+    const FOLLOW = ["incomplete", "no_response", "on_hold"] as const;
+    const isFollow = (FOLLOW as readonly string[]).includes(data.status);
+    const dbStatus = isFollow ? "pending" : data.status;
+    const { data: cur } = await supabase.from("orders").select("status").eq("id", data.id).eq("store_id", store.id).maybeSingle();
+    if (!cur) throw new Error("Order not found");
+    if (isFollow && (cur as any).status !== "pending")
+      throw new Error("No Response / On Hold / Incomplete শুধু Pending অর্ডারে দেওয়া যায়।");
+    if (data.status === "processing" && (cur as any).status !== "confirmed" && (cur as any).status !== "processing")
+      throw new Error("আগে অর্ডারটি Confirmed করুন, তারপর Processing।");
     const { error } = await supabase
       .from("orders")
-      .update({ status: data.status })
+      .update({
+        status: dbStatus,
+        followup_status: isFollow ? data.status : null,
+        status_source: "merchant",
+        ...(data.status === "confirmed" ? { confirmed_at: new Date().toISOString() } : {}),
+      } as never)
       .eq("id", data.id)
       .eq("store_id", store.id);
-    if (error) throw new Error(error.message);
+    if (error) throw new Error(error.message.replace(/^ORDER_LOCKED:\s*/, ""));
 
     // Fire-and-observe: push Messenger status update to the customer if this order
     // originated from (or has) a Messenger conversation. Failures are swallowed —
