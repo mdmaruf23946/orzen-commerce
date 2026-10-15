@@ -41,25 +41,26 @@ async function draftFor(p: { name: string; brand?: string | null; category?: str
   const { routedChatCompletion } = await import("@/lib/ai-provider.server");
   let text: string | null = null;
   try {
+    // Lite model: no hidden "thinking" tokens, ~150-250 tokens total, 1-3s.
     text = await routedChatCompletion({
       jsonOnly: true,
-      maxTokens: 1800,
-      temperature: 0.6,
+      modelOverride: "google/gemini-flash-lite-latest",
+      maxTokens: 220,
+      temperature: 0.3,
       messages: [
         {
           role: "system",
           content:
-            "You write ecommerce product SEO for a Bangladeshi online store. Keep the language of the product name (English or Bangla). Title 45–60 characters, include the product name, no ALL CAPS, no emojis. Meta description 130–155 characters with a clear benefit and a soft call to action. 5–8 search keywords. Image alt text under 120 characters describing the product photo. Never invent prices, discounts, materials or claims not in the input. Reply ONLY with JSON: {\"title\": string, \"description\": string, \"keywords\": string[], \"alt\": string}",
+            "Product SEO, same language as product name. Title<=60 chars, description<=150 chars, 5 keywords comma-separated, short alt. No invented claims. ONLY JSON: {\"title\":\"\",\"description\":\"\",\"keywords\":\"\",\"alt\":\"\"}",
         },
         {
           role: "user",
           content: [
-            `Store: ${p.storeName ?? ""}`,
             `Product: ${p.name}`,
             p.brand ? `Brand: ${p.brand}` : "",
             p.category ? `Category: ${p.category}` : "",
             p.price ? `Price: ৳${p.price}` : "",
-            `Details: ${strip(p.description).slice(0, 900)}`,
+            p.description ? `Details: ${strip(p.description).slice(0, 200)}` : "",
           ]
             .filter(Boolean)
             .join("\n"),
