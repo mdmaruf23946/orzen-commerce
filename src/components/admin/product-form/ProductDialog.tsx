@@ -28,6 +28,7 @@ import { GalleryUploader } from "@/components/admin/GalleryUploader";
 import { DigitalFilesUploader, type DigitalFile } from "./DigitalFilesUploader";
 import { SeoSuggestButton } from "./SeoSuggestButton";
 import { AiAssistTab } from "./AiAssistTab";
+import { VariantBuilder } from "./VariantBuilder";
 
 
 
@@ -46,7 +47,10 @@ type ProductMeta = {
   barcode?: string | null;
   inventory_status?: "in_stock" | "out_of_stock" | "pre_order";
   stock_managed?: boolean;
-  shipping?: { weight?: number; l?: number; w?: number; h?: number; type?: "free" | "fixed" | "calculated"; rate?: number };
+  shipping?: {
+    weight?: number; l?: number; w?: number; h?: number; type?: "free" | "fixed" | "calculated"; rate?: number;
+    net_weight?: string; volume?: string; pack_size?: string; unit?: string;
+  };
   purchase?: { cod?: boolean; online?: boolean; min_qty?: number; max_qty?: number };
   labels?: string[];
   related?: { related?: string[]; fbt?: string[]; cross?: string[]; upsell?: string[] };
@@ -238,7 +242,17 @@ export function ProductDialog({
   );
   const [videoInput, setVideoInput] = useState("");
 
-  const [variants, setVariants] = useState<VariantsV2>(normalizeVariants(editing?.variants));
+  const [variants, setVariants] = useState<VariantsV2>(() => {
+    const v = normalizeVariants(editing?.variants);
+    // Restore combinations the merchant switched off earlier so they can be re-enabled.
+    return v.options.length ? { ...v, items: buildMatrix(v.options, v.items) } : v;
+  });
+  const [excludedVariants, setExcludedVariants] = useState<string[]>(() => {
+    const v = normalizeVariants(editing?.variants);
+    if (!v.options.length) return [];
+    const saved = new Set(v.items.map((i) => i.id));
+    return buildMatrix(v.options, v.items).filter((i) => !saved.has(i.id)).map((i) => i.id);
+  });
 
   const [specs, setSpecs] = useState<{ key: string; value: string }[]>(
     Array.isArray((editing as any)?.specifications) ? ((editing as any).specifications as any) : [],
@@ -497,7 +511,13 @@ export function ProductDialog({
         cost_price: costPrice === "" ? 0 : Number(costPrice),
         sku: sku || null,
         low_stock_threshold: Number(lowThreshold),
-        stock: isStockless ? 0 : Number(stock),
+        stock: isStockless
+          ? 0
+          : variants.items.some((i) => !excludedVariants.includes(i.id))
+            ? variants.items
+                .filter((i) => !excludedVariants.includes(i.id))
+                .reduce((s, i) => s + Number(i.stock ?? 0), 0)
+            : Number(stock),
         status,
         primary_image_url: image,
         gallery,
@@ -508,7 +528,12 @@ export function ProductDialog({
         shipping_info: shippingInfo || null,
         is_featured: isFeatured,
         specifications: specs.filter((s) => s.key.trim()),
-        variants,
+        variants: variants.options.length
+          ? {
+              options: variants.options.filter((o) => o.name.trim() && o.values.length),
+              items: variants.items.filter((i) => !excludedVariants.includes(i.id)),
+            }
+          : variants,
         related_product_ids: related.related ?? [],
         product_type: productType,
         meta,
@@ -837,47 +862,14 @@ export function ProductDialog({
       id: "variants",
       label: "Variants",
       content: (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-muted-foreground">Options like Color, Size, Storage. Values are comma-separated.</p>
-            <Button type="button" size="sm" variant="outline" onClick={addOption}><Plus className="mr-1 h-3 w-3" />Option</Button>
-          </div>
-          {variants.options.map((opt, i) => (
-            <div key={i} className="grid gap-2 rounded-md border p-3 sm:grid-cols-[1fr_2fr_auto]">
-              <Input value={opt.name} onChange={(e) => setOptionName(i, e.target.value)} placeholder="Option name" />
-              <Input value={opt.values.join(", ")} onChange={(e) => setOptionValues(i, e.target.value)} placeholder="Red, Blue, Green" />
-              <Button type="button" size="sm" variant="ghost" onClick={() => removeOption(i)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
-            </div>
-          ))}
-          {variants.items.length > 0 && (
-            <div className="overflow-x-auto rounded-md border">
-              <table className="w-full text-xs">
-                <thead className="bg-muted/50">
-                  <tr>
-                    <th className="p-2 text-left">Variant</th>
-                    <th className="p-2 text-left">SKU</th>
-                    <th className="p-2 text-left">Price</th>
-                    <th className="p-2 text-left">Discount</th>
-                    <th className="p-2 text-left">Stock</th>
-                    <th className="p-2 text-left">Barcode</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {variants.items.map((it) => (
-                    <tr key={it.id} className="border-t">
-                      <td className="p-2 font-medium">{Object.values(it.options).join(" / ")}</td>
-                      <td className="p-2"><Input className="h-8" value={it.sku ?? ""} onChange={(e) => updateItem(it.id, { sku: e.target.value })} /></td>
-                      <td className="p-2"><Input className="h-8 w-20" type="number" min={0} value={it.price ?? ""} onChange={(e) => updateItem(it.id, { price: e.target.value === "" ? null : Number(e.target.value) })} /></td>
-                      <td className="p-2"><Input className="h-8 w-20" type="number" min={0} value={it.discount ?? ""} onChange={(e) => updateItem(it.id, { discount: e.target.value === "" ? null : Number(e.target.value) })} /></td>
-                      <td className="p-2"><Input className="h-8 w-20" type="number" min={0} value={it.stock ?? ""} onChange={(e) => updateItem(it.id, { stock: e.target.value === "" ? null : Number(e.target.value) })} /></td>
-                      <td className="p-2"><Input className="h-8" value={it.barcode ?? ""} onChange={(e) => updateItem(it.id, { barcode: e.target.value })} /></td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
+        <VariantBuilder
+          variants={variants}
+          setVariants={setVariants as any}
+          excluded={excludedVariants}
+          setExcluded={setExcludedVariants}
+          images={[image, ...gallery].filter(Boolean) as string[]}
+          basePrice={finalPrice}
+        />
       ),
     },
     {
@@ -904,6 +896,10 @@ export function ProductDialog({
         <div className="space-y-4">
           <div className="grid gap-3 sm:grid-cols-4">
             <Field label="Weight (kg)"><Input type="number" min={0} step="0.01" value={shipping.weight ?? ""} onChange={(e) => setShipping({ ...shipping, weight: Number(e.target.value) || undefined })} /></Field>
+            <Field label="Net weight"><Input value={shipping.net_weight ?? ""} placeholder="e.g. 500 g" onChange={(e) => setShipping({ ...shipping, net_weight: e.target.value || undefined })} /></Field>
+            <Field label="Volume"><Input value={shipping.volume ?? ""} placeholder="e.g. 250 ml" onChange={(e) => setShipping({ ...shipping, volume: e.target.value || undefined })} /></Field>
+            <Field label="Pack size"><Input value={shipping.pack_size ?? ""} placeholder="e.g. 12 pcs" onChange={(e) => setShipping({ ...shipping, pack_size: e.target.value || undefined })} /></Field>
+            <Field label="Unit"><Input value={shipping.unit ?? ""} placeholder="pcs / kg / litre" onChange={(e) => setShipping({ ...shipping, unit: e.target.value || undefined })} /></Field>
             <Field label="Length (cm)"><Input type="number" min={0} step="0.1" value={shipping.l ?? ""} onChange={(e) => setShipping({ ...shipping, l: Number(e.target.value) || undefined })} /></Field>
             <Field label="Width (cm)"><Input type="number" min={0} step="0.1" value={shipping.w ?? ""} onChange={(e) => setShipping({ ...shipping, w: Number(e.target.value) || undefined })} /></Field>
             <Field label="Height (cm)"><Input type="number" min={0} step="0.1" value={shipping.h ?? ""} onChange={(e) => setShipping({ ...shipping, h: Number(e.target.value) || undefined })} /></Field>
@@ -1157,6 +1153,97 @@ export function ProductDialog({
     },
   ];
 
+  const T = (id: string) => tabs.find((t) => t.id === id)!.content;
+  const variantsOn = variants.items.length > 0;
+  const activeItems = variants.items.filter((i) => !excludedVariants.includes(i.id));
+  const issues: string[] = [];
+  if (!name.trim()) issues.push("পণ্যের নাম দিন (ধাপ ১)");
+  if (!regularPrice || reg <= 0) issues.push("দাম দিন (ধাপ ২)");
+  if (sale != null && sale >= reg) issues.push("অফার দাম মূল দামের চেয়ে কম হতে হবে");
+  if (!image) issues.push("একটি ছবি দিলে বিক্রি ভালো হয় (ঐচ্ছিক)");
+  if (variants.options.length && !activeItems.length) issues.push("Variant চালু আছে কিন্তু কোনো value নেই");
+  const prices = activeItems.map((i) => i.price ?? finalPrice);
+  const priceText = prices.length && Math.min(...prices) !== Math.max(...prices)
+    ? `৳${Math.min(...prices)} – ৳${Math.max(...prices)}`
+    : `৳${(prices[0] ?? finalPrice).toFixed(0)}`;
+  const totalStock = variantsOn ? activeItems.reduce((s, i) => s + Number(i.stock ?? 0), 0) : stock;
+
+  const physicalSteps = [
+    {
+      id: "basic",
+      label: "Basic info",
+      content: (
+        <div className="space-y-6">
+          {T("general")}
+          <div className="border-t pt-4">{T("media")}</div>
+        </div>
+      ),
+    },
+    {
+      id: "price",
+      label: "Price, Stock & Variants",
+      content: (
+        <div className="space-y-5">
+          {T("pricing")}
+          {!variantsOn ? (
+            T("inventory")
+          ) : (
+            <p className="rounded-md bg-muted/40 p-2 text-xs text-muted-foreground">
+              Variant চালু আছে — মোট স্টক combination থেকে হিসাব হবে ({totalStock})।
+            </p>
+          )}
+          {T("variants")}
+          <More title="ওজন, মাপ ও ডেলিভারি (ঐচ্ছিক)">{T("shipping")}</More>
+        </div>
+      ),
+    },
+    {
+      id: "review",
+      label: "Review & Publish",
+      content: (
+        <div className="space-y-4">
+          <div className="flex gap-3 rounded-xl border p-3">
+            {image ? (
+              <img src={image.startsWith("http") ? image : `/api/img/${image}`} alt="" className="h-20 w-20 shrink-0 rounded-lg border object-cover" />
+            ) : (
+              <div className="grid h-20 w-20 shrink-0 place-items-center rounded-lg border bg-muted text-[10px] text-muted-foreground">No image</div>
+            )}
+            <div className="min-w-0 flex-1 space-y-1 text-sm">
+              <p className="truncate font-semibold">{name || "(নাম নেই)"}</p>
+              <p className="text-primary font-semibold">{priceText}{hasDiscount && <span className="ml-2 text-xs text-muted-foreground line-through">৳{reg}</span>}</p>
+              <p className="text-xs text-muted-foreground">
+                {categories.find((c) => c.id === categoryId)?.name ?? "No category"} · Stock {totalStock}
+                {variantsOn && ` · ${activeItems.length} variants`}
+              </p>
+            </div>
+          </div>
+          {variantsOn && (
+            <div className="flex flex-wrap gap-1.5">
+              {activeItems.slice(0, 30).map((i) => (
+                <span key={i.id} className="rounded-full border px-2 py-0.5 text-[11px]">
+                  {Object.values(i.options).join(" / ")} · ৳{i.price ?? finalPrice} · {i.stock ?? 0}
+                </span>
+              ))}
+            </div>
+          )}
+          {issues.length > 0 ? (
+            <ul className="space-y-1 rounded-md border border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive">
+              {issues.map((m) => <li key={m}>• {m}</li>)}
+            </ul>
+          ) : (
+            <p className="rounded-md bg-primary/10 p-3 text-xs text-primary">সব ঠিক আছে — নিচের বাটনে চাপ দিয়ে Publish করুন।</p>
+          )}
+          {T("visibility")}
+          <More title="Attributes / Specifications">{T("attributes")}</More>
+          <More title="Payment, Warranty ও Return">{T("purchase")}</More>
+          <More title="Related products">{T("related")}</More>
+          <More title="SEO">{T("seo")}</More>
+          <More title="AI Assist">{T("ai")}</More>
+        </div>
+      ),
+    },
+  ];
+
   const visibleTabs = isDigital
     ? [
         ...tabs.filter((t) => t.id === "general" || t.id === "media"),
@@ -1165,7 +1252,7 @@ export function ProductDialog({
       ]
     : isService || isSubscription
       ? tabs.filter((t) => t.id !== "inventory" && t.id !== "shipping" && t.id !== "variants")
-      : tabs;
+      : physicalSteps;
 
 
 
@@ -1220,6 +1307,18 @@ export function ProductDialog({
 }
 
 const selectCls = "flex h-9 w-full rounded-md border bg-background px-3 text-sm";
+
+function More({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <details className="group rounded-xl border">
+      <summary className="flex cursor-pointer list-none items-center justify-between p-3 text-sm font-medium">
+        {title}
+        <ChevronRight className="h-4 w-4 transition-transform group-open:rotate-90" />
+      </summary>
+      <div className="border-t p-3">{children}</div>
+    </details>
+  );
+}
 
 function Field({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
   return (
