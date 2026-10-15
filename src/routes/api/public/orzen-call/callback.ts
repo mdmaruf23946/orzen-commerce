@@ -160,7 +160,8 @@ export const Route = createFileRoute("/api/public/orzen-call/callback")({
         // (2) Order status change only — no call record.
 
         if (event === "order.status_changed") {
-          const follow = mapFollowup(body.status);
+          const st = body.status ?? body.call_status;
+          const follow = mapFollowup(st);
           if (follow) {
             const o = await findOrder();
             if (!o) return Response.json({ ok: false, error: "order not found" }, { status: 404 });
@@ -168,7 +169,7 @@ export const Route = createFileRoute("/api/public/orzen-call/callback")({
             await supabaseAdmin.from("orders").update({ followup_status: follow, status_source: "ai_call" } as never).eq("id", o.id).eq("store_id", store).eq("status", "pending");
             return Response.json({ ok: true, order_id: o.id, status: follow });
           }
-          const next = mapStatus(body.status);
+          const next = mapStatus(st);
           if (!next) return Response.json({ ok: false, error: "invalid status" }, { status: 400 });
           const o = await findOrder();
           if (!o) return Response.json({ ok: false, error: "order not found" }, { status: 404 });
@@ -177,6 +178,14 @@ export const Route = createFileRoute("/api/public/orzen-call/callback")({
           if (next === "confirmed") patch.confirmed_at = now;
           const { error } = await supabaseAdmin.from("orders").update(patch as never).eq("id", o.id).eq("store_id", store);
           if (error) return Response.json({ ok: false, error: "update failed" }, { status: 500 });
+          if (next !== "pending") {
+            await supabaseAdmin.from("calls").insert({
+              store_id: store, order_id: o.id, customer_name: body.customer_name ?? o.customer_name ?? null,
+              phone: body.phone ?? o.phone ?? "", provider: "orzen_call", direction: "outbound", call_type: "ai",
+              status: "completed", result: next === "confirmed" ? "order_confirmed" : "order_cancelled",
+              duration_sec: 0, note: body.note ?? "Orzen Call status update", started_at: now, ended_at: now,
+            } as never);
+          }
           return Response.json({ ok: true, order_id: o.id, status: next });
         }
 
