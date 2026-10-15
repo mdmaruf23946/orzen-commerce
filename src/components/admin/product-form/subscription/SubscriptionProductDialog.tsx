@@ -1195,3 +1195,15 @@ export function SubscriptionProductDialog({
     </Dialog>
   );
 }
+
+function Fold({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <details className="group rounded-xl border">
+      <summary className="cursor-pointer list-none p-3 text-sm font-medium">
+        <span className="mr-1 inline-block transition-transform group-open:rotate-90">›</span>
+        {title} <span className="text-xs text-muted-foreground">(ঐচ্ছিক)</span>
+      </summary>
+      <div className="border-t p-3">{children}</div>
+    </details>
+  );
+}
