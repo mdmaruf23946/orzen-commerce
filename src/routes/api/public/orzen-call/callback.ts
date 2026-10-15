@@ -22,6 +22,16 @@ const Body = z.object({
   note: z.string().max(1000).optional(),
   summary: z.string().max(4000).optional(),
   recording_url: z.string().url().max(2000).optional(),
+  address: z.string().max(500).optional(),
+  area: z.string().max(120).optional(),
+  delivery_charge: z.coerce.number().min(0).max(100000).optional(),
+  items: z.array(z.object({
+    product_id: z.string().uuid().optional(),
+    sku: z.string().max(80).optional(),
+    name: z.string().max(200).optional(),
+    qty: z.coerce.number().int().min(1).max(100).default(1),
+  })).max(20).optional(),
+
 });
 
 function mapFollowup(s: string | undefined): "no_response" | "on_hold" | null {
@@ -87,7 +97,58 @@ export const Route = createFileRoute("/api/public/orzen-call/callback")({
         };
         const now = new Date().toISOString();
 
+        // (1) New order placed over the phone by the AI agent.
+        if (event === "order.created" || event === "order.new") {
+          const name = (body.customer_name ?? "").trim();
+          const phone = (body.phone ?? "").replace(/[^\d+]/g, "");
+          const address = (body.address ?? "").trim();
+          const items = body.items ?? [];
+          if (!name || phone.length < 10 || address.length < 3 || !items.length)
+            return Response.json({ ok: false, error: "customer_name, phone, address and items are required" }, { status: 400 });
+          // Resolve each item to a store product (id, sku, or name).
+          const resolved: { product_id: string; name: string; price: number; qty: number }[] = [];
+          for (const it of items) {
+            let q = supabaseAdmin.from("products").select("id,name,price,status").eq("store_id", store);
+            if (it.product_id) q = q.eq("id", it.product_id);
+            else if (it.sku) q = q.eq("sku", it.sku);
+            else if (it.name) q = q.ilike("name", `%${it.name.replace(/[%_]/g, "")}%`);
+            else return Response.json({ ok: false, error: "item needs product_id, sku or name" }, { status: 400 });
+            const { data: rows } = await q.limit(1);
+            const p = (rows ?? [])[0] as any;
+            if (!p) return Response.json({ ok: false, error: `product not found: ${it.product_id ?? it.sku ?? it.name}` }, { status: 404 });
+            const price = Number(p.price) || 0;
+            resolved.push({ product_id: p.id, name: p.name, price, qty: it.qty });
+          }
+          const itemsTotal = resolved.reduce((a, r) => a + r.price * r.qty, 0);
+          const delivery = Number(body.delivery_charge ?? 0) || 0;
+          const idem = `orzen-call:${body.call_id ?? `${phone}:${resolved.map((r) => `${r.product_id}x${r.qty}`).join(",")}`}`.padEnd(16, "0");
+          const { data: r, error } = await supabaseAdmin.rpc("create_chat_order" as any, {
+            _store_id: store,
+            _idem_key: idem,
+            _order: {
+              customer_name: name, phone, address, area: body.area ?? "",
+              payment_method: "cod", subtotal: itemsTotal + delivery, delivery_amount: delivery,
+              discount_amount: 0, notes: ["Phone order (AI call)", body.note].filter(Boolean).join(" • "),
+            },
+            _items: resolved,
+          } as any);
+          if (error) {
+            const out = /out_of_stock/.test(error.message);
+            return Response.json({ ok: false, error: out ? "out of stock" : "could not create order" }, { status: out ? 409 : 500 });
+          }
+          const res = r as any;
+          if (!res.existing) {
+            await supabaseAdmin.from("orders").update({ source: "phone_call", status_source: "ai_call" } as never).eq("id", res.id);
+            if (body.call_id) {
+              await supabaseAdmin.from("calls").update({ order_id: res.id } as never)
+                .eq("provider_call_sid", `orzen:${store}:${body.call_id}`);
+            }
+          }
+          return Response.json({ ok: true, order_id: res.id, invoice_no: res.invoice_no, total: itemsTotal + delivery, duplicate: !!res.existing });
+        }
+
         // (2) Order status change only — no call record.
+
         if (event === "order.status_changed") {
           const follow = mapFollowup(body.status);
           if (follow) {
