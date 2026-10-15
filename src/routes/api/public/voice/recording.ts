@@ -16,6 +16,13 @@ async function handle(request: Request) {
   const { data: call } = await (supabaseAdmin as any).from("calls")
     .select("store_id,recording_ref").eq("id", q.data.c).maybeSingle();
   const ref: string | undefined = call?.recording_ref;
+  if (ref?.startsWith("storage:")) {
+    const path = ref.slice(8);
+    if (!path.startsWith(`${call.store_id}/`)) return new Response("Not found", { status: 404 });
+    const { data, error } = await supabaseAdmin.storage.from("call-recordings").download(path);
+    if (error || !data) return new Response("Not found", { status: 404 });
+    return new Response(data, { headers: { "Content-Type": data.type || "audio/mpeg", "Cache-Control": "private, no-store" } });
+  }
   if (!ref || !/^https:\/\//i.test(ref)) return new Response("Not found", { status: 404 });
 
   const headers: Record<string, string> = { "User-Agent": "ORZEN-Recording/1.0", Accept: "audio/*,*/*" };

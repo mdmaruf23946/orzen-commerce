@@ -139,10 +139,25 @@ export const Route = createFileRoute("/api/public/orzen-call/callback")({
         if (conversation) callRow.conversation_text = conversation;
         // Only https recordings are kept; they are streamed later through a signed, store-scoped link.
         if (body.recording_url && /^https:\/\//i.test(body.recording_url)) callRow.recording_ref = body.recording_url;
-        const { error: logErr } = callRow.provider_call_sid
-          ? await supabaseAdmin.from("calls").upsert(callRow as never, { onConflict: "provider_call_sid" })
-          : await supabaseAdmin.from("calls").insert(callRow as never);
+        const { data: saved, error: logErr } = callRow.provider_call_sid
+          ? await supabaseAdmin.from("calls").upsert(callRow as never, { onConflict: "provider_call_sid" }).select("id").maybeSingle()
+          : await supabaseAdmin.from("calls").insert(callRow as never).select("id").maybeSingle();
         if (logErr) console.error("[orzen-call] log failed", logErr.message);
+        // Keep a permanent private copy so the recording survives even if the provider deletes it.
+        if (saved && callRow.recording_ref) {
+          try {
+            const res = await fetch(String(callRow.recording_ref), { headers: { "User-Agent": "ORZEN-Recording/1.0" } });
+            if (res.ok) {
+              const buf = await res.arrayBuffer();
+              if (buf.byteLength > 0 && buf.byteLength <= 50 * 1024 * 1024) {
+                const path = `${store}/${(saved as any).id}.mp3`;
+                const { error: upErr } = await supabaseAdmin.storage.from("call-recordings")
+                  .upload(path, buf, { contentType: res.headers.get("content-type") || "audio/mpeg", upsert: true });
+                if (!upErr) await supabaseAdmin.from("calls").update({ recording_ref: `storage:${path}` } as never).eq("id", (saved as any).id);
+              }
+            }
+          } catch (e) { console.error("[orzen-call] archive failed", (e as Error).message); }
+        }
 
         if (o && !decided && o.status === "pending") {
           // Not reached / asked to call later → No Response / On Hold (never Confirmed without explicit consent).
