@@ -391,6 +391,10 @@ function Guide({ callback }: { callback: string | null }) {
       </ol>
       <p className="font-semibold">Callback example (sent by Orzen Call)</p>
       <pre className="overflow-x-auto rounded-lg bg-muted p-3 text-xs">{sample}</pre>
+      <p className="font-semibold">Phone order (customer orders during a call)</p>
+      <pre className="overflow-x-auto rounded-lg bg-muted p-3 text-xs">{JSON.stringify({ event: "order.created", call_id: "abc123", customer_name: "Rahim", phone: "01712345678", address: "House 5, Mirpur 10, Dhaka", area: "Dhaka", delivery_charge: 60, items: [{ name: "Panjabi", qty: 1 }] }, null, 2)}</pre>
+      <p className="text-xs text-muted-foreground">Items can use <b>product_id</b>, <b>sku</b> or <b>name</b>. The reply contains <b>invoice_no</b> so the AI can tell the customer. The same call_id never creates a second order.</p>
+
       <p className="text-xs text-muted-foreground">
         <b>status</b>: confirmed / cancelled (or anything else to only log the call). <b>call_status</b>: answered, no_answer, busy, failed.
         Every request we send carries an <code className="rounded bg-muted px-1">X-Orzen-Signature</code> (HMAC-SHA256 of the body using your private key).
