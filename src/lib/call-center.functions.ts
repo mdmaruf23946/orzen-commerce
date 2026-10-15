@@ -303,10 +303,9 @@ export const updateCallOutcome = createServerFn({ method: "POST" })
 export const deleteCall = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { callId: string }) => z.object({ callId: z.string().uuid() }).parse(d))
-  .handler(async ({ data, context }) => {
-    const storeId = await storeIdOrThrow(context.supabase, context.userId);
-    await context.supabase.from("calls").delete().eq("id", data.callId).eq("store_id", storeId);
-    return { ok: true };
+  .handler(async () => {
+    // Call history is permanent by store policy; deletion is blocked here and in the database.
+    throw new Error("Call history cannot be deleted");
   });
 
 export const listCallRecordings = createServerFn({ method: "GET" })
@@ -351,7 +350,7 @@ export const getOrderCallDetails = createServerFn({ method: "GET" })
       id: r.id as string, source: r.provider as string, status: r.status as string, result: r.result as string | null,
       duration_sec: Number(r.duration_sec ?? 0), summary: (r.note ?? null) as string | null, created_at: r.created_at as string,
       transcript: toTurns(r.transcript, r.conversation_text),
-      play_url: r.recording_ref && /^https:\/\//i.test(r.recording_ref) ? signedRecordingPath(r.id) : null,
+      play_url: r.recording_ref && /^(https:\/\/|storage:)/i.test(r.recording_ref) ? signedRecordingPath(r.id) : null,
     }));
     const aiRows = (ai ?? []) as any[];
     if (aiRows.length) {

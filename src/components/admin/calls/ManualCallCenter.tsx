@@ -149,7 +149,7 @@ function useDelete() {
 }
 
 function CallTableRow({ call }: { call: CallRow }) {
-  const remove = useDelete();
+
   return (
     <tr className="hover:bg-muted/30">
       <td className="px-3 py-2">
@@ -180,14 +180,6 @@ function CallTableRow({ call }: { call: CallRow }) {
             variant="outline"
             label="Call Again"
           />
-          <button
-            type="button"
-            onClick={() => void remove(call.id)}
-            className="inline-flex h-8 w-8 items-center justify-center rounded-lg border text-muted-foreground hover:bg-muted hover:text-destructive"
-            aria-label="Delete call"
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-          </button>
         </div>
       </td>
     </tr>
