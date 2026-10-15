@@ -269,6 +269,7 @@ export function OrderDetailsDrawer({ open, onOpenChange, orderId }: Props) {
                           <div className="flex items-center gap-1.5 text-xs text-muted-foreground"><Globe className="h-3.5 w-3.5" /> Source: <span className="font-medium capitalize text-foreground">{order.source ?? order.order_source ?? "Website"}</span></div>
                         </div>
                       </div>
+                      <div className="col-span-2 flex items-start justify-between gap-4 border-t pt-3 sm:col-span-2 sm:grid sm:grid-cols-2 sm:gap-0 sm:divide-x sm:border-t-0 sm:pt-0">
                       <div className="space-y-2 sm:pl-4">
                         <div>
                           <div className="text-[11px] text-muted-foreground">Payment Status</div>
@@ -283,6 +284,7 @@ export function OrderDetailsDrawer({ open, onOpenChange, orderId }: Props) {
                         <div className="text-[11px] text-muted-foreground">Total Amount</div>
                         <div className="text-xl font-bold sm:text-2xl tracking-tight">৳ {total.toLocaleString("en-BD")}</div>
                         <div className="text-xs text-muted-foreground">({itemCount} items)</div>
+                      </div>
                       </div>
                     </div>
                 </Card>
