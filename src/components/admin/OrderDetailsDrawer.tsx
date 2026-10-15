@@ -573,15 +573,27 @@ function CustomerStats({ phone, enabled }: { phone: string; enabled: boolean }) 
   if (!data) return null;
   const rate = data.total ? Math.round((data.delivered / data.total) * 100) : 0;
   return (
-    <div className="mt-4 grid min-w-0 grid-cols-2 gap-3 overflow-hidden rounded-xl border p-3 sm:grid-cols-4 lg:grid-cols-2 2xl:grid-cols-4">
-      <Stat label="Total Orders" value={data.total} />
-      <Stat label="Delivered" value={data.delivered} tone="text-primary" />
-      <Stat label="Cancelled" value={data.cancelled} tone="text-destructive" />
-      <div className="flex min-w-0 items-center justify-between gap-1.5 overflow-hidden">
-        <div className="min-w-0"><Stat label="Success Rate" value={`${rate}%`} tone="text-primary" /></div>
-        <Ring pct={rate} />
+    <div className="mt-4 min-w-0 overflow-hidden rounded-xl border">
+      <div className="grid grid-cols-4 divide-x">
+        {([
+          ["Orders", data.total, ""],
+          ["Delivered", data.delivered, "text-primary"],
+          ["Cancelled", data.cancelled, "text-destructive"],
+        ] as const).map(([l, v, t]) => (
+          <div key={l} className="min-w-0 px-2 py-2.5 text-center">
+            <div className="truncate text-[11px] text-muted-foreground">{l}</div>
+            <div className={`text-lg font-bold leading-tight ${t}`}>{v}</div>
+          </div>
+        ))}
+        <div className="min-w-0 px-2 py-2.5 text-center">
+          <div className="truncate text-[11px] text-muted-foreground">Success</div>
+          <div className="flex items-center justify-center gap-1">
+            <Ring pct={rate} />
+            <span className="text-lg font-bold leading-tight text-primary">{rate}%</span>
+          </div>
+        </div>
       </div>
-      <div className="col-span-2 border-t pt-2 text-[11px] text-muted-foreground sm:col-span-4 lg:col-span-2 2xl:col-span-4">
+      <div className="border-t bg-muted/40 px-3 py-2 text-[11px] text-muted-foreground">
         Lifetime value ৳{Number(data.lifetime).toLocaleString("en-BD")} · since {new Date(data.since).toLocaleDateString()}
       </div>
     </div>
@@ -593,7 +605,7 @@ function Stat({ label, value, tone = "" }: { label: string; value: any; tone?: s
 function Ring({ pct }: { pct: number }) {
   const r = 14, c = 2 * Math.PI * r;
   return (
-    <svg viewBox="0 0 36 36" className="h-8 w-8 shrink-0 -rotate-90">
+    <svg viewBox="0 0 36 36" className="h-4 w-4 shrink-0 -rotate-90">
       <circle cx="18" cy="18" r={r} fill="none" strokeWidth="4" className="stroke-muted" />
       <circle cx="18" cy="18" r={r} fill="none" strokeWidth="4" strokeLinecap="round" className="stroke-primary" strokeDasharray={c} strokeDashoffset={c - (c * pct) / 100} />
     </svg>
