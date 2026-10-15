@@ -417,6 +417,12 @@ export const cancelParcel = createServerFn({ method: "POST" })
       .eq("id", parcel.id)
       .eq("store_id", store.id);
     await addEvent(supabase, store.id, parcel.id, "cancelled", data.reason ?? message, "manual");
+    if (parcel.order_id) {
+      try {
+        const { pushOrzenOrder } = await import("@/lib/orzen-sync.server");
+        await pushOrzenOrder(store.id, parcel.order_id, "order.courier_updated", { courier: parcel.courier_key, courier_status: "cancelled", reason: data.reason ?? null });
+      } catch { /* non-fatal */ }
+    }
     return { ok: true, message };
   });
 
@@ -913,6 +919,12 @@ export async function dispatchParcel(
         .eq("id", parcel.order_id)
         .eq("store_id", store.id);
     }
+    if (parcel.order_id) {
+      try {
+        const { pushOrzenOrder } = await import("@/lib/orzen-sync.server");
+        await pushOrzenOrder(store.id, parcel.order_id, "order.courier_updated", { courier: key, courier_status: res.status, tracking_code: trackingCode, tracking_url: buildTrackingUrl(key, trackingCode, parcel.recipient_phone), courier_event: "sent_to_courier" });
+      } catch { /* non-fatal */ }
+    }
     return { ok: true, id: parcel.id, trackingCode, message: "Parcel created" };
   } catch (e) {
     await writeLogs(supabase, store.id, parcel.id, key, ctx.logs);
@@ -964,6 +976,12 @@ export async function syncOne(supabase: any, store: { id: string; couriers: any 
     if (changed) {
       await addEvent(supabase, store.id, parcel.id, res.status, res.message ?? null, "api");
       await mirrorOrder(supabase, store.id, { ...parcel, status: res.status });
+      if (parcel.order_id) {
+        try {
+          const { pushOrzenOrder } = await import("@/lib/orzen-sync.server");
+          await pushOrzenOrder(store.id, parcel.order_id, "order.courier_updated", { courier: parcel.courier_key, courier_status: res.status, previous_courier_status: parcel.status, tracking_code: parcel.tracking_code ?? null, message: res.message ?? null });
+        } catch { /* non-fatal */ }
+      }
     }
     return changed;
   } catch (e) {

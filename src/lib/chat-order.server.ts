@@ -57,5 +57,11 @@ export async function createChatOrder(
     return { ok: false, error: m || "insert_failed" };
   }
   const r = data as { id: string; invoice_no: string | null; existing: boolean };
+  if (!r.existing) {
+    try {
+      const { pushOrzenOrder } = await import("@/lib/orzen-sync.server");
+      await pushOrzenOrder(storeId, r.id, "order.created", { source: "chat" });
+    } catch { /* non-fatal */ }
+  }
   return { ok: true, id: r.id, invoice_no: r.invoice_no, existing: !!r.existing };
 }

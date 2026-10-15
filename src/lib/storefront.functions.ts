@@ -1493,6 +1493,11 @@ export const placeOrder = createServerFn({ method: "POST" })
       }
     }
 
+    try {
+      const { pushOrzenOrder } = await import("@/lib/orzen-sync.server");
+      await pushOrzenOrder(data.storeId, order.id, "order.created", { source: "website" });
+    } catch { /* non-fatal */ }
+
     return { orderId: order.id, warning: warned ? DUPLICATE_MESSAGE : null };
   });
 
