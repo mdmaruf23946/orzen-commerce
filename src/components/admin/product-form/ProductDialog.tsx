@@ -511,7 +511,13 @@ export function ProductDialog({
         cost_price: costPrice === "" ? 0 : Number(costPrice),
         sku: sku || null,
         low_stock_threshold: Number(lowThreshold),
-        stock: isStockless ? 0 : Number(stock),
+        stock: isStockless
+          ? 0
+          : variants.items.some((i) => !excludedVariants.includes(i.id))
+            ? variants.items
+                .filter((i) => !excludedVariants.includes(i.id))
+                .reduce((s, i) => s + Number(i.stock ?? 0), 0)
+            : Number(stock),
         status,
         primary_image_url: image,
         gallery,
@@ -522,7 +528,12 @@ export function ProductDialog({
         shipping_info: shippingInfo || null,
         is_featured: isFeatured,
         specifications: specs.filter((s) => s.key.trim()),
-        variants,
+        variants: variants.options.length
+          ? {
+              options: variants.options.filter((o) => o.name.trim() && o.values.length),
+              items: variants.items.filter((i) => !excludedVariants.includes(i.id)),
+            }
+          : variants,
         related_product_ids: related.related ?? [],
         product_type: productType,
         meta,
@@ -885,6 +896,10 @@ export function ProductDialog({
         <div className="space-y-4">
           <div className="grid gap-3 sm:grid-cols-4">
             <Field label="Weight (kg)"><Input type="number" min={0} step="0.01" value={shipping.weight ?? ""} onChange={(e) => setShipping({ ...shipping, weight: Number(e.target.value) || undefined })} /></Field>
+            <Field label="Net weight"><Input value={shipping.net_weight ?? ""} placeholder="e.g. 500 g" onChange={(e) => setShipping({ ...shipping, net_weight: e.target.value || undefined })} /></Field>
+            <Field label="Volume"><Input value={shipping.volume ?? ""} placeholder="e.g. 250 ml" onChange={(e) => setShipping({ ...shipping, volume: e.target.value || undefined })} /></Field>
+            <Field label="Pack size"><Input value={shipping.pack_size ?? ""} placeholder="e.g. 12 pcs" onChange={(e) => setShipping({ ...shipping, pack_size: e.target.value || undefined })} /></Field>
+            <Field label="Unit"><Input value={shipping.unit ?? ""} placeholder="pcs / kg / litre" onChange={(e) => setShipping({ ...shipping, unit: e.target.value || undefined })} /></Field>
             <Field label="Length (cm)"><Input type="number" min={0} step="0.1" value={shipping.l ?? ""} onChange={(e) => setShipping({ ...shipping, l: Number(e.target.value) || undefined })} /></Field>
             <Field label="Width (cm)"><Input type="number" min={0} step="0.1" value={shipping.w ?? ""} onChange={(e) => setShipping({ ...shipping, w: Number(e.target.value) || undefined })} /></Field>
             <Field label="Height (cm)"><Input type="number" min={0} step="0.1" value={shipping.h ?? ""} onChange={(e) => setShipping({ ...shipping, h: Number(e.target.value) || undefined })} /></Field>
@@ -1292,6 +1307,18 @@ export function ProductDialog({
 }
 
 const selectCls = "flex h-9 w-full rounded-md border bg-background px-3 text-sm";
+
+function More({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <details className="group rounded-xl border">
+      <summary className="flex cursor-pointer list-none items-center justify-between p-3 text-sm font-medium">
+        {title}
+        <ChevronRight className="h-4 w-4 transition-transform group-open:rotate-90" />
+      </summary>
+      <div className="border-t p-3">{children}</div>
+    </details>
+  );
+}
 
 function Field({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
   return (
