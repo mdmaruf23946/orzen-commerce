@@ -534,6 +534,12 @@ export const updateOrderStatus = createServerFn({ method: "POST" })
     if (!cur) throw new Error("Order not found");
     if ((cur as any).status === "cancelled" && data.status !== "cancelled")
       throw new Error("বাতিল (Cancelled) অর্ডার আর আগের অবস্থায় ফেরানো যায় না।");
+    if (["delivered", "returned", "shipped"].includes((cur as any).status))
+      throw new Error("এই অর্ডারের স্ট্যাটাস আর পরিবর্তন করা যায় না।");
+    if ((cur as any).status === "confirmed" && !["processing", "cancelled", "confirmed"].includes(data.status))
+      throw new Error("Confirmed অর্ডার শুধু Processing বা Cancelled করা যায়।");
+    if ((cur as any).status === "processing" && !["confirmed", "cancelled", "processing"].includes(data.status))
+      throw new Error("Processing অর্ডার শুধু Confirmed বা Cancelled করা যায়।");
     if (isFollow && (cur as any).status !== "pending")
       throw new Error("No Response / On Hold / Incomplete শুধু Pending অর্ডারে দেওয়া যায়।");
     if (data.status === "processing" && (cur as any).status !== "confirmed" && (cur as any).status !== "processing")
