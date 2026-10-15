@@ -163,7 +163,7 @@ const ORDER_LABEL: Record<string, string> = {
   confirmed: "Confirmed", processing: "Processing", delivered: "Delivered", cancelled: "Cancelled",
 };
 /** Statuses the merchant may pick next from the current one (backend enforces the same). */
-function nextStatuses(cur: string): string[] {
+export function nextStatuses(cur: string): string[] {
   if (cur === "pending" || cur === "no_response" || cur === "on_hold" || cur === "incomplete")
     return ["pending", "no_response", "on_hold", "incomplete", "confirmed", "cancelled"].filter((s) => s !== cur);
   if (cur === "confirmed") return ["processing", "cancelled"];

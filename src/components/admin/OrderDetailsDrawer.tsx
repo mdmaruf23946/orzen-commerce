@@ -231,21 +231,23 @@ export function OrderDetailsDrawer({ open, onOpenChange, orderId }: Props) {
                   <Link to="/admin/invoice/$orderId" params={{ orderId }} target="_blank" className="inline-flex h-9 items-center gap-1.5 rounded-lg border bg-card px-3 text-sm font-medium shadow-sm hover:bg-muted"><Printer className="h-4 w-4" /> Print</Link>
                   <Link to="/admin/invoice/$orderId" params={{ orderId }} target="_blank" className="inline-flex h-9 items-center gap-1.5 rounded-lg border bg-card px-3 text-sm font-medium shadow-sm hover:bg-muted"><Download className="h-4 w-4" /> Invoice</Link>
                   <button type="button" onClick={() => setTab("tracking")} className="inline-flex h-9 items-center gap-1.5 rounded-lg border bg-card px-3 text-sm font-medium shadow-sm hover:bg-muted"><Truck className="h-4 w-4" /> Track Order</button>
-                  {!["cancelled","delivered","returned"].includes(order.status) && !order.courier_tracking_id && (
-                    <button type="button" onClick={() => { if (confirm("এই অর্ডারটি বাতিল করবেন?")) changeStatus("cancelled"); }} className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-destructive/30 bg-card px-3 text-sm font-medium text-destructive shadow-sm hover:bg-destructive/10">Cancel Order</button>
-                  )}
-                  {order.status !== "cancelled" && (
+                  {(() => {
+                    const cur = order.status === "pending" && order.followup_status ? order.followup_status : order.status;
+                    const next = order.courier_tracking_id ? [] : nextStatuses(cur);
+                    if (next.length === 0) return null;
+                    return (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button size="sm" className="h-9 gap-1.5"><RefreshCw className="h-4 w-4" /> Update Status <ChevronDown className="h-4 w-4" /></Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      {STATUS_OPTIONS.map((s) => (
-                        <DropdownMenuItem key={s} disabled={s === order.status} onClick={() => changeStatus(s)} className="capitalize">{s.replace(/_/g, " ")}</DropdownMenuItem>
+                      {next.map((s) => (
+                        <DropdownMenuItem key={s} onClick={() => { if (s !== "cancelled" || confirm("এই অর্ডারটি বাতিল করবেন?")) changeStatus(s); }} className="capitalize">{s.replace(/_/g, " ")}</DropdownMenuItem>
                       ))}
                     </DropdownMenuContent>
                   </DropdownMenu>
-                  )}
+                    );
+                  })()}
                 </div>
               )}
             </div>
