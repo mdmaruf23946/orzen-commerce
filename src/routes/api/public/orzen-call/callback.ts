@@ -42,10 +42,10 @@ function mapFollowup(s: string | undefined): "no_response" | "on_hold" | null {
 }
 
 function mapStatus(s: string | undefined): "confirmed" | "cancelled" | "pending" | null {
-  const v = (s ?? "").toLowerCase();
-  if (["confirmed", "confirm", "verified", "yes"].includes(v)) return "confirmed";
-  if (["cancelled", "canceled", "cancel", "rejected", "no"].includes(v)) return "cancelled";
-  if (v === "pending") return "pending";
+  const v = (s ?? "").toLowerCase().trim().replace(/[\s-]/g, "_");
+  if (["confirmed", "confirm", "verified", "yes", "order_confirmed", "কনফার্মড", "কনফার্ম", "নিশ্চিত"].includes(v)) return "confirmed";
+  if (["cancelled", "canceled", "cancel", "rejected", "no", "order_cancelled", "বাতিল"].includes(v)) return "cancelled";
+  if (["pending", "পেন্ডিং"].includes(v)) return "pending";
   return null;
 }
 
@@ -89,11 +89,21 @@ export const Route = createFileRoute("/api/public/orzen-call/callback")({
 
         const event = (body.event ?? "").toLowerCase();
         const findOrder = async () => {
-          if (!body.order_id && !body.invoice_no) return null;
-          let q = supabaseAdmin.from("orders").select("id,status,customer_name,phone").eq("store_id", store);
-          q = body.order_id ? q.eq("id", body.order_id) : q.eq("invoice_no", body.invoice_no!);
-          const { data } = await q.maybeSingle();
-          return data as any;
+          const sel = "id,status,customer_name,phone";
+          if (body.order_id || body.invoice_no) {
+            let q = supabaseAdmin.from("orders").select(sel).eq("store_id", store);
+            q = body.order_id ? q.eq("id", body.order_id) : q.eq("invoice_no", body.invoice_no!);
+            const { data } = await q.maybeSingle();
+            if (data) return data as any;
+          }
+          // Fallback: latest order of this phone (prefer pending).
+          const digits = (body.phone ?? "").replace(/\D/g, "");
+          if (digits.length >= 10) {
+            const { data: rows } = await supabaseAdmin.from("orders").select(sel).eq("store_id", store)
+              .ilike("phone", `%${digits.slice(-10)}`).order("created_at", { ascending: false }).limit(5);
+            if (rows?.length) return ((rows as any[]).find((r) => r.status === "pending") ?? rows[0]) as any;
+          }
+          return null;
         };
         const now = new Date().toISOString();
 
@@ -150,7 +160,8 @@ export const Route = createFileRoute("/api/public/orzen-call/callback")({
         // (2) Order status change only — no call record.
 
         if (event === "order.status_changed") {
-          const follow = mapFollowup(body.status);
+          const st = body.status ?? body.call_status;
+          const follow = mapFollowup(st);
           if (follow) {
             const o = await findOrder();
             if (!o) return Response.json({ ok: false, error: "order not found" }, { status: 404 });
@@ -158,7 +169,7 @@ export const Route = createFileRoute("/api/public/orzen-call/callback")({
             await supabaseAdmin.from("orders").update({ followup_status: follow, status_source: "ai_call" } as never).eq("id", o.id).eq("store_id", store).eq("status", "pending");
             return Response.json({ ok: true, order_id: o.id, status: follow });
           }
-          const next = mapStatus(body.status);
+          const next = mapStatus(st);
           if (!next) return Response.json({ ok: false, error: "invalid status" }, { status: 400 });
           const o = await findOrder();
           if (!o) return Response.json({ ok: false, error: "order not found" }, { status: 404 });
@@ -167,6 +178,14 @@ export const Route = createFileRoute("/api/public/orzen-call/callback")({
           if (next === "confirmed") patch.confirmed_at = now;
           const { error } = await supabaseAdmin.from("orders").update(patch as never).eq("id", o.id).eq("store_id", store);
           if (error) return Response.json({ ok: false, error: "update failed" }, { status: 500 });
+          if (next !== "pending") {
+            await supabaseAdmin.from("calls").insert({
+              store_id: store, order_id: o.id, customer_name: body.customer_name ?? o.customer_name ?? null,
+              phone: body.phone ?? o.phone ?? "", provider: "orzen_call", direction: "outbound", call_type: "ai",
+              status: "completed", result: next === "confirmed" ? "order_confirmed" : "order_cancelled",
+              duration_sec: 0, note: body.note ?? "Orzen Call status update", started_at: now, ended_at: now,
+            } as never);
+          }
           return Response.json({ ok: true, order_id: o.id, status: next });
         }
 
