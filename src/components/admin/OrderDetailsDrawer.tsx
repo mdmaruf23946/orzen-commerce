@@ -573,15 +573,15 @@ function CustomerStats({ phone, enabled }: { phone: string; enabled: boolean }) 
   if (!data) return null;
   const rate = data.total ? Math.round((data.delivered / data.total) * 100) : 0;
   return (
-    <div className="mt-4 grid grid-cols-2 gap-3 rounded-xl border p-3 sm:grid-cols-4 sm:divide-x">
+    <div className="mt-4 grid min-w-0 grid-cols-2 gap-3 overflow-hidden rounded-xl border p-3 sm:grid-cols-4 lg:grid-cols-2 2xl:grid-cols-4">
       <Stat label="Total Orders" value={data.total} />
       <Stat label="Delivered" value={data.delivered} tone="text-primary" />
       <Stat label="Cancelled" value={data.cancelled} tone="text-destructive" />
-      <div className="flex items-center justify-between gap-2 sm:pl-3">
-        <Stat label="Success Rate" value={`${rate}%`} tone="text-primary" />
+      <div className="flex min-w-0 items-center justify-between gap-1.5 overflow-hidden">
+        <div className="min-w-0"><Stat label="Success Rate" value={`${rate}%`} tone="text-primary" /></div>
         <Ring pct={rate} />
       </div>
-      <div className="col-span-2 border-t pt-2 text-[11px] text-muted-foreground sm:col-span-4">
+      <div className="col-span-2 border-t pt-2 text-[11px] text-muted-foreground sm:col-span-4 lg:col-span-2 2xl:col-span-4">
         Lifetime value ৳{Number(data.lifetime).toLocaleString("en-BD")} · since {new Date(data.since).toLocaleDateString()}
       </div>
     </div>
@@ -593,7 +593,7 @@ function Stat({ label, value, tone = "" }: { label: string; value: any; tone?: s
 function Ring({ pct }: { pct: number }) {
   const r = 14, c = 2 * Math.PI * r;
   return (
-    <svg viewBox="0 0 36 36" className="h-9 w-9 shrink-0 -rotate-90">
+    <svg viewBox="0 0 36 36" className="h-8 w-8 shrink-0 -rotate-90">
       <circle cx="18" cy="18" r={r} fill="none" strokeWidth="4" className="stroke-muted" />
       <circle cx="18" cy="18" r={r} fill="none" strokeWidth="4" strokeLinecap="round" className="stroke-primary" strokeDasharray={c} strokeDashoffset={c - (c * pct) / 100} />
     </svg>
