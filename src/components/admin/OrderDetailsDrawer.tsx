@@ -255,8 +255,8 @@ export function OrderDetailsDrawer({ open, onOpenChange, orderId }: Props) {
             ) : (
               <div className="space-y-4 lg:space-y-5">
                 <Card className="relative p-4 sm:p-5">
-                    <div className="grid gap-4 sm:grid-cols-[minmax(0,1.6fr)_1fr_1fr] sm:divide-x">
-                      <div className="flex gap-3 pr-24 sm:pr-0">
+                    <div className="grid grid-cols-2 gap-4 sm:grid-cols-[minmax(0,1.6fr)_1fr_1fr] sm:divide-x">
+                      <div className="col-span-2 flex gap-3 sm:col-span-1">
                         <div className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-primary text-primary-foreground shadow-sm">
                           <ShoppingBag className="h-6 w-6" />
                         </div>
@@ -279,7 +279,7 @@ export function OrderDetailsDrawer({ open, onOpenChange, orderId }: Props) {
                           <div className="text-sm font-medium">{payLabel(order.payment_method)}</div>
                         </div>
                       </div>
-                      <div className="absolute right-4 top-4 text-right sm:static sm:pl-4 sm:text-left">
+                      <div className="text-right sm:pl-4 sm:text-left">
                         <div className="text-[11px] text-muted-foreground">Total Amount</div>
                         <div className="text-xl font-bold sm:text-2xl tracking-tight">৳ {total.toLocaleString("en-BD")}</div>
                         <div className="text-xs text-muted-foreground">({itemCount} items)</div>
