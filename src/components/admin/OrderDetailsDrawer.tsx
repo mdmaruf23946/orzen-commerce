@@ -159,7 +159,7 @@ export function OrderDetailsDrawer({ open, onOpenChange, orderId }: Props) {
   const subtotal = items.length ? itemsTotal : Math.max(total - delivery + discount, 0);
 
   const statusFn = useServerFn(updateOrderStatus);
-  const [tab, setTab] = useState<"timeline" | "tracking" | "notes">("timeline");
+  const [, setTab] = useState<"timeline" | "tracking" | "notes">("timeline");
   async function changeStatus(s: string) {
     try {
       await statusFn({ data: { id: orderId, status: s as any } });
@@ -185,36 +185,32 @@ export function OrderDetailsDrawer({ open, onOpenChange, orderId }: Props) {
         </>
       )}
       <Sheet open={open} onOpenChange={onOpenChange}>
-        <SheetContent side="right" className="w-full overflow-y-auto bg-muted/40 p-0 sm:max-w-full lg:max-w-[1280px]">
+        <SheetContent side="right" className="w-full overflow-y-auto bg-muted p-0 sm:max-w-full lg:max-w-[1280px]">
           <SheetHeader className="sr-only"><SheetTitle>Order Details</SheetTitle></SheetHeader>
 
           <div className="space-y-4 p-3 sm:p-5 lg:p-6">
-            {/* Page header */}
             <div className="flex flex-col gap-3 pr-8 sm:flex-row sm:items-end sm:justify-between">
               <div>
                 <button type="button" onClick={() => onOpenChange(false)} className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
                   <ArrowLeft className="h-3.5 w-3.5" /> Back to Orders
                 </button>
                 <h2 className="mt-1 text-xl font-bold tracking-tight sm:text-2xl">Order Details</h2>
-                <p className="text-xs text-muted-foreground sm:text-sm">View complete information about this order, products, customer and delivery status.</p>
               </div>
               {order && (
                 <div className="flex flex-wrap gap-2">
-                  <Link to="/admin/invoice/$orderId" params={{ orderId }} target="_blank" className="inline-flex h-9 items-center gap-1.5 rounded-lg border bg-card px-3 text-sm font-medium shadow-sm hover:bg-muted">
-                    <Printer className="h-4 w-4" /> Print
-                  </Link>
-                  <Link to="/admin/invoice/$orderId" params={{ orderId }} target="_blank" className="inline-flex h-9 items-center gap-1.5 rounded-lg border bg-card px-3 text-sm font-medium shadow-sm hover:bg-muted">
-                    <Download className="h-4 w-4" /> Download Invoice
-                  </Link>
+                  <Link to="/admin/invoice/$orderId" params={{ orderId }} target="_blank" className="inline-flex h-9 items-center gap-1.5 rounded-lg border bg-card px-3 text-sm font-medium shadow-sm hover:bg-muted"><Printer className="h-4 w-4" /> Print</Link>
+                  <Link to="/admin/invoice/$orderId" params={{ orderId }} target="_blank" className="inline-flex h-9 items-center gap-1.5 rounded-lg border bg-card px-3 text-sm font-medium shadow-sm hover:bg-muted"><Download className="h-4 w-4" /> Invoice</Link>
+                  <button type="button" onClick={() => setTab("tracking")} className="inline-flex h-9 items-center gap-1.5 rounded-lg border bg-card px-3 text-sm font-medium shadow-sm hover:bg-muted"><Truck className="h-4 w-4" /> Track Order</button>
+                  {!["cancelled","delivered","returned"].includes(order.status) && !order.courier_tracking_id && (
+                    <button type="button" onClick={() => { if (confirm("এই অর্ডারটি বাতিল করবেন?")) changeStatus("cancelled"); }} className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-destructive/30 bg-card px-3 text-sm font-medium text-destructive shadow-sm hover:bg-destructive/10">Cancel Order</button>
+                  )}
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button size="sm" className="h-9 gap-1.5"><RefreshCw className="h-4 w-4" /> Update Status <ChevronDown className="h-4 w-4" /></Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       {STATUS_OPTIONS.map((s) => (
-                        <DropdownMenuItem key={s} disabled={s === order.status} onClick={() => changeStatus(s)} className="capitalize">
-                          {s.replace(/_/g, " ")}
-                        </DropdownMenuItem>
+                        <DropdownMenuItem key={s} disabled={s === order.status} onClick={() => changeStatus(s)} className="capitalize">{s.replace(/_/g, " ")}</DropdownMenuItem>
                       ))}
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -225,12 +221,9 @@ export function OrderDetailsDrawer({ open, onOpenChange, orderId }: Props) {
             {isLoading || !order ? (
               <div className="rounded-2xl border bg-card p-10 text-center text-sm text-muted-foreground">Loading…</div>
             ) : (
-              <div className="grid gap-4 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)] lg:gap-5">
-                {/* LEFT */}
-                <div className="min-w-0 space-y-4 lg:space-y-5">
-                  {/* Summary */}
-                  <Card className="p-4 sm:p-5">
-                    <div className="grid gap-4 sm:grid-cols-[minmax(0,1.4fr)_1fr_1fr] sm:divide-x">
+              <div className="space-y-4 lg:space-y-5">
+                <Card className="p-4 sm:p-5">
+                    <div className="grid gap-4 sm:grid-cols-[minmax(0,1.6fr)_1fr_1fr] sm:divide-x">
                       <div className="flex gap-3">
                         <div className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-primary text-primary-foreground shadow-sm">
                           <ShoppingBag className="h-6 w-6" />
@@ -260,9 +253,41 @@ export function OrderDetailsDrawer({ open, onOpenChange, orderId }: Props) {
                         <div className="text-xs text-muted-foreground">({itemCount} items)</div>
                       </div>
                     </div>
-                  </Card>
+                </Card>
 
-                  {/* Products */}
+                  {isPhysical && (
+                    <Card>
+                      <CardHead icon={Truck} title="Courier Performance" sub="(This Customer)" action={
+                        <button type="button" onClick={() => setFraudOpen(true)} className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs hover:bg-muted"><ShieldCheck className="h-3 w-3" /> {cachedFraud ? "Re-check" : "Check"}</button>
+                      } />
+                      <div className="px-4 pb-4">
+                        {cachedFraud ? (
+                          <>
+                            <div className="mb-3 flex items-center justify-between text-xs">
+                              <RiskBadge risk={(cachedFraud as any).risk} />
+                              <span className="text-muted-foreground">Checked {fmtDate((cachedFraud as any).checked_at)}</span>
+                            </div>
+                            <div className="flex snap-x gap-3 overflow-x-auto pb-1 [&>*]:min-w-[200px] [&>*]:flex-1 [&>*]:snap-start">
+                              {((cachedFraud as any).courier_history ?? []).map((c: any) => (
+                                <div key={c.courier} className="rounded-xl border p-2.5">
+                                  <div className="flex items-center gap-2">
+                                    <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-primary/10 text-[11px] font-bold uppercase text-primary">{String(c.courier).slice(0, 2)}</span>
+                                    <div className="min-w-0"><div className="truncate text-xs font-semibold capitalize">{c.courier}</div><div className="text-[10px] text-muted-foreground">Total: {c.total}</div></div>
+                                  </div>
+                                  <div className="mt-2 text-[10px] text-muted-foreground">Delivered: <span className="text-primary">{c.success}</span> | Cancelled: <span className="text-destructive">{c.cancelled ?? Math.max(0, c.total - c.success)}</span></div>
+                                  <div className="mt-1.5 flex items-baseline gap-1"><span className="text-sm font-bold">{c.rate}%</span><span className="text-[10px] text-muted-foreground">Success</span></div>
+                                  <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full bg-primary" style={{ width: `${c.rate}%` }} /></div>
+                                </div>
+                              ))}
+                            </div>
+                          </>
+                        ) : <div className="text-xs text-muted-foreground">Checking courier history…</div>}
+                      </div>
+                    </Card>
+                  )}
+
+                <div className="grid gap-4 lg:grid-cols-[minmax(0,1.55fr)_minmax(0,1fr)] lg:gap-5">
+                  <div className="min-w-0 space-y-4 lg:space-y-5">
                   <Card>
                     <CardHead icon={LayoutGrid} title={`Ordered Products (${items.length})`} action={editBtn(() => setEditItems(true))} />
                     <div className="px-3 pb-3 sm:px-4 sm:pb-4">
@@ -312,7 +337,6 @@ export function OrderDetailsDrawer({ open, onOpenChange, orderId }: Props) {
                       </div>
                     </div>
                   </Card>
-
                   {kind === "digital" && (
                     <Card><CardHead icon={ScrollText} title="Digital delivery" />
                       <dl className="grid grid-cols-2 gap-y-1 px-4 pb-4 text-xs">
@@ -323,24 +347,16 @@ export function OrderDetailsDrawer({ open, onOpenChange, orderId }: Props) {
                   )}
                   {kind === "service" && <Card><CardHead icon={ScrollText} title="Service workflow" /><div className="px-4 pb-4"><ServiceWorkflowPanel orderId={order.id} open={true} /></div></Card>}
                   {kind === "subscription" && <Card><CardHead icon={ScrollText} title="Subscription" /><div className="px-4 pb-4"><SubscriptionOrderPanel orderId={order.id} fallback={fulfil} /></div></Card>}
-
-                  {/* Tabs */}
-                  <Card>
-                    <div className="flex gap-1 overflow-x-auto border-b px-3 sm:px-4">
-                      {([["timeline", "Order Timeline", Clock], ["tracking", "Courier Tracking", RefreshCw], ["notes", "Internal Notes", ScrollText]] as const).map(([k, l, I]) => (
-                        <button key={k} type="button" onClick={() => setTab(k)} className={`inline-flex shrink-0 items-center gap-1.5 border-b-2 px-3 py-3 text-sm font-medium ${tab === k ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}>
-                          <I className="h-4 w-4" /> {l}
-                        </button>
-                      ))}
-                    </div>
-                    <div className="p-4">
-                      {tab === "timeline" && (
+                    <div className="grid gap-4 xl:grid-cols-2">
+                      <Card>
+                        <CardHead icon={Clock} title="Order Timeline" />
+                        <div className="px-4 pb-4">
                         <ol className="relative">
                           {timeline.map((t, i) => (
                             <li key={t.id} className="relative flex gap-3 pb-5 last:pb-0">
                               {i < timeline.length - 1 && <span className="absolute left-[11px] top-6 h-full w-0.5 bg-primary/30" />}
                               <span className="relative z-10 grid h-6 w-6 shrink-0 place-items-center rounded-full bg-primary text-primary-foreground"><Check className="h-3.5 w-3.5" /></span>
-                              <div className="grid min-w-0 flex-1 gap-0.5 sm:grid-cols-[1fr_1.2fr_auto] sm:gap-3">
+                              <div className="grid min-w-0 flex-1 gap-0.5  sm:gap-3">
                                 <div>
                                   <div className="text-sm font-semibold">{STAGE_LABEL[t.stage] ?? t.stage}</div>
                                   <div className="text-[11px] text-muted-foreground">{fmtDate(t.created_at)}</div>
@@ -352,22 +368,78 @@ export function OrderDetailsDrawer({ open, onOpenChange, orderId }: Props) {
                           ))}
                           {timeline.length === 0 && <li className="text-xs text-muted-foreground">No events yet.</li>}
                         </ol>
-                      )}
-                      {tab === "tracking" && (
+                        </div>
+                      </Card>
+                      <Card>
+                        <CardHead icon={Truck} title="Courier Tracking" />
+                        <div className="px-4 pb-4">
                         <div className="space-y-4">
                           <CourierTrackingCard order={order} />
                           {isPhysical && (
-                            <form onSubmit={submitCourier} className="grid gap-2 sm:grid-cols-3">
+                            <form onSubmit={submitCourier} className="grid gap-2 ">
                               <Input placeholder="Courier (e.g. Pathao)" value={courier.name} onChange={(e) => setCourier((c) => ({ ...c, name: e.target.value }))} className="h-9 text-xs" />
                               <Input placeholder="Tracking ID" value={courier.tracking} onChange={(e) => setCourier((c) => ({ ...c, tracking: e.target.value }))} className="h-9 text-xs" />
                               <Input placeholder="Status (e.g. In Transit)" value={courier.status} onChange={(e) => setCourier((c) => ({ ...c, status: e.target.value }))} className="h-9 text-xs" />
-                              <Button type="submit" size="sm" variant="outline" disabled={savingCourier} className="sm:col-span-3 sm:justify-self-start">{savingCourier ? "Saving…" : "Update courier"}</Button>
+                              <Button type="submit" size="sm" variant="outline" disabled={savingCourier} className="sm:justify-self-start">{savingCourier ? "Saving…" : "Update courier"}</Button>
                             </form>
                           )}
                         </div>
-                      )}
-                      {tab === "notes" && (
-                        <div className="space-y-4">
+                        </div>
+                      </Card>
+                    </div>
+                  </div>
+
+                  <aside className="order-first min-w-0 space-y-4 lg:order-none lg:space-y-5">
+                  <Card>
+                    <CardHead icon={User} title="Customer Details" action={editBtn(() => setEditCustomer(true))} />
+                    <div className="px-4 pb-4">
+                      <div className="flex gap-3">
+                        <div className="grid h-14 w-14 shrink-0 place-items-center rounded-full bg-primary/10 text-lg font-bold text-primary">
+                          {(order.customer_name ?? "?").trim().charAt(0).toUpperCase()}
+                        </div>
+                        <div className="min-w-0 flex-1 space-y-1.5">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="truncate text-base font-semibold">{order.customer_name}</span>
+                            <CustomerBadge phone={order.phone} enabled={open} />
+                          </div>
+                          <div className="flex flex-wrap items-center gap-2 text-sm">
+                            <Phone className="h-3.5 w-3.5 text-muted-foreground" /> {order.phone}
+                          </div>
+                          {order.email && <div className="text-xs text-muted-foreground">{order.email}</div>}
+                          {isPhysical && order.address && (
+                            <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${order.address} ${order.area ?? ""}`)}`} target="_blank" rel="noreferrer" className="flex items-start gap-1.5 text-xs text-muted-foreground hover:text-primary">
+                              <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0" /> <span>{[order.address, order.area].filter(Boolean).join(", ")}</span>
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                      <ContactButtons phone={order.phone} copyText={copyText} />
+                      <CustomerStats phone={order.phone} enabled={open} />
+                    </div>
+                  </Card>
+                  <Card>
+                    <CardHead icon={PhoneCall} title="AI Calling & Conversation History" />
+                    <div className="px-4 pb-4"><CallsHistory orderId={orderId} enabled={open} /></div>
+                  </Card>
+                  </aside>
+                </div>
+
+                <div className="grid gap-4 lg:grid-cols-2 lg:gap-5">
+                  <Card>
+                    <CardHead icon={ClipboardList} title="Order Information" />
+                    <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2.5 px-4 pb-4 text-sm">
+                      <dt className="text-muted-foreground">Order Type</dt><dd className="text-right font-medium capitalize">{kind}</dd>
+                      <dt className="text-muted-foreground">Source</dt><dd className="text-right font-medium capitalize">{order.source ?? order.order_source ?? "Website"}</dd>
+                      {order.campaign && <><dt className="text-muted-foreground">Campaign</dt><dd className="text-right font-medium">{String(order.campaign)}</dd></>}
+                      {isPhysical && <><dt className="text-muted-foreground">Shipping Address</dt><dd className="text-right font-medium">{[order.address, order.area].filter(Boolean).join(", ") || "—"}</dd></>}
+                      {isPhysical && <><dt className="text-muted-foreground">Delivery Zone</dt><dd className="text-right font-medium">{order.delivery_zone ?? order.area ?? "—"}</dd></>}
+                      <dt className="text-muted-foreground">Delivery Charge</dt><dd className="text-right font-medium">৳ {delivery.toLocaleString("en-BD")}</dd>
+                      <dt className="text-muted-foreground">Payment</dt><dd className="text-right font-medium">{payLabel(order.payment_method)}</dd>
+                    </dl>
+                  </Card>
+                  <Card>
+                    <CardHead icon={ScrollText} title="Internal Notes & Edit History" />
+                    <div className="px-4 pb-4">
                           <ul className="space-y-1.5">
                             {notes.map((n) => (
                               <li key={n.id} className="flex items-start justify-between gap-2 rounded-lg bg-muted/50 p-2.5 text-xs">
@@ -397,78 +469,9 @@ export function OrderDetailsDrawer({ open, onOpenChange, orderId }: Props) {
                               <span><span className="font-medium">Allow duplicate purchase</span><span className="mt-0.5 block text-[11px] text-muted-foreground">Let this customer order the same product again even if another order exists.</span></span>
                             </label>
                           )}
-                        </div>
-                      )}
                     </div>
                   </Card>
                 </div>
-
-                {/* RIGHT */}
-                <aside className="order-first min-w-0 space-y-4 lg:order-none lg:space-y-5">
-                  <Card>
-                    <CardHead icon={User} title="Customer Details" action={editBtn(() => setEditCustomer(true))} />
-                    <div className="px-4 pb-4">
-                      <div className="flex gap-3">
-                        <div className="grid h-14 w-14 shrink-0 place-items-center rounded-full bg-primary/10 text-lg font-bold text-primary">
-                          {(order.customer_name ?? "?").trim().charAt(0).toUpperCase()}
-                        </div>
-                        <div className="min-w-0 flex-1 space-y-1.5">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <span className="truncate text-base font-semibold">{order.customer_name}</span>
-                            <CustomerBadge phone={order.phone} enabled={open} />
-                          </div>
-                          <div className="flex flex-wrap items-center gap-2 text-sm">
-                            <Phone className="h-3.5 w-3.5 text-muted-foreground" /> {order.phone}
-                          </div>
-                          {order.email && <div className="text-xs text-muted-foreground">{order.email}</div>}
-                          {isPhysical && order.address && (
-                            <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${order.address} ${order.area ?? ""}`)}`} target="_blank" rel="noreferrer" className="flex items-start gap-1.5 text-xs text-muted-foreground hover:text-primary">
-                              <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0" /> <span>{[order.address, order.area].filter(Boolean).join(", ")}</span>
-                            </a>
-                          )}
-                        </div>
-                      </div>
-                      <ContactButtons phone={order.phone} copyText={copyText} />
-                      <CustomerStats phone={order.phone} enabled={open} />
-                    </div>
-                  </Card>
-
-                  {isPhysical && (
-                    <Card>
-                      <CardHead icon={Truck} title="Courier Performance" sub="(This Customer)" action={
-                        <button type="button" onClick={() => setFraudOpen(true)} className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs hover:bg-muted"><ShieldCheck className="h-3 w-3" /> {cachedFraud ? "Re-check" : "Check"}</button>
-                      } />
-                      <div className="px-4 pb-4">
-                        {cachedFraud ? (
-                          <>
-                            <div className="mb-3 flex items-center justify-between text-xs">
-                              <RiskBadge risk={(cachedFraud as any).risk} />
-                              <span className="text-muted-foreground">Checked {fmtDate((cachedFraud as any).checked_at)}</span>
-                            </div>
-                            <div className="grid grid-cols-2 gap-2 xl:grid-cols-4">
-                              {((cachedFraud as any).courier_history ?? []).map((c: any) => (
-                                <div key={c.courier} className="rounded-xl border p-2.5">
-                                  <div className="flex items-center gap-2">
-                                    <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-primary/10 text-[11px] font-bold uppercase text-primary">{String(c.courier).slice(0, 2)}</span>
-                                    <div className="min-w-0"><div className="truncate text-xs font-semibold capitalize">{c.courier}</div><div className="text-[10px] text-muted-foreground">Total: {c.total}</div></div>
-                                  </div>
-                                  <div className="mt-2 text-[10px] text-muted-foreground">Delivered: <span className="text-primary">{c.success}</span> | Cancelled: <span className="text-destructive">{c.cancelled ?? Math.max(0, c.total - c.success)}</span></div>
-                                  <div className="mt-1.5 flex items-baseline gap-1"><span className="text-sm font-bold">{c.rate}%</span><span className="text-[10px] text-muted-foreground">Success</span></div>
-                                  <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full bg-primary" style={{ width: `${c.rate}%` }} /></div>
-                                </div>
-                              ))}
-                            </div>
-                          </>
-                        ) : <div className="text-xs text-muted-foreground">Checking courier history…</div>}
-                      </div>
-                    </Card>
-                  )}
-
-                  <Card>
-                    <CardHead icon={PhoneCall} title="AI Calling & Conversation History" />
-                    <div className="px-4 pb-4"><CallsHistory orderId={orderId} enabled={open} /></div>
-                  </Card>
-                </aside>
               </div>
             )}
           </div>
