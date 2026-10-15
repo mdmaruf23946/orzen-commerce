@@ -129,7 +129,7 @@ export const generateProductDraft = createServerFn({ method: "POST" })
 
     // Runs on the platform owner's own provider keys (Winner Admin → AI).
     const { routedStructuredModel } = await import("@/lib/ai-provider.server");
-    const model = await routedStructuredModel("google/gemini-2.5-pro");
+    const model = await routedStructuredModel("google/gemini-2.5-flash");
 
     const system = [
       "You are an e-commerce product listing generator for a Bangladeshi (BDT) storefront.",
