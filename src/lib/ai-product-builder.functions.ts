@@ -33,7 +33,7 @@ const draftSchema = z.object({
   long_description_html: z.string(),
   category_guess: z.string().nullable(),
   subcategory_guess: z.string().nullable(),
-  tags: z.array(z.string()),
+  tags: z.array(z.string()).default([]),
   features: z.array(z.string()),
   specifications: z.array(z.object({ key: z.string(), value: z.string() })),
   includes: z.array(z.string()),
@@ -129,7 +129,7 @@ export const generateProductDraft = createServerFn({ method: "POST" })
 
     // Runs on the platform owner's own provider keys (Winner Admin → AI).
     const { routedStructuredModel } = await import("@/lib/ai-provider.server");
-    const model = await routedStructuredModel("google/gemini-2.5-flash");
+    const model = await routedStructuredModel("google/gemini-flash-lite-latest");
 
     const system = [
       "You are an e-commerce product listing generator for a Bangladeshi (BDT) storefront.",
