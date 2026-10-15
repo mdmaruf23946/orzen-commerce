@@ -1122,6 +1122,54 @@ export function SubscriptionProductDialog({
     },
   ];
 
+  const T = (id: string) => tabs.find((t) => t.id === id)!.content;
+  const hasPlans = plans.some((p: any) => Number(p?.price ?? p?.regular_price ?? 0) > 0);
+  const issues: string[] = [];
+  if (!name.trim()) issues.push("প্ল্যানের নাম দিন (ধাপ ১)");
+  if (!hasPlans && reg <= 0) issues.push("কমপক্ষে একটি বিলিং প্ল্যান বা দাম দিন (ধাপ ২)");
+  if (sale != null && sale > reg) issues.push("অফার দাম মূল দামের চেয়ে কম হতে হবে");
+  if (!benefits.some((b) => b.title.trim())) issues.push("কী কী সুবিধা পাবে লিখলে বিক্রি বাড়ে (ঐচ্ছিক)");
+  const steps = [
+    { id: "basic", label: "Basic info", content: <div className="space-y-4">{T("general")}{T("media")}</div> },
+    {
+      id: "plan",
+      label: "Billing, Trial & Benefits",
+      content: (
+        <div className="space-y-4">
+          {T("plan")}
+          {T("pricing")}
+          {T("plans")}
+          {T("trial")}
+          {T("benefits")}
+          {T("renewal")}
+        </div>
+      ),
+    },
+    {
+      id: "review",
+      label: "Review & Publish",
+      content: (
+        <div className="space-y-4">
+          {T("review")}
+          {issues.length ? (
+            <ul className="space-y-1 rounded-md border border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive">
+              {issues.map((m) => <li key={m}>• {m}</li>)}
+            </ul>
+          ) : (
+            <p className="rounded-md bg-primary/10 p-3 text-xs text-primary">সব ঠিক আছে — নিচের বাটনে চাপ দিয়ে Publish করুন।</p>
+          )}
+          {T("visibility")}
+          <Fold title="Access">{T("access")}</Fold>
+          <Fold title="ব্যবহার সীমা (Usage limits)">{T("usage")}</Fold>
+          <Fold title="কাস্টমারের তথ্য">{T("customer")}</Fold>
+          <Fold title="Policies">{T("policies")}</Fold>
+          <Fold title="Notifications">{T("notifications")}</Fold>
+          <Fold title="SEO">{T("seo")}</Fold>
+        </div>
+      ),
+    },
+  ];
+
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="flex h-[92vh] max-w-3xl flex-col gap-0 overflow-hidden p-0">
@@ -1131,7 +1179,7 @@ export function SubscriptionProductDialog({
           </DialogTitle>
         </DialogHeader>
         <FormWizard
-          tabs={tabs}
+          tabs={steps}
           saving={saving}
           editing={!!editing}
           entityLabel="subscription"
