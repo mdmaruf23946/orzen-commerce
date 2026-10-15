@@ -178,14 +178,7 @@ export const Route = createFileRoute("/api/public/orzen-call/callback")({
           if (next === "confirmed") patch.confirmed_at = now;
           const { error } = await supabaseAdmin.from("orders").update(patch as never).eq("id", o.id).eq("store_id", store);
           if (error) return Response.json({ ok: false, error: "update failed" }, { status: 500 });
-          if (next !== "pending") {
-            await supabaseAdmin.from("calls").insert({
-              store_id: store, order_id: o.id, customer_name: body.customer_name ?? o.customer_name ?? null,
-              phone: body.phone ?? o.phone ?? "", provider: "orzen_call", direction: "outbound", call_type: "ai",
-              status: "completed", result: next === "confirmed" ? "order_confirmed" : "order_cancelled",
-              duration_sec: 0, note: body.note ?? "Orzen Call status update", started_at: now, ended_at: now,
-            } as never);
-          }
+          // Status-only change: no call happened, so no call record is created.
           return Response.json({ ok: true, order_id: o.id, status: next });
         }
 
