@@ -22,8 +22,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { FraudCheckModal, RiskBadge } from "@/components/admin/FraudCheckModal";
 import { ServiceWorkflowPanel } from "@/components/admin/service/ServiceWorkflowPanel";
 import { SubscriptionOrderPanel } from "@/components/admin/subscriptions/SubscriptionOrderPanel";
-import { CallHistoryList } from "@/components/admin/calls/CallHistoryList";
-import { getCallsForOrder } from "@/lib/call-center.functions";
+import { getOrderCallDetails } from "@/lib/call-center.functions";
 
 import { toast } from "sonner";
 import { EditCustomerDialog, EditItemsDialog } from "@/components/admin/orders/OrderEditDialogs";
@@ -613,15 +612,20 @@ function ContactButtons({ phone, copyText }: { phone: string; copyText: string }
 }
 
 function CallsHistory({ orderId, enabled }: { orderId: string; enabled: boolean }) {
-  const listFn = useServerFn(getCallsForOrder);
-  const { data } = useQuery({
-    queryKey: ["order-calls", orderId],
-    queryFn: () => listFn({ data: { orderId } }),
+  const detailFn = useServerFn(getOrderCallDetails);
+  const { data, isLoading } = useQuery({
+    queryKey: ["order-call-details", orderId],
+    queryFn: () => detailFn({ data: { orderId } }),
     enabled: enabled && !!orderId,
+    staleTime: 60_000,
   });
+  const [openId, setOpenId] = useState<string | null>(null);
   const calls = (data ?? []) as any[];
+  if (isLoading) return <div className="text-xs text-muted-foreground">Loading…</div>;
   if (!calls.length) return <div className="rounded-xl border border-dashed p-4 text-center text-xs text-muted-foreground">এই অর্ডারে এখনো কোনো কল হয়নি।</div>;
   const last = calls[0];
+  const shown = calls.find((c) => c.id === openId) ?? last;
+  const isAgent = (r: string) => /agent|ai|assistant|bot|system/i.test(r);
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-center gap-3 rounded-xl bg-primary/5 p-3">
@@ -636,20 +640,45 @@ function CallsHistory({ orderId, enabled }: { orderId: string; enabled: boolean 
         </div>
       </div>
       {last.result && (
-        <div className="flex items-center gap-3 text-xs"><span className="text-muted-foreground">Customer Interest</span><Pill tone="primary">{String(last.result).replace(/_/g, " ")}</Pill></div>
-      )}
-      {last.note && (
-        <div className="rounded-xl border p-3">
-          <div className="text-xs font-semibold">Call Summary</div>
-          <p className="mt-1 whitespace-pre-line text-xs text-muted-foreground">{last.note}</p>
-        </div>
+        <div className="flex items-center gap-3 text-xs"><span className="text-muted-foreground">Customer Interest</span><Pill tone="primary">{String(last.result).replace(/^order_/, "").replace(/_/g, " ")}</Pill></div>
       )}
       {calls.length > 1 && (
-        <details className="rounded-xl border p-3">
-          <summary className="cursor-pointer text-xs font-semibold">Previous calls ({calls.length - 1})</summary>
-          <div className="mt-2"><CallHistoryList calls={calls.slice(1)} empty="" /></div>
-        </details>
+        <div className="flex gap-1.5 overflow-x-auto pb-1">
+          {calls.map((c, i) => (
+            <button key={c.id} type="button" onClick={() => setOpenId(c.id)} className={`shrink-0 rounded-lg border px-2.5 py-1 text-[11px] ${shown.id === c.id ? "border-primary bg-primary/10 text-primary" : "hover:bg-muted"}`}>
+              Call {calls.length - i} · {formatDuration(c.duration_sec)}
+            </button>
+          ))}
+        </div>
       )}
+      {shown.summary && (
+        <div className="rounded-xl border p-3">
+          <div className="text-xs font-semibold">Call Summary</div>
+          <p className="mt-1 whitespace-pre-line text-xs text-muted-foreground">{shown.summary}</p>
+        </div>
+      )}
+      <div className="rounded-xl border p-3">
+        <div className="text-xs font-semibold">Conversation Transcript</div>
+        {shown.play_url ? (
+          <audio controls preload="none" src={shown.play_url} className="mt-2 h-10 w-full" />
+        ) : (
+          <div className="mt-1 text-[11px] text-muted-foreground">এই কলের রেকর্ডিং পাওয়া যায়নি।</div>
+        )}
+        {shown.transcript.length ? (
+          <ul className="mt-3 max-h-80 space-y-2 overflow-y-auto pr-1">
+            {shown.transcript.map((m: any, i: number) => (
+              <li key={i} className={`flex ${isAgent(m.role) ? "justify-start" : "justify-end"}`}>
+                <div className={`max-w-[85%] rounded-2xl px-3 py-2 text-xs ${isAgent(m.role) ? "bg-muted" : "bg-primary/10"}`}>
+                  <div className="mb-0.5 text-[10px] font-semibold uppercase text-muted-foreground">{isAgent(m.role) ? "AI" : "Customer"}</div>
+                  <div className="whitespace-pre-line">{m.text}</div>
+                </div>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <div className="mt-2 text-[11px] text-muted-foreground">এই কলের লেখা কথোপকথন সংরক্ষিত নেই।</div>
+        )}
+      </div>
     </div>
   );
 }
