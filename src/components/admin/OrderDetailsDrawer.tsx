@@ -204,6 +204,7 @@ export function OrderDetailsDrawer({ open, onOpenChange, orderId }: Props) {
                   {!["cancelled","delivered","returned"].includes(order.status) && !order.courier_tracking_id && (
                     <button type="button" onClick={() => { if (confirm("এই অর্ডারটি বাতিল করবেন?")) changeStatus("cancelled"); }} className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-destructive/30 bg-card px-3 text-sm font-medium text-destructive shadow-sm hover:bg-destructive/10">Cancel Order</button>
                   )}
+                  {order.status !== "cancelled" && (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button size="sm" className="h-9 gap-1.5"><RefreshCw className="h-4 w-4" /> Update Status <ChevronDown className="h-4 w-4" /></Button>
@@ -214,6 +215,7 @@ export function OrderDetailsDrawer({ open, onOpenChange, orderId }: Props) {
                       ))}
                     </DropdownMenuContent>
                   </DropdownMenu>
+                  )}
                 </div>
               )}
             </div>
