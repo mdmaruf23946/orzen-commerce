@@ -42,10 +42,10 @@ function mapFollowup(s: string | undefined): "no_response" | "on_hold" | null {
 }
 
 function mapStatus(s: string | undefined): "confirmed" | "cancelled" | "pending" | null {
-  const v = (s ?? "").toLowerCase();
-  if (["confirmed", "confirm", "verified", "yes"].includes(v)) return "confirmed";
-  if (["cancelled", "canceled", "cancel", "rejected", "no"].includes(v)) return "cancelled";
-  if (v === "pending") return "pending";
+  const v = (s ?? "").toLowerCase().trim().replace(/[\s-]/g, "_");
+  if (["confirmed", "confirm", "verified", "yes", "order_confirmed", "কনফার্মড", "কনফার্ম", "নিশ্চিত"].includes(v)) return "confirmed";
+  if (["cancelled", "canceled", "cancel", "rejected", "no", "order_cancelled", "বাতিল"].includes(v)) return "cancelled";
+  if (["pending", "পেন্ডিং"].includes(v)) return "pending";
   return null;
 }
 
@@ -89,11 +89,21 @@ export const Route = createFileRoute("/api/public/orzen-call/callback")({
 
         const event = (body.event ?? "").toLowerCase();
         const findOrder = async () => {
-          if (!body.order_id && !body.invoice_no) return null;
-          let q = supabaseAdmin.from("orders").select("id,status,customer_name,phone").eq("store_id", store);
-          q = body.order_id ? q.eq("id", body.order_id) : q.eq("invoice_no", body.invoice_no!);
-          const { data } = await q.maybeSingle();
-          return data as any;
+          const sel = "id,status,customer_name,phone";
+          if (body.order_id || body.invoice_no) {
+            let q = supabaseAdmin.from("orders").select(sel).eq("store_id", store);
+            q = body.order_id ? q.eq("id", body.order_id) : q.eq("invoice_no", body.invoice_no!);
+            const { data } = await q.maybeSingle();
+            if (data) return data as any;
+          }
+          // Fallback: latest order of this phone (prefer pending).
+          const digits = (body.phone ?? "").replace(/\D/g, "");
+          if (digits.length >= 10) {
+            const { data: rows } = await supabaseAdmin.from("orders").select(sel).eq("store_id", store)
+              .ilike("phone", `%${digits.slice(-10)}`).order("created_at", { ascending: false }).limit(5);
+            if (rows?.length) return ((rows as any[]).find((r) => r.status === "pending") ?? rows[0]) as any;
+          }
+          return null;
         };
         const now = new Date().toISOString();
 
