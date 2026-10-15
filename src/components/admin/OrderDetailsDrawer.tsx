@@ -289,13 +289,14 @@ export function OrderDetailsDrawer({ open, onOpenChange, orderId }: Props) {
                     </div>
                 </Card>
 
+                  <div className={`grid gap-4 ${isPhysical ? "lg:grid-cols-[300px_minmax(0,1fr)]" : ""} lg:items-stretch`}>
                   <OurRecord phone={order.phone} enabled={open} />
                   {isPhysical && (
                     <Card>
                       <CardHead icon={Truck} title="Courier Ratio" sub="(This Customer)" action={
                         <button type="button" onClick={() => setFraudOpen(true)} className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs hover:bg-muted"><ShieldCheck className="h-3 w-3" /> {cachedFraud ? "Re-check" : "Check"}</button>
                       } />
-                      <div className="px-4 pb-4">
+                      <div className="min-w-0 px-4 pb-4">
                         {cachedFraud ? (
                           <>
                             <div className="mb-3 flex items-center justify-between text-xs">
@@ -308,6 +309,7 @@ export function OrderDetailsDrawer({ open, onOpenChange, orderId }: Props) {
                       </div>
                     </Card>
                   )}
+                  </div>
 
                 <div className="grid gap-4 lg:grid-cols-[minmax(0,1.55fr)_minmax(0,1fr)] lg:gap-5">
                   <div className="min-w-0 space-y-4 lg:space-y-5">
