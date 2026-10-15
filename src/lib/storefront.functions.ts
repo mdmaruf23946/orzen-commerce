@@ -544,7 +544,7 @@ export const getProduct = createServerFn({ method: "GET" })
     const { data: p, error } = await (sb as any)
       .from("storefront_products")
       .select(
-        "id,name,slug,description,short_description,price,old_price,stock,status,primary_image_url,gallery,store_id,brand,sku,category_id,features,specifications,video_url,warranty,return_policy,meta,product_type,total_sold,rating,created_at,updated_at",
+        "id,name,slug,description,short_description,price,old_price,stock,status,primary_image_url,gallery,store_id,brand,sku,category_id,features,specifications,video_url,warranty,return_policy,meta,product_type,total_sold,rating,created_at,updated_at,variants",
       )
       .eq("id", data.productId)
       .eq("store_id", data.storeId)
