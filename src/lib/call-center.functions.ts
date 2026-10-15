@@ -323,3 +323,47 @@ export const listCallRecordings = createServerFn({ method: "GET" })
     const { signedRecordingPath } = await import("@/lib/voice/queue.server");
     return ((data ?? []) as any[]).map(({ recording_ref, ...r }) => ({ ...r, play_url: signedRecordingPath(r.id) }));
   });
+
+/** Full call detail for one order: transcript, conversation text and a short-lived signed recording link. Store-scoped. */
+export const getOrderCallDetails = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { orderId: string }) => z.object({ orderId: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const storeId = await storeIdOrThrow(context.supabase, context.userId);
+    const [{ data: rows }, { data: ai }] = await Promise.all([
+      (context.supabase as any).from("calls")
+        .select("id,provider,call_type,status,result,duration_sec,note,transcript,conversation_text,recording_ref,created_at")
+        .eq("store_id", storeId).eq("order_id", data.orderId)
+        .order("created_at", { ascending: false }).limit(20),
+      (context.supabase as any).from("ai_calls")
+        .select("id,status,result,duration_sec,summary,created_at")
+        .eq("store_id", storeId).eq("order_id", data.orderId)
+        .order("created_at", { ascending: false }).limit(10),
+    ]);
+    const { signedRecordingPath } = await import("@/lib/voice/queue.server");
+    type Turn = { role: string; text: string };
+    const toTurns = (t: any, text: string | null): Turn[] => {
+      if (Array.isArray(t)) return t.map((m: any) => ({ role: String(m.role ?? ""), text: String(m.text ?? m.message ?? "") })).filter((m) => m.text);
+      if (text) return text.split("\n").map((l) => { const i = l.indexOf(":"); return i > 0 && i < 20 ? { role: l.slice(0, i).trim(), text: l.slice(i + 1).trim() } : { role: "", text: l.trim() }; }).filter((m) => m.text);
+      return [];
+    };
+    const out = ((rows ?? []) as any[]).map((r) => ({
+      id: r.id as string, source: r.provider as string, status: r.status as string, result: r.result as string | null,
+      duration_sec: Number(r.duration_sec ?? 0), summary: (r.note ?? null) as string | null, created_at: r.created_at as string,
+      transcript: toTurns(r.transcript, r.conversation_text),
+      play_url: r.recording_ref && /^https:\/\//i.test(r.recording_ref) ? signedRecordingPath(r.id) : null,
+    }));
+    const aiRows = (ai ?? []) as any[];
+    if (aiRows.length) {
+      const { data: tr } = await (context.supabase as any).from("ai_call_transcripts")
+        .select("call_id,role,message,seq").eq("store_id", storeId).in("call_id", aiRows.map((a) => a.id)).order("seq");
+      for (const a of aiRows) {
+        out.push({
+          id: a.id, source: "ai_agent", status: a.status, result: a.result, duration_sec: Number(a.duration_sec ?? 0),
+          summary: a.summary ?? null, created_at: a.created_at, play_url: null,
+          transcript: ((tr ?? []) as any[]).filter((t) => t.call_id === a.id).map((t) => ({ role: t.role, text: t.message })),
+        });
+      }
+    }
+    return out.sort((a, b) => b.created_at.localeCompare(a.created_at));
+  });

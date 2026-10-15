@@ -20,6 +20,8 @@ const Body = z.object({
   phone: z.string().max(40).optional(),
   customer_name: z.string().max(200).optional(),
   note: z.string().max(1000).optional(),
+  summary: z.string().max(4000).optional(),
+  recording_url: z.string().url().max(2000).optional(),
 });
 
 function mapFollowup(s: string | undefined): "no_response" | "on_hold" | null {
@@ -129,12 +131,14 @@ export const Route = createFileRoute("/api/public/orzen-call/callback")({
           status: callStatus,
           result: next === "confirmed" ? "order_confirmed" : next === "cancelled" ? "order_cancelled" : callStatus === "completed" ? "other" : "unavailable",
           duration_sec: dur,
-          note: body.note ?? null,
+          note: body.note ?? body.summary ?? null,
           started_at: new Date(Date.now() - dur * 1000).toISOString(),
           ended_at: now,
         };
         if (transcript) callRow.transcript = transcript;
         if (conversation) callRow.conversation_text = conversation;
+        // Only https recordings are kept; they are streamed later through a signed, store-scoped link.
+        if (body.recording_url && /^https:\/\//i.test(body.recording_url)) callRow.recording_ref = body.recording_url;
         const { error: logErr } = callRow.provider_call_sid
           ? await supabaseAdmin.from("calls").upsert(callRow as never, { onConflict: "provider_call_sid" })
           : await supabaseAdmin.from("calls").insert(callRow as never);
