@@ -149,7 +149,7 @@ function useDelete() {
 }
 
 function CallTableRow({ call }: { call: CallRow }) {
-  const remove = useDelete();
+
   return (
     <tr className="hover:bg-muted/30">
       <td className="px-3 py-2">
