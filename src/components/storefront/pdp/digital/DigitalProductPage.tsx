@@ -7,6 +7,7 @@ import { addToCart } from "@/lib/cart";
 import { listRelatedProducts, listStoreCategories } from "@/lib/storefront.functions";
 import { formatBytes, type LicenseType } from "@/lib/digital";
 import { LICENSE_LABELS } from "@/lib/digital";
+import { readVariants, variantPrice, variantLabel } from "@/lib/product-variants";
 import { ProductGallery } from "@/components/storefront/pdp/ProductGallery";
 import { ReviewsBlock } from "@/components/storefront/pdp/ReviewsBlock";
 import { RelatedRail } from "@/components/storefront/pdp/RelatedRail";
@@ -38,7 +39,14 @@ export function DigitalProductPage({ slug, store, product }: Props) {
   const oldPrice = product.old_price != null ? Number(product.old_price) : null;
   const discountPct =
     oldPrice && oldPrice > price ? Math.round(((oldPrice - price) / oldPrice) * 100) : 0;
-  const isFree = dg.free || price <= 0;
+  const licenses = useMemo(
+    () => (dg.free ? [] : readVariants(product.variants).items.filter((i) => i.options?.License)),
+    [product.variants, dg.free],
+  );
+  const [licenseId, setLicenseId] = useState<string>(() => (licenses.length === 1 ? licenses[0].id : ""));
+  const license = licenses.find((l) => l.id === licenseId) ?? null;
+  const shownPrice = license ? variantPrice(license, price) : price;
+  const isFree = dg.free || (price <= 0 && !licenses.length);
 
   const categoriesQ = useQuery({
     queryKey: ["store-categories", store.id],
@@ -71,19 +79,26 @@ export function DigitalProductPage({ slug, store, product }: Props) {
     return () => clearTimeout(t);
   }, [added]);
 
-  function add() {
+  function add(): boolean {
+    if (licenses.length && !license) {
+      toast.error("একটি লাইসেন্স বেছে নিন");
+      buyBoxRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      return false;
+    }
     addToCart(slug, {
       productId: product.id,
       name: product.name,
-      price,
+      price: shownPrice,
       image: product.primary_image_url,
       qty: 1,
-    });
+      ...(license ? { variantId: license.id, variantLabel: variantLabel(license) } : {}),
+    } as any);
     setAdded(true);
     toast.success(t("pdp.addedToCart"));
+    return true;
   }
   function buy() {
-    add();
+    if (!add()) return;
     navigate({ to: "/store/$slug/checkout", params: { slug } });
   }
 
@@ -143,9 +158,33 @@ export function DigitalProductPage({ slug, store, product }: Props) {
             </dl>
 
             <div ref={buyBoxRef} className="mt-4 rounded-xl border bg-card p-4">
+              {licenses.length > 0 && (
+                <div className="mb-4 space-y-2">
+                  <p className="text-sm font-medium">লাইসেন্স বেছে নিন</p>
+                  {licenses.map((l) => {
+                    const on = l.id === licenseId;
+                    return (
+                      <button
+                        key={l.id}
+                        type="button"
+                        onClick={() => setLicenseId(l.id)}
+                        className={`w-full rounded-lg border p-3 text-left transition ${on ? "border-primary bg-primary/5 ring-1 ring-primary" : "hover:border-primary/50"}`}
+                      >
+                        <span className="flex items-center justify-between gap-2 text-sm font-semibold">
+                          <span>{l.options.License}</span>
+                          <span>৳{variantPrice(l, price).toFixed(0)}</span>
+                        </span>
+                        {(l as any).description && (
+                          <span className="mt-0.5 block text-xs text-muted-foreground">{(l as any).description}</span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
               <div className="flex items-end gap-2">
                 <span className="text-2xl font-bold text-foreground">
-                  {isFree ? t("common.free") : `৳${price.toFixed(0)}`}
+                  {isFree ? t("common.free") : `${licenses.length && !license ? "From " : ""}৳${(license ? shownPrice : licenses.length ? Math.min(...licenses.map((l) => variantPrice(l, price))) : price).toFixed(0)}`}
                 </span>
                 {!isFree && oldPrice && oldPrice > price && (
                   <>
