@@ -450,6 +450,10 @@ export const upsertProduct = createServerFn({ method: "POST" })
         .eq("id", data.id)
         .eq("store_id", store.id);
       if (error) throw new Error(error.message);
+      try {
+        const { pushOrzenProducts } = await import("@/lib/orzen-sync.server");
+        await pushOrzenProducts(store.id, [data.id], Number(data.stock) <= 0 ? "product.stock_out" : "product.updated");
+      } catch { /* non-fatal */ }
       return { id: data.id };
     }
     // New product → enforce the plan's product limit.
@@ -461,6 +465,10 @@ export const upsertProduct = createServerFn({ method: "POST" })
       .select("id")
       .single();
     if (error) throw new Error(error.message);
+    try {
+      const { pushOrzenProducts } = await import("@/lib/orzen-sync.server");
+      await pushOrzenProducts(store.id, [(created as any).id], "product.created");
+    } catch { /* non-fatal */ }
     return created;
   });
 
@@ -477,6 +485,10 @@ export const deleteProduct = createServerFn({ method: "POST" })
       .eq("id", data.id)
       .eq("store_id", store.id);
     if (error) throw new Error(error.message);
+    try {
+      const { pushOrzenEvent } = await import("@/lib/orzen-sync.server");
+      await pushOrzenEvent(store.id, "product.deleted", { product_id: data.id }, "product");
+    } catch { /* non-fatal */ }
     return { ok: true };
   });
 
@@ -587,6 +599,16 @@ export const updateOrderStatus = createServerFn({ method: "POST" })
         console.error("[updateOrderStatus] auto parcel failed:", (e as Error).message);
       }
     }
+
+    try {
+      const { pushOrzenOrder, pushOrzenProducts } = await import("@/lib/orzen-sync.server");
+      await pushOrzenOrder(store.id, data.id, "order.status_changed", { previous_status: (cur as any).status, new_status: data.status, changed_by: "merchant" });
+      if (["confirmed", "cancelled", "delivered"].includes(data.status)) {
+        const { data: its } = await supabase.from("order_items").select("product_id").eq("order_id", data.id);
+        const ids = [...new Set(((its ?? []) as any[]).map((i) => i.product_id).filter(Boolean))] as string[];
+        await pushOrzenProducts(store.id, ids, "product.stock_changed");
+      }
+    } catch { /* non-fatal */ }
 
     return { ok: true, messenger, parcel };
   });

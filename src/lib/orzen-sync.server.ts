@@ -47,7 +47,7 @@ export async function pushOrzenOrder(storeId: string, orderId: string, event: st
     const sb = await admin();
     const { data: o } = await sb
       .from("orders")
-      .select("id,invoice_no,status,followup_status,customer_name,phone,address,area,payment_method,payment_status,delivery_amount,discount_amount,subtotal,notes,created_at,courier_name,courier_status,courier_tracking_id,order_items(product_id,name_snapshot,price_snapshot,qty,variant_label)")
+      .select("id,invoice_no,status,followup_status,customer_name,phone,address,area,payment_method,payment_status,delivery_amount,discount_amount,subtotal,notes,created_at,courier_name,courier_status,courier_tracking_id,order_items(product_id,name_snapshot,price_snapshot,qty)")
       .eq("store_id", storeId)
       .eq("id", orderId)
       .maybeSingle();

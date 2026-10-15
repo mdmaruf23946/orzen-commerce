@@ -386,7 +386,7 @@ function Guide({ callback }: { callback: string | null }) {
       <ol className="list-decimal space-y-1.5 pl-5 text-muted-foreground">
         <li>Paste your Orzen Call webhook link in <b>Setup</b> and save.</li>
         <li>Copy the Callback URL from Setup into Orzen Call.</li>
-        <li>Every new order is sent as <code className="rounded bg-muted px-1">order.created</code>; products as <code className="rounded bg-muted px-1">products.sync</code>.</li>
+        <li>Real-time events: <code className="rounded bg-muted px-1">order.created</code>, <code className="rounded bg-muted px-1">order.status_changed</code>, <code className="rounded bg-muted px-1">order.courier_updated</code>, <code className="rounded bg-muted px-1">product.created/updated/stock_out/stock_changed/deleted</code>; full catalog as <code className="rounded bg-muted px-1">products.sync</code>.</li>
         <li>After the call, Orzen Call posts the result back — the order becomes Confirmed or Cancelled and the call shows in Call History.</li>
       </ol>
       <p className="font-semibold">Callback example (sent by Orzen Call)</p>
