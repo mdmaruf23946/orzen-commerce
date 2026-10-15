@@ -176,6 +176,36 @@ export function OrderDetailsDrawer({ open, onOpenChange, orderId }: Props) {
     `Total: ৳${total.toFixed(0)}`,
   ].filter(Boolean).join("\n") : "";
 
+  const customerCard = order ? (
+                  <Card>
+                    <CardHead icon={User} title="Customer Details" action={editBtn(() => setEditCustomer(true))} />
+                    <div className="px-4 pb-4">
+                      <div className="flex gap-3">
+                        <div className="grid h-14 w-14 shrink-0 place-items-center rounded-full bg-primary/10 text-lg font-bold text-primary">
+                          {(order.customer_name ?? "?").trim().charAt(0).toUpperCase()}
+                        </div>
+                        <div className="min-w-0 flex-1 space-y-1.5">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="truncate text-base font-semibold">{order.customer_name}</span>
+                            <CustomerBadge phone={order.phone} enabled={open} />
+                          </div>
+                          <div className="flex flex-wrap items-center gap-2 text-sm">
+                            <Phone className="h-3.5 w-3.5 text-muted-foreground" /> {order.phone}
+                          </div>
+                          {order.email && <div className="text-xs text-muted-foreground">{order.email}</div>}
+                          {isPhysical && order.address && (
+                            <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${order.address} ${order.area ?? ""}`)}`} target="_blank" rel="noreferrer" className="flex items-start gap-1.5 text-xs text-muted-foreground hover:text-primary">
+                              <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0" /> <span>{[order.address, order.area].filter(Boolean).join(", ")}</span>
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                      <ContactButtons phone={order.phone} copyText={copyText} />
+                      <CustomerStats phone={order.phone} enabled={open} />
+                    </div>
+                  </Card>
+  ) : null;
+
   return (
     <>
       {order && (
@@ -224,9 +254,9 @@ export function OrderDetailsDrawer({ open, onOpenChange, orderId }: Props) {
               <div className="rounded-2xl border bg-card p-10 text-center text-sm text-muted-foreground">Loading…</div>
             ) : (
               <div className="space-y-4 lg:space-y-5">
-                <Card className="p-4 sm:p-5">
+                <Card className="relative p-4 sm:p-5">
                     <div className="grid gap-4 sm:grid-cols-[minmax(0,1.6fr)_1fr_1fr] sm:divide-x">
-                      <div className="flex gap-3">
+                      <div className="flex gap-3 pr-24 sm:pr-0">
                         <div className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-primary text-primary-foreground shadow-sm">
                           <ShoppingBag className="h-6 w-6" />
                         </div>
@@ -249,9 +279,9 @@ export function OrderDetailsDrawer({ open, onOpenChange, orderId }: Props) {
                           <div className="text-sm font-medium">{payLabel(order.payment_method)}</div>
                         </div>
                       </div>
-                      <div className="sm:pl-4">
+                      <div className="absolute right-4 top-4 text-right sm:static sm:pl-4 sm:text-left">
                         <div className="text-[11px] text-muted-foreground">Total Amount</div>
-                        <div className="text-2xl font-bold tracking-tight">৳ {total.toLocaleString("en-BD")}</div>
+                        <div className="text-xl font-bold sm:text-2xl tracking-tight">৳ {total.toLocaleString("en-BD")}</div>
                         <div className="text-xs text-muted-foreground">({itemCount} items)</div>
                       </div>
                     </div>
@@ -339,6 +369,7 @@ export function OrderDetailsDrawer({ open, onOpenChange, orderId }: Props) {
                       </div>
                     </div>
                   </Card>
+                  <div className="lg:hidden">{customerCard}</div>
                   {kind === "digital" && (
                     <Card><CardHead icon={ScrollText} title="Digital delivery" />
                       <dl className="grid grid-cols-2 gap-y-1 px-4 pb-4 text-xs">
@@ -391,34 +422,8 @@ export function OrderDetailsDrawer({ open, onOpenChange, orderId }: Props) {
                     </div>
                   </div>
 
-                  <aside className="order-first min-w-0 space-y-4 lg:order-none lg:space-y-5">
-                  <Card>
-                    <CardHead icon={User} title="Customer Details" action={editBtn(() => setEditCustomer(true))} />
-                    <div className="px-4 pb-4">
-                      <div className="flex gap-3">
-                        <div className="grid h-14 w-14 shrink-0 place-items-center rounded-full bg-primary/10 text-lg font-bold text-primary">
-                          {(order.customer_name ?? "?").trim().charAt(0).toUpperCase()}
-                        </div>
-                        <div className="min-w-0 flex-1 space-y-1.5">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <span className="truncate text-base font-semibold">{order.customer_name}</span>
-                            <CustomerBadge phone={order.phone} enabled={open} />
-                          </div>
-                          <div className="flex flex-wrap items-center gap-2 text-sm">
-                            <Phone className="h-3.5 w-3.5 text-muted-foreground" /> {order.phone}
-                          </div>
-                          {order.email && <div className="text-xs text-muted-foreground">{order.email}</div>}
-                          {isPhysical && order.address && (
-                            <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${order.address} ${order.area ?? ""}`)}`} target="_blank" rel="noreferrer" className="flex items-start gap-1.5 text-xs text-muted-foreground hover:text-primary">
-                              <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0" /> <span>{[order.address, order.area].filter(Boolean).join(", ")}</span>
-                            </a>
-                          )}
-                        </div>
-                      </div>
-                      <ContactButtons phone={order.phone} copyText={copyText} />
-                      <CustomerStats phone={order.phone} enabled={open} />
-                    </div>
-                  </Card>
+                  <aside className="min-w-0 space-y-4 lg:order-none lg:space-y-5">
+                  <div className="hidden lg:block">{customerCard}</div>
                   <Card>
                     <CardHead icon={PhoneCall} title="AI Calling & Conversation History" />
                     <div className="px-4 pb-4"><CallsHistory orderId={orderId} enabled={open} /></div>
