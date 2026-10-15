@@ -28,6 +28,7 @@ import { GalleryUploader } from "@/components/admin/GalleryUploader";
 import { DigitalFilesUploader, type DigitalFile } from "./DigitalFilesUploader";
 import { SeoSuggestButton } from "./SeoSuggestButton";
 import { AiAssistTab } from "./AiAssistTab";
+import { VariantBuilder } from "./VariantBuilder";
 
 
 
@@ -46,7 +47,10 @@ type ProductMeta = {
   barcode?: string | null;
   inventory_status?: "in_stock" | "out_of_stock" | "pre_order";
   stock_managed?: boolean;
-  shipping?: { weight?: number; l?: number; w?: number; h?: number; type?: "free" | "fixed" | "calculated"; rate?: number };
+  shipping?: {
+    weight?: number; l?: number; w?: number; h?: number; type?: "free" | "fixed" | "calculated"; rate?: number;
+    net_weight?: string; volume?: string; pack_size?: string; unit?: string;
+  };
   purchase?: { cod?: boolean; online?: boolean; min_qty?: number; max_qty?: number };
   labels?: string[];
   related?: { related?: string[]; fbt?: string[]; cross?: string[]; upsell?: string[] };
@@ -238,7 +242,17 @@ export function ProductDialog({
   );
   const [videoInput, setVideoInput] = useState("");
 
-  const [variants, setVariants] = useState<VariantsV2>(normalizeVariants(editing?.variants));
+  const [variants, setVariants] = useState<VariantsV2>(() => {
+    const v = normalizeVariants(editing?.variants);
+    // Restore combinations the merchant switched off earlier so they can be re-enabled.
+    return v.options.length ? { ...v, items: buildMatrix(v.options, v.items) } : v;
+  });
+  const [excludedVariants, setExcludedVariants] = useState<string[]>(() => {
+    const v = normalizeVariants(editing?.variants);
+    if (!v.options.length) return [];
+    const saved = new Set(v.items.map((i) => i.id));
+    return buildMatrix(v.options, v.items).filter((i) => !saved.has(i.id)).map((i) => i.id);
+  });
 
   const [specs, setSpecs] = useState<{ key: string; value: string }[]>(
     Array.isArray((editing as any)?.specifications) ? ((editing as any).specifications as any) : [],
