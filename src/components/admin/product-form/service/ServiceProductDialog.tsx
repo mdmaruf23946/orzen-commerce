@@ -794,6 +794,52 @@ export function ServiceProductDialog({
     },
   ];
 
+  const T = (id: string) => tabs.find((t) => t.id === id)!.content;
+  const issues: string[] = [];
+  if (!name.trim()) issues.push("সার্ভিসের নাম দিন (ধাপ ১)");
+  if (!categoryId) issues.push("ক্যাটাগরি বেছে নিন (ধাপ ১)");
+  if (!isQuote && (!regularPrice || reg <= 0)) issues.push("দাম দিন (ধাপ ২)");
+  if (!isQuote && sale != null && sale >= reg) issues.push("অফার দাম মূল দামের চেয়ে কম হতে হবে");
+  if (!delTime) issues.push("কাজ শেষ হতে কত সময় লাগবে লিখুন (ধাপ ২)");
+  if (!image) issues.push("একটি ছবি দিলে ভালো হয় (ঐচ্ছিক)");
+  const steps = [
+    { id: "basic", label: "Basic info", content: T("general") },
+    {
+      id: "price",
+      label: "Price, Time & Booking",
+      content: (
+        <div className="space-y-4">
+          {T("pricing")}
+          {T("delivery")}
+          {T("booking")}
+          <Fold title="Add-ons (অতিরিক্ত সেবা)">{T("addons")}</Fold>
+        </div>
+      ),
+    },
+    {
+      id: "review",
+      label: "Review & Publish",
+      content: (
+        <div className="space-y-4">
+          {T("review")}
+          {issues.length ? (
+            <ul className="space-y-1 rounded-md border border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive">
+              {issues.map((m) => <li key={m}>• {m}</li>)}
+            </ul>
+          ) : (
+            <p className="rounded-md bg-primary/10 p-3 text-xs text-primary">সব ঠিক আছে — নিচের বাটনে চাপ দিয়ে Publish করুন।</p>
+          )}
+          {T("visibility")}
+          <Fold title="কী কী পাবেন, Requirements ও Deliverables">{T("details")}</Fold>
+          <Fold title="Portfolio ও ভিডিও">{T("media")}</Fold>
+          <Fold title="FAQ">{T("faq")}</Fold>
+          <Fold title="Policies">{T("policies")}</Fold>
+          <Fold title="SEO">{T("seo")}</Fold>
+        </div>
+      ),
+    },
+  ];
+
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="flex h-[92vh] max-w-3xl flex-col gap-0 overflow-hidden p-0">
@@ -803,7 +849,7 @@ export function ServiceProductDialog({
           </DialogTitle>
         </DialogHeader>
         <ServiceWizard
-          tabs={tabs}
+          tabs={steps}
           saving={saving}
           editing={!!editing}
           onCancel={onClose}
