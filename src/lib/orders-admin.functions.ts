@@ -279,6 +279,8 @@ export const getOrderCustomerStats = createServerFn({ method: "POST" })
       (min, o) => (new Date(o.created_at) < new Date(min) ? o.created_at : min),
       list[0].created_at as string,
     );
+    const byStatus: Record<string, number> = {};
+    for (const o of list) byStatus[o.status] = (byStatus[o.status] ?? 0) + 1;
     return {
       total: list.length,
       delivered: delivered.length,
@@ -286,5 +288,31 @@ export const getOrderCustomerStats = createServerFn({ method: "POST" })
       codSuccess: cod.length ? Math.round((codDone.length / cod.length) * 100) : null,
       lifetime: delivered.reduce((s, o) => s + value(o), 0),
       since,
+      byStatus,
     };
+  });
+
+/** Store brand (name + logo) for the "Our Record" card. */
+export const getStoreBrand = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const sid = await getOwnedStoreId(context.supabase, context.userId);
+    if (!sid) return null;
+    const { data } = await (context.supabase as any)
+      .from("stores").select("name,business_name,logo_url").eq("id", sid).maybeSingle();
+    if (!data) return null;
+    return { name: (data.business_name || data.name) as string, logo_url: (data.logo_url ?? null) as string | null };
+  });
+
+/** Public courier branding (name/logo/color only — never credentials), managed in Owner → Courier Brand Assets. */
+export const listCourierBrands = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async () => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data } = await (supabaseAdmin as any)
+      .from("courier_providers").select("name,code,logo_url,brand_color").eq("is_active", true);
+    return ((data ?? []) as any[]).map((c) => ({
+      name: String(c.name), code: String(c.code).toLowerCase(),
+      logo_url: (c.logo_url ?? null) as string | null, brand_color: (c.brand_color ?? null) as string | null,
+    }));
   });

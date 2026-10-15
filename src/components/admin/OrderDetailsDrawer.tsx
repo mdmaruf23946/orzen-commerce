@@ -13,7 +13,7 @@ import { Link } from "@tanstack/react-router";
 import { getOrderDetails, addInternalNote, deleteInternalNote } from "@/lib/business.functions";
 import { updateOrderCourierInfo } from "@/lib/ai-review.functions";
 import { setOrderAllowDuplicate, updateOrderStatus } from "@/lib/admin.functions";
-import { getOrderCustomerStats } from "@/lib/orders-admin.functions";
+import { getOrderCustomerStats, getStoreBrand, listCourierBrands } from "@/lib/orders-admin.functions";
 import { getCachedFraudCheck, ensureAutoFraudCheck } from "@/lib/fraud.functions";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
@@ -289,9 +289,10 @@ export function OrderDetailsDrawer({ open, onOpenChange, orderId }: Props) {
                     </div>
                 </Card>
 
+                  <OurRecord phone={order.phone} enabled={open} />
                   {isPhysical && (
                     <Card>
-                      <CardHead icon={Truck} title="Courier Performance" sub="(This Customer)" action={
+                      <CardHead icon={Truck} title="Courier Ratio" sub="(This Customer)" action={
                         <button type="button" onClick={() => setFraudOpen(true)} className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs hover:bg-muted"><ShieldCheck className="h-3 w-3" /> {cachedFraud ? "Re-check" : "Check"}</button>
                       } />
                       <div className="px-4 pb-4">
@@ -301,19 +302,7 @@ export function OrderDetailsDrawer({ open, onOpenChange, orderId }: Props) {
                               <RiskBadge risk={(cachedFraud as any).risk} />
                               <span className="text-muted-foreground">Checked {fmtDate((cachedFraud as any).checked_at)}</span>
                             </div>
-                            <div className="flex snap-x gap-3 overflow-x-auto pb-1 [&>*]:min-w-[200px] [&>*]:flex-1 [&>*]:snap-start">
-                              {((cachedFraud as any).courier_history ?? []).map((c: any) => (
-                                <div key={c.courier} className="rounded-xl border p-2.5">
-                                  <div className="flex items-center gap-2">
-                                    <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-primary/10 text-[11px] font-bold uppercase text-primary">{String(c.courier).slice(0, 2)}</span>
-                                    <div className="min-w-0"><div className="truncate text-xs font-semibold capitalize">{c.courier}</div><div className="text-[10px] text-muted-foreground">Total: {c.total}</div></div>
-                                  </div>
-                                  <div className="mt-2 text-[10px] text-muted-foreground">Delivered: <span className="text-primary">{c.success}</span> | Cancelled: <span className="text-destructive">{c.cancelled ?? Math.max(0, c.total - c.success)}</span></div>
-                                  <div className="mt-1.5 flex items-baseline gap-1"><span className="text-sm font-bold">{c.rate}%</span><span className="text-[10px] text-muted-foreground">Success</span></div>
-                                  <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full bg-primary" style={{ width: `${c.rate}%` }} /></div>
-                                </div>
-                              ))}
-                            </div>
+                            <CourierRatioCards history={(cachedFraud as any).courier_history ?? []} />
                           </>
                         ) : <div className="text-xs text-muted-foreground">Checking courier history…</div>}
                       </div>
@@ -692,5 +681,100 @@ function CallsHistory({ orderId, enabled }: { orderId: string; enabled: boolean 
         )}
       </div>
     </div>
+  );
+}
+
+const COURIER_FALLBACK: Record<string, { name: string; color: string }> = {
+  pathao: { name: "Pathao", color: "#E8541C" },
+  steadfast: { name: "SteadFast", color: "#0E9F6E" },
+  redx: { name: "RedX", color: "#E11D48" },
+  paperfly: { name: "Paperfly", color: "#1E3A8A" },
+  parceldex: { name: "Parceldex", color: "#0369A1" },
+  ecourier: { name: "eCourier", color: "#00A651" },
+  sundarban: { name: "Sundarban", color: "#B45309" },
+};
+function imgSrc(u: string | null | undefined) {
+  if (!u) return null;
+  return u.startsWith("http") || u.startsWith("/") ? u : `/api/img/${u}`;
+}
+
+function RatioCard({ title, logo, color, total, success, cancelled }: { title: string; logo?: React.ReactNode; color?: string; total: number; success: number; cancelled: number }) {
+  const rate = total > 0 ? Math.round((success / total) * 100) : 0;
+  return (
+    <div className="overflow-hidden rounded-xl border bg-card shadow-sm">
+      <div className={`flex items-center gap-2 px-3 py-2 ${color ? "" : "bg-primary text-primary-foreground"}`} style={color ? { background: color, color: "#fff" } : undefined}>
+        {logo}
+        <span className="truncate text-sm font-semibold">{title}</span>
+      </div>
+      <div className="space-y-1 p-3 text-xs">
+        <div className="flex justify-between"><span className="text-muted-foreground">Success Rate</span><span className="font-bold text-primary">{rate}%</span></div>
+        <div className="flex justify-between"><span className="text-muted-foreground">Total</span><span className="font-semibold">{total}</span></div>
+        <div className="flex justify-between"><span className="text-muted-foreground">Success</span><span className="font-semibold text-primary">{success}</span></div>
+        <div className="flex justify-between"><span className="text-muted-foreground">Cancelled</span><span className="font-semibold text-destructive">{cancelled}</span></div>
+        <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full bg-primary" style={{ width: `${rate}%` }} /></div>
+      </div>
+    </div>
+  );
+}
+
+function CourierRatioCards({ history }: { history: any[] }) {
+  const brandsFn = useServerFn(listCourierBrands);
+  const { data: brands } = useQuery({ queryKey: ["courier-brands"], queryFn: () => brandsFn(), staleTime: 300_000 });
+  const rows = history.map((h) => {
+    const total = Number(h.total ?? 0), success = Number(h.success ?? 0);
+    return { key: String(h.courier).toLowerCase(), total, success, cancelled: Number(h.cancelled ?? Math.max(0, total - success)) };
+  });
+  const sum = rows.reduce((a, r) => ({ t: a.t + r.total, s: a.s + r.success, c: a.c + r.cancelled }), { t: 0, s: 0, c: 0 });
+  return (
+    <div className="flex snap-x gap-3 overflow-x-auto pb-1 [&>*]:w-[170px] [&>*]:shrink-0 [&>*]:snap-start">
+      <RatioCard title="Overall" total={sum.t} success={sum.s} cancelled={sum.c} />
+      {rows.map((r) => {
+        const b = brands?.find((x) => x.code === r.key || x.name.toLowerCase() === r.key);
+        const fb = COURIER_FALLBACK[r.key];
+        const logo = imgSrc(b?.logo_url);
+        const name = b?.name ?? fb?.name ?? r.key;
+        return (
+          <RatioCard key={r.key} title={name} color={b?.brand_color || fb?.color || "#334155"} total={r.total} success={r.success} cancelled={r.cancelled}
+            logo={logo
+              ? <img src={logo} alt={name} className="h-6 w-6 shrink-0 rounded bg-card object-contain p-0.5" />
+              : <span className="grid h-6 w-6 shrink-0 place-items-center rounded bg-card/20 text-[10px] font-bold uppercase">{name.slice(0, 2)}</span>} />
+        );
+      })}
+    </div>
+  );
+}
+
+const STATUS_LABEL: [string, string][] = [
+  ["pending", "Pending"], ["confirmed", "Confirmed"], ["processing", "Processing"], ["ready_to_send", "Ready to Send"],
+  ["shipped", "Shipped"], ["delivered", "Delivered"], ["returned", "Returned"], ["cancelled", "Cancelled"],
+];
+function OurRecord({ phone, enabled }: { phone: string; enabled: boolean }) {
+  const data = useCustomerStats(phone, enabled);
+  const brandFn = useServerFn(getStoreBrand);
+  const { data: brand } = useQuery({ queryKey: ["store-brand"], queryFn: () => brandFn(), staleTime: 300_000, enabled });
+  const by: Record<string, number> = (data as any)?.byStatus ?? {};
+  const extra = Object.keys(by).filter((k) => !STATUS_LABEL.some(([s]) => s === k));
+  const logo = imgSrc(brand?.logo_url);
+  return (
+    <Card>
+      <div className="flex items-center justify-between gap-2 border-b px-4 py-3">
+        <div className="flex min-w-0 items-center gap-2">
+          {logo
+            ? <img src={logo} alt={brand?.name ?? "Store"} className="h-8 w-8 shrink-0 rounded-lg border object-contain" />
+            : <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-primary text-xs font-bold text-primary-foreground">{(brand?.name ?? "S").slice(0, 1)}</span>}
+          <div className="min-w-0"><div className="truncate text-sm font-semibold">Our Record</div><div className="truncate text-[11px] text-muted-foreground">{brand?.name ?? ""}</div></div>
+        </div>
+        {data && <Pill tone={data.total > 1 ? "primary" : "muted"}>{data.total > 1 ? "Returning Customer" : "New Customer"}</Pill>}
+      </div>
+      <div className="p-4">
+        <div className="flex items-baseline justify-between"><span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Web Orders</span><span className="text-xl font-bold">{data?.total ?? 0}</span></div>
+        <div className="mt-2 flex flex-wrap gap-1.5">
+          {[...STATUS_LABEL.filter(([s]) => by[s]), ...extra.map((k) => [k, k.replace(/_/g, " ")] as [string, string])].map(([s, l]) => (
+            <span key={s} className={`rounded-full border px-2 py-0.5 text-[11px] capitalize ${s === "cancelled" ? "text-destructive" : s === "delivered" ? "text-primary" : ""}`}>{l}: <b>{by[s]}</b></span>
+          ))}
+          {!data && <span className="text-xs text-muted-foreground">এই নম্বরে আগে কোনো অর্ডার নেই।</span>}
+        </div>
+      </div>
+    </Card>
   );
 }
