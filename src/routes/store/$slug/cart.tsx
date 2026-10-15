@@ -178,7 +178,7 @@ function CartPage() {
               {gItems.map((i) => {
                 const on = selected.includes(i.productId);
                 return (
-                  <li key={i.productId} className="sf-animate-fade-in flex gap-3 p-3 transition-colors hover:bg-sf-surface/60">
+                  <li key={i.productId + (i.variantId ?? "")} className="sf-animate-fade-in flex gap-3 p-3 transition-colors hover:bg-sf-surface/60">
                     <Box checked={on} onClick={() => toggleItem(i.productId)} className="mt-6" />
                     <div className="h-16 w-16 shrink-0 overflow-hidden rounded-md bg-muted">
                       {i.image && <img src={i.image} alt="" className="h-full w-full object-cover transition-transform duration-500 hover:scale-110" />}
@@ -187,7 +187,7 @@ function CartPage() {
                       <div className="flex items-start justify-between gap-2">
                         <p className="line-clamp-2 text-sm font-medium">{i.name}</p>
                         <button
-                          onClick={() => removeItem(slug, i.productId)}
+                          onClick={() => removeItem(slug, i.productId, i.variantId ?? "")}
                           className="sf-press text-muted-foreground hover:scale-110 hover:text-destructive"
                           aria-label={t("cart.removeAria")}
                         >
@@ -199,7 +199,7 @@ function CartPage() {
                           <button
                             type="button"
                             className="sf-press grid h-8 w-8 place-items-center rounded-full hover:bg-sf-accent-soft hover:text-sf-accent"
-                            onClick={() => updateQty(slug, i.productId, i.qty - 1)}
+                            onClick={() => updateQty(slug, i.productId, i.qty - 1, i.variantId ?? "")}
                           >
                             <Minus className="h-3.5 w-3.5" />
                           </button>
@@ -207,7 +207,7 @@ function CartPage() {
                           <button
                             type="button"
                             className="sf-press grid h-8 w-8 place-items-center rounded-full hover:bg-sf-accent-soft hover:text-sf-accent"
-                            onClick={() => updateQty(slug, i.productId, i.qty + 1)}
+                            onClick={() => updateQty(slug, i.productId, i.qty + 1, i.variantId ?? "")}
                           >
                             <Plus className="h-3.5 w-3.5" />
                           </button>

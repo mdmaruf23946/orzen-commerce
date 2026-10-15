@@ -46,17 +46,20 @@ export function addToCart(slug: string, item: CartItem) {
   ).catch(() => {});
 }
 
-export function updateQty(slug: string, productId: string, qty: number) {
+const same = (i: CartItem, productId: string, variantId?: string) =>
+  i.productId === productId && (variantId === undefined || (i.variantId ?? "") === variantId);
+
+export function updateQty(slug: string, productId: string, qty: number, variantId?: string) {
   const items = readCart(slug)
-    .map((i) => (i.productId === productId ? { ...i, qty } : i))
+    .map((i) => (same(i, productId, variantId) ? { ...i, qty } : i))
     .filter((i) => i.qty > 0);
   writeCart(slug, items);
 }
 
-export function removeItem(slug: string, productId: string) {
+export function removeItem(slug: string, productId: string, variantId?: string) {
   writeCart(
     slug,
-    readCart(slug).filter((i) => i.productId !== productId),
+    readCart(slug).filter((i) => !same(i, productId, variantId)),
   );
 }
 
