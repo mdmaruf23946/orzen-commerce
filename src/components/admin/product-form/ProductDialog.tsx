@@ -308,6 +308,24 @@ export function ProductDialog({
   const [digFree, setDigFree] = useState<boolean>(dig0.free ?? false);
   const [digSaleStart, setDigSaleStart] = useState<string>(dig0.sale_window?.start ?? "");
   const [digSaleEnd, setDigSaleEnd] = useState<string>(dig0.sale_window?.end ?? "");
+  // License tiers (Personal / Commercial …) — saved as variants with option "License"
+  // so storefront picker, cart and server pricing reuse the variant path.
+  const [licenses, setLicenses] = useState<{ id: string; name: string; price: string; description: string }[]>(() => {
+    const v = editing?.variants;
+    if (editing?.product_type !== "digital" || !v || !Array.isArray(v.items)) return [];
+    return v.items
+      .filter((it: any) => it?.options?.License)
+      .map((it: any) => ({
+        id: String(it.id),
+        name: String(it.options.License),
+        price: it.price != null ? String(it.price) : "",
+        description: String(it.description ?? ""),
+      }));
+  });
+  const cleanLicenses = licenses
+    .filter((l) => l.name.trim() && Number(l.price) > 0)
+    .map((l) => ({ id: l.id, name: l.name.trim(), price: Number(l.price), description: l.description.trim() }));
+  const newLicId = () => `lic_${Math.random().toString(36).slice(2, 10)}`;
 
   const [addingCat, setAddingCat] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -528,7 +546,14 @@ export function ProductDialog({
         shipping_info: shippingInfo || null,
         is_featured: isFeatured,
         specifications: specs.filter((s) => s.key.trim()),
-        variants: variants.options.length
+        variants: isDigital
+          ? cleanLicenses.length && !digFree
+            ? {
+                options: [{ name: "License", values: cleanLicenses.map((l) => l.name) }],
+                items: cleanLicenses.map((l) => ({ id: l.id, options: { License: l.name }, price: l.price, description: l.description })),
+              }
+            : { options: [], items: [] }
+          : variants.options.length
           ? {
               options: variants.options.filter((o) => o.name.trim() && o.values.length),
               items: variants.items.filter((i) => !excludedVariants.includes(i.id)),
@@ -1250,6 +1275,7 @@ export function ProductDialog({
   if (!digFree && (!regularPrice || reg <= 0)) digIssues.push("দাম দিন অথবা 'Free product' চালু করুন (ধাপ ২)");
   if (sale != null && sale >= reg && !digFree) digIssues.push("অফার দাম মূল দামের চেয়ে কম হতে হবে");
   if (!digFiles.length && !digExternalUrl.trim()) digIssues.push("ফাইল আপলোড করুন বা ডাউনলোড লিংক দিন (ধাপ ২)");
+  if (!digFree && licenses.some((l) => !l.name.trim() || !(Number(l.price) > 0))) digIssues.push("প্রতিটা লাইসেন্সের নাম ও দাম দিন, নইলে সেটা বাদ যাবে");
   if (!image) digIssues.push("একটি কভার ছবি দিলে ভালো হয় (ঐচ্ছিক)");
   const digitalSteps = [
     {
@@ -1269,6 +1295,37 @@ export function ProductDialog({
         <div className="space-y-5">
           {T("pricing")}
           <div className="border-t pt-4">{D("digital-files")}</div>
+          {!digFree && (
+            <div className="space-y-3 border-t pt-4">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <Label>লাইসেন্স (ঐচ্ছিক)</Label>
+                  <p className="text-xs text-muted-foreground">প্রতিটা লাইসেন্সের আলাদা দাম। না দিলে উপরের একটাই দাম থাকবে।</p>
+                </div>
+                <div className="flex gap-2">
+                  {licenses.length === 0 && (
+                    <Button type="button" size="sm" variant="outline" onClick={() => setLicenses([
+                      { id: newLicId(), name: "Personal", price: regularPrice || "", description: "শুধু ব্যক্তিগত ব্যবহারের জন্য" },
+                      { id: newLicId(), name: "Commercial", price: "", description: "ব্যবসা ও ক্লায়েন্ট প্রজেক্টে ব্যবহার করা যাবে" },
+                    ])}>+ Personal & Commercial</Button>
+                  )}
+                  <Button type="button" size="sm" variant="outline" onClick={() => setLicenses([...licenses, { id: newLicId(), name: "", price: "", description: "" }])}>
+                    <Plus className="h-3 w-3" /> Custom
+                  </Button>
+                </div>
+              </div>
+              {licenses.map((l, i) => (
+                <div key={l.id} className="space-y-2 rounded-xl border p-3">
+                  <div className="flex gap-2">
+                    <Input className="flex-1" placeholder="নাম (যেমন Extended)" value={l.name} onChange={(e) => setLicenses(licenses.map((x, j) => j === i ? { ...x, name: e.target.value } : x))} />
+                    <Input className="w-28" type="number" min={0} placeholder="দাম ৳" value={l.price} onChange={(e) => setLicenses(licenses.map((x, j) => j === i ? { ...x, price: e.target.value } : x))} />
+                    <Button type="button" size="icon" variant="ghost" onClick={() => setLicenses(licenses.filter((_, j) => j !== i))}><X className="h-4 w-4" /></Button>
+                  </div>
+                  <Input placeholder="কী কী করা যাবে (ছোট করে)" maxLength={200} value={l.description} onChange={(e) => setLicenses(licenses.map((x, j) => j === i ? { ...x, description: e.target.value } : x))} />
+                </div>
+              ))}
+            </div>
+          )}
           <div className="border-t pt-4">{D("download")}</div>
         </div>
       ),
@@ -1286,7 +1343,7 @@ export function ProductDialog({
             )}
             <div className="min-w-0 flex-1 space-y-1 text-sm">
               <p className="truncate font-semibold">{name || "(নাম নেই)"}</p>
-              <p className="font-semibold text-primary">{digFree ? "Free" : `৳${finalPrice.toFixed(0)}`}</p>
+              <p className="font-semibold text-primary">{digFree ? "Free" : cleanLicenses.length ? cleanLicenses.map((l) => `${l.name} ৳${l.price}`).join(" · ") : `৳${finalPrice.toFixed(0)}`}</p>
               <p className="text-xs text-muted-foreground">
                 {digFiles.length} file{digFiles.length === 1 ? "" : "s"}{digExternalUrl ? " · external link" : ""} · {digMode === "instant" ? "Instant download" : "Manual approval"}
               </p>
