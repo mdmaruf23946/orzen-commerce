@@ -13,7 +13,7 @@ import { Link } from "@tanstack/react-router";
 import { getOrderDetails, addInternalNote, deleteInternalNote } from "@/lib/business.functions";
 import { updateOrderCourierInfo } from "@/lib/ai-review.functions";
 import { setOrderAllowDuplicate, updateOrderStatus } from "@/lib/admin.functions";
-import { getOrderCustomerStats } from "@/lib/orders-admin.functions";
+import { getOrderCustomerStats, getStoreBrand, listCourierBrands } from "@/lib/orders-admin.functions";
 import { getCachedFraudCheck, ensureAutoFraudCheck } from "@/lib/fraud.functions";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
@@ -289,9 +289,10 @@ export function OrderDetailsDrawer({ open, onOpenChange, orderId }: Props) {
                     </div>
                 </Card>
 
+                  <OurRecord phone={order.phone} enabled={open} />
                   {isPhysical && (
                     <Card>
-                      <CardHead icon={Truck} title="Courier Performance" sub="(This Customer)" action={
+                      <CardHead icon={Truck} title="Courier Ratio" sub="(This Customer)" action={
                         <button type="button" onClick={() => setFraudOpen(true)} className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs hover:bg-muted"><ShieldCheck className="h-3 w-3" /> {cachedFraud ? "Re-check" : "Check"}</button>
                       } />
                       <div className="px-4 pb-4">
@@ -301,19 +302,7 @@ export function OrderDetailsDrawer({ open, onOpenChange, orderId }: Props) {
                               <RiskBadge risk={(cachedFraud as any).risk} />
                               <span className="text-muted-foreground">Checked {fmtDate((cachedFraud as any).checked_at)}</span>
                             </div>
-                            <div className="flex snap-x gap-3 overflow-x-auto pb-1 [&>*]:min-w-[200px] [&>*]:flex-1 [&>*]:snap-start">
-                              {((cachedFraud as any).courier_history ?? []).map((c: any) => (
-                                <div key={c.courier} className="rounded-xl border p-2.5">
-                                  <div className="flex items-center gap-2">
-                                    <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-primary/10 text-[11px] font-bold uppercase text-primary">{String(c.courier).slice(0, 2)}</span>
-                                    <div className="min-w-0"><div className="truncate text-xs font-semibold capitalize">{c.courier}</div><div className="text-[10px] text-muted-foreground">Total: {c.total}</div></div>
-                                  </div>
-                                  <div className="mt-2 text-[10px] text-muted-foreground">Delivered: <span className="text-primary">{c.success}</span> | Cancelled: <span className="text-destructive">{c.cancelled ?? Math.max(0, c.total - c.success)}</span></div>
-                                  <div className="mt-1.5 flex items-baseline gap-1"><span className="text-sm font-bold">{c.rate}%</span><span className="text-[10px] text-muted-foreground">Success</span></div>
-                                  <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full bg-primary" style={{ width: `${c.rate}%` }} /></div>
-                                </div>
-                              ))}
-                            </div>
+                            <CourierRatioCards history={(cachedFraud as any).courier_history ?? []} />
                           </>
                         ) : <div className="text-xs text-muted-foreground">Checking courier history…</div>}
                       </div>
