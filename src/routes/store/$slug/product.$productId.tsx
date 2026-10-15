@@ -309,6 +309,11 @@ function ProductPage() {
                     </div>
                   </div>
                 ))}
+                {variant && (variant as any).description && (
+                  <p className="rounded-lg border bg-muted/40 p-3 text-sm text-muted-foreground">
+                    {(variant as any).description}
+                  </p>
+                )}
                 {variant?.image && (
                   <img src={variant.image.startsWith("http") ? variant.image : `/api/img/${variant.image}`} alt="" className="h-20 w-20 rounded-lg border object-cover" />
                 )}

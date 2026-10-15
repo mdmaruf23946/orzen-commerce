@@ -36,6 +36,8 @@ const RichTextEditor = lazy(() => import("../RichTextEditor"));
 
 type Category = { id: string; name: string; parent_id?: string | null };
 
+const newPkgId = () => `pkg_${Math.random().toString(36).slice(2, 10)}`;
+
 export function ServiceProductDialog({
   storeId,
   editing,
@@ -121,6 +123,22 @@ export function ServiceProductDialog({
 
   // Step 7 — Add-ons
   const [addons, setAddons] = useState<ServiceAddon[]>(svc0.addons ?? []);
+
+  // Packages (Basic / Standard / Premium) — saved as product variants so the
+  // storefront picker, cart and server-side pricing reuse the variant path.
+  const [packages, setPackages] = useState<{ id: string; name: string; price: string; description: string }[]>(() => {
+    const v = editing?.variants;
+    if (!v || !Array.isArray(v.items)) return [];
+    return v.items.map((it: any) => ({
+      id: String(it.id),
+      name: String(it.options?.Package ?? Object.values(it.options ?? {})[0] ?? ""),
+      price: it.price != null ? String(it.price) : "",
+      description: String(it.description ?? ""),
+    }));
+  });
+  const cleanPkgs = packages
+    .filter((p) => p.name.trim() && Number(p.price) > 0)
+    .map((p) => ({ id: p.id, name: p.name.trim(), price: Number(p.price), description: p.description.trim() }));
 
   // Step 8 — FAQ
   const [faq, setFaq] = useState<ServiceFaq[]>(svc0.faq ?? []);
@@ -229,6 +247,10 @@ export function ServiceProductDialog({
       toast.error("Select a category");
       return;
     }
+    if (packages.some((p) => p.name.trim() && !(Number(p.price) > 0))) {
+      toast.error("প্রতিটা প্যাকেজের দাম দিন");
+      return;
+    }
     if (!isQuote && (!regularPrice || reg <= 0)) {
       toast.error("Enter a regular price, or choose Custom quote pricing");
       return;
@@ -259,7 +281,12 @@ export function ServiceProductDialog({
         shipping_info: null,
         is_featured: isFeatured,
         specifications: [],
-        variants: [],
+        variants: cleanPkgs.length
+          ? {
+              options: [{ name: "Package", values: cleanPkgs.map((p) => p.name) }],
+              items: cleanPkgs.map((p) => ({ id: p.id, options: { Package: p.name }, price: p.price, description: p.description })),
+            }
+          : [],
         related_product_ids: [],
         product_type: "service",
         meta: buildMeta(),
@@ -778,6 +805,7 @@ export function ServiceProductDialog({
               ["Included", String(included.filter(Boolean).length)],
               ["Requirements", String(requirements.filter(Boolean).length)],
               ["Deliverables", String(deliverables.filter(Boolean).length)],
+              ["Packages", cleanPkgs.length ? cleanPkgs.map((p) => `${p.name} ৳${p.price}`).join(", ") : "—"],
               ["Add-ons", String(addons.filter((a) => a.name.trim()).length)],
               ["FAQ", String(faq.filter((f) => f.question.trim()).length)],
               ["Portfolio images", String(portfolio.length)],
@@ -812,6 +840,33 @@ export function ServiceProductDialog({
           {T("pricing")}
           {T("delivery")}
           {T("booking")}
+          <StepCard title="প্যাকেজ (Basic / Standard / Premium) — ঐচ্ছিক">
+            <p className="mb-3 text-xs text-muted-foreground">
+              প্যাকেজ দিলে কাস্টমার দোকানে একটা বেছে নেবে, আর সেই প্যাকেজের দামই নেওয়া হবে। না দিলে উপরের দামই থাকবে।
+            </p>
+            <div className="space-y-3">
+              {packages.map((p, i) => (
+                <div key={p.id} className="space-y-2 rounded-lg border p-3">
+                  <div className="grid grid-cols-[1fr_110px_auto] gap-2">
+                    <Input placeholder="নাম (যেমন Basic)" value={p.name} onChange={(e) => setPackages(packages.map((x, j) => (j === i ? { ...x, name: e.target.value } : x)))} />
+                    <Input type="number" min={0} placeholder="দাম ৳" value={p.price} onChange={(e) => setPackages(packages.map((x, j) => (j === i ? { ...x, price: e.target.value } : x)))} />
+                    <Button type="button" variant="ghost" size="icon" onClick={() => setPackages(packages.filter((_, j) => j !== i))}><Trash2 className="h-4 w-4" /></Button>
+                  </div>
+                  <Input placeholder="কী কী থাকবে (ছোট করে)" value={p.description} onChange={(e) => setPackages(packages.map((x, j) => (j === i ? { ...x, description: e.target.value } : x)))} />
+                </div>
+              ))}
+              <div className="flex flex-wrap gap-2">
+                {packages.length === 0 && (
+                  <Button type="button" variant="outline" size="sm" onClick={() => setPackages(["Basic", "Standard", "Premium"].map((n) => ({ id: newPkgId(), name: n, price: "", description: "" })))}>
+                    Basic / Standard / Premium যোগ করুন
+                  </Button>
+                )}
+                <Button type="button" variant="outline" size="sm" onClick={() => setPackages([...packages, { id: newPkgId(), name: "", price: "", description: "" }])}>
+                  <Plus className="mr-1 h-4 w-4" /> প্যাকেজ যোগ করুন
+                </Button>
+              </div>
+            </div>
+          </StepCard>
           <Fold title="Add-ons (অতিরিক্ত সেবা)">{T("addons")}</Fold>
         </div>
       ),
