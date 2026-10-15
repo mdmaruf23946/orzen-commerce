@@ -166,45 +166,64 @@ export function OrderDetailsDrawer({ open, onOpenChange, orderId }: Props) {
       <Sheet open={open} onOpenChange={onOpenChange}>
         <SheetContent
           side="right"
-          className="w-full overflow-y-auto p-0 sm:max-w-lg"
+          className="w-full overflow-y-auto bg-muted/30 p-0 sm:max-w-3xl lg:max-w-5xl xl:max-w-6xl"
         >
-          <SheetHeader className="sticky top-0 z-10 border-b bg-background px-4 py-3">
-            <SheetTitle className="flex items-center justify-between gap-2 text-base">
-              <span className="truncate">Order Details</span>
+          <SheetHeader className="sticky top-0 z-10 border-b bg-background px-4 py-3 pr-12 sm:px-6">
+            <SheetTitle className="flex items-center justify-between gap-3 text-base">
+              <span className="min-w-0">
+                <span className="flex flex-wrap items-center gap-2">
+                  <span className="truncate font-semibold">
+                    {order ? (order.invoice_no ?? `#${orderId.slice(0, 8).toUpperCase()}`) : "Order Details"}
+                  </span>
+                  {order?.status && (
+                    <span className="rounded-full border bg-primary/10 px-2 py-0.5 text-[11px] font-medium capitalize text-primary">
+                      {String(order.status).replace(/_/g, " ")}
+                    </span>
+                  )}
+                  {order?.payment_method && (
+                    <span className="rounded-full border bg-muted px-2 py-0.5 text-[11px] font-medium uppercase text-muted-foreground">
+                      {order.payment_method}
+                    </span>
+                  )}
+                </span>
+                {order?.created_at && (
+                  <span className="mt-0.5 block text-xs font-normal text-muted-foreground">
+                    {new Date(order.created_at).toLocaleString()}
+                  </span>
+                )}
+              </span>
               {order?.invoice_no && (
                 <Link
                   to="/admin/invoice/$orderId"
                   params={{ orderId }}
                   target="_blank"
-                  className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs font-normal hover:bg-muted"
+                  className="inline-flex shrink-0 items-center gap-1 rounded-md border px-2.5 py-1.5 text-xs font-medium hover:bg-muted"
                 >
-                  <Printer className="h-3 w-3" /> Invoice
+                  <Printer className="h-3.5 w-3.5" /> Invoice
                 </Link>
               )}
             </SheetTitle>
-
           </SheetHeader>
 
           {isLoading || !order ? (
             <div className="p-6 text-center text-sm text-muted-foreground">Loading…</div>
           ) : (
-            <div className="space-y-3 p-4">
+            <div className="grid gap-4 p-4 sm:p-5 lg:grid-cols-[minmax(0,1fr)_340px] lg:gap-5 lg:p-6">
+              <div className="min-w-0 space-y-4">
               {/* Products */}
               <Section icon={Package} title="Product" action={editBtn(() => setEditItems(true))}>
                 <ul className="divide-y">
                   {items.map((it, i) => (
-                    <li key={i} className="space-y-3 py-3">
-                      <div className="mx-auto h-32 w-32 shrink-0 overflow-hidden rounded-xl border bg-muted sm:h-36 sm:w-36">
+                    <li key={i} className="flex items-center gap-3 py-3 sm:gap-4">
+                      <div className="h-16 w-16 shrink-0 overflow-hidden rounded-lg border bg-muted sm:h-20 sm:w-20">
                         <ProductImage url={it.products?.primary_image_url} alt={it.name_snapshot} />
                       </div>
-                      <div className="text-center">
-                        <div className="text-sm font-medium">{it.name_snapshot}</div>
-                        {it.products?.sku && <div className="text-[10px] text-muted-foreground">SKU: {it.products.sku}</div>}
-                        <div className="mt-1 flex items-center justify-center gap-2 text-xs text-muted-foreground">
-                          <span>Qty {it.qty} · ৳{Number(it.price_snapshot).toFixed(0)}</span>
-                          <span className="font-semibold text-foreground">৳{(Number(it.price_snapshot) * it.qty).toFixed(0)}</span>
-                        </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="line-clamp-2 text-sm font-medium">{it.name_snapshot}</div>
+                        {it.products?.sku && <div className="mt-0.5 text-[11px] text-muted-foreground">SKU: {it.products.sku}</div>}
+                        <div className="mt-1 text-xs text-muted-foreground">৳{Number(it.price_snapshot).toFixed(0)} × {it.qty}</div>
                       </div>
+                      <div className="shrink-0 text-right text-sm font-semibold">৳{(Number(it.price_snapshot) * it.qty).toFixed(0)}</div>
                     </li>
                   ))}
                 </ul>
@@ -217,7 +236,68 @@ export function OrderDetailsDrawer({ open, onOpenChange, orderId }: Props) {
                   </div>
                 </div>
               </Section>
-
+              {/* Type-specific fulfilment */}
+              {kind === "digital" && (
+                <Section icon={ScrollText} title="Digital delivery">
+                  <dl className="grid grid-cols-2 gap-y-1 text-xs">
+                    <dt className="text-muted-foreground">Access</dt>
+                    <dd className="text-right capitalize">
+                      {order.confirmation_status === "confirmed" ? "Granted" : "Locked"}
+                    </dd>
+                    <dt className="text-muted-foreground">Delivery email</dt>
+                    <dd className="text-right">{order.email ?? "—"}</dd>
+                  </dl>
+                </Section>
+              )}
+              {kind === "service" && (
+                <Section icon={ScrollText} title="Service workflow">
+                  <ServiceWorkflowPanel orderId={order.id} open={true} />
+                </Section>
+              )}
+              {kind === "subscription" && (
+                <Section icon={ScrollText} title="Subscription">
+                  <SubscriptionOrderPanel orderId={order.id} fallback={fulfil} />
+                </Section>
+              )}
+              {/* Timeline */}
+              <Section icon={ScrollText} title="Timeline">
+                <ol className="space-y-2">
+                  {timeline.map((t) => (
+                    <li key={t.id} className="flex items-start gap-2 text-xs">
+                      <span className="mt-1 h-1.5 w-1.5 rounded-full bg-primary" />
+                      <div>
+                        <div className="font-medium">{STAGE_LABEL[t.stage] ?? t.stage}</div>
+                        <div className="text-muted-foreground">{new Date(t.created_at).toLocaleString()}</div>
+                      </div>
+                    </li>
+                  ))}
+                  {timeline.length === 0 && <li className="text-xs text-muted-foreground">No events yet.</li>}
+                </ol>
+              </Section>
+              <Section icon={ScrollText} title="Edit History">
+                <OrderEditHistory orderId={orderId} enabled={open} />
+              </Section>
+              {/* Notes */}
+              <Section icon={ScrollText} title="Internal Notes">
+                <ul className="space-y-1.5">
+                  {notes.map((n) => (
+                    <li key={n.id} className="group flex items-start justify-between gap-2 rounded bg-muted/40 p-2 text-xs">
+                      <div>
+                        <div>{n.body}</div>
+                        <div className="mt-0.5 text-[10px] text-muted-foreground">{new Date(n.created_at).toLocaleString()}</div>
+                      </div>
+                      <button onClick={() => remove(n.id)} className="opacity-60 hover:opacity-100"><Trash2 className="h-3 w-3 text-destructive" /></button>
+                    </li>
+                  ))}
+                  {notes.length === 0 && <li className="text-xs text-muted-foreground">No notes yet.</li>}
+                </ul>
+                <form onSubmit={submitNote} className="mt-2 space-y-2">
+                  <Textarea rows={2} value={note} onChange={(e) => setNote(e.target.value)} placeholder="Add internal note…" className="text-xs" />
+                  <Button type="submit" size="sm" variant="outline" disabled={!note.trim()}>Add note</Button>
+                </form>
+              </Section>
+              </div>
+              <aside className="order-first min-w-0 space-y-4 lg:order-none lg:sticky lg:top-20 lg:self-start">
               {/* Customer */}
               <Section icon={User} title="Customer" action={editBtn(() => setEditCustomer(true))}>
                 <div className="space-y-1 text-sm">
@@ -244,7 +324,6 @@ export function OrderDetailsDrawer({ open, onOpenChange, orderId }: Props) {
                 </div>
                 <CustomerStats phone={order.phone} enabled={open} />
               </Section>
-
               {/* Calls */}
               <Section icon={Phone} title="Contact">
                 <OrderCallsPanel
@@ -257,13 +336,67 @@ export function OrderDetailsDrawer({ open, onOpenChange, orderId }: Props) {
                 />
 
               </Section>
-
-
-
-              <Section icon={ScrollText} title="Edit History">
-                <OrderEditHistory orderId={orderId} enabled={open} />
+              {/* Courier + fraud */}
+              {isPhysical && (
+              <Section icon={Truck} title="Courier & Risk">
+                <div className="flex items-center justify-between gap-2">
+                  {cachedFraud ? <RiskBadge risk={(cachedFraud as any).risk} /> : <span className="text-xs text-muted-foreground">Checking…</span>}
+                  <Button size="sm" variant="outline" onClick={() => setFraudOpen(true)}>
+                    <ShieldCheck className="mr-1 h-3 w-3" /> {cachedFraud ? "View / Re-check" : "Fraud Check"}
+                  </Button>
+                </div>
+                {cachedFraud && (
+                  <>
+                    <div className="mt-2 grid grid-cols-2 gap-2 text-xs">
+                      <MiniStat label="Total Orders" value={(cachedFraud as any).total_orders ?? 0} />
+                      <MiniStat label="Successful" value={(cachedFraud as any).successful ?? 0} />
+                      <MiniStat label="Returned" value={(cachedFraud as any).returned ?? 0} />
+                      <MiniStat label="Cancelled" value={(cachedFraud as any).cancelled ?? 0} />
+                      <MiniStat label="COD Success" value={`${(cachedFraud as any).cod_success_rate ?? 0}%`} />
+                      <MiniStat label="Last Delivery" value={(cachedFraud as any).last_delivery ? new Date((cachedFraud as any).last_delivery).toLocaleDateString() : "—"} />
+                    </div>
+                    {Array.isArray((cachedFraud as any).courier_history) && (cachedFraud as any).courier_history.length > 0 && (
+                      <details className="mt-2 rounded-lg border p-2.5">
+                        <summary className="cursor-pointer text-[11px] font-medium">Courier History</summary>
+                        <ul className="mt-1.5 space-y-1 text-[11px]">
+                          {(cachedFraud as any).courier_history.map((c: any, i: number) => (
+                            <li key={i} className="flex items-center justify-between">
+                              <span className="capitalize">{c.courier}</span>
+                              <span className="text-muted-foreground">{c.success}/{c.total} · {c.rate}%</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </details>
+                    )}
+                    <div className="mt-2 flex flex-wrap items-center justify-between gap-1 text-[10px] text-muted-foreground">
+                      <span>Last Checked: {new Date((cachedFraud as any).checked_at).toLocaleString()}</span>
+                      <span>
+                        {Math.min((cachedFraud as any).check_count ?? 1, (cachedFraud as any).max_checks ?? 2)}/{(cachedFraud as any).max_checks ?? 2} · <span className="capitalize">{(cachedFraud as any).last_check_source ?? "system"}</span>
+                      </span>
+                    </div>
+                  </>
+                )}
               </Section>
-
+              )}
+              {/* Courier tracking editor */}
+              {isPhysical && (
+              <Section icon={Truck} title="Courier tracking">
+                {(order.courier_name || order.courier_tracking_id || order.courier_status) && (
+                  <div className="mb-2 rounded-md bg-muted/40 p-2 text-xs">
+                    {order.courier_name && <div><span className="text-muted-foreground">Courier:</span> {order.courier_name}</div>}
+                    {order.courier_tracking_id && <div><span className="text-muted-foreground">Tracking:</span> <span className="font-mono">{order.courier_tracking_id}</span></div>}
+                    {order.courier_status && <div><span className="text-muted-foreground">Status:</span> {order.courier_status}</div>}
+                    {order.courier_last_synced_at && <div className="text-[10px] text-muted-foreground">Updated {new Date(order.courier_last_synced_at).toLocaleString()}</div>}
+                  </div>
+                )}
+                <form onSubmit={submitCourier} className="space-y-2">
+                  <Input placeholder="Courier (e.g. Pathao, Steadfast)" value={courier.name} onChange={(e) => setCourier((c) => ({ ...c, name: e.target.value }))} className="h-8 text-xs" />
+                  <Input placeholder="Tracking ID" value={courier.tracking} onChange={(e) => setCourier((c) => ({ ...c, tracking: e.target.value }))} className="h-8 text-xs" />
+                  <Input placeholder="Status (e.g. In Transit)" value={courier.status} onChange={(e) => setCourier((c) => ({ ...c, status: e.target.value }))} className="h-8 text-xs" />
+                  <Button type="submit" size="sm" variant="outline" disabled={savingCourier}>{savingCourier ? "Saving…" : "Update courier"}</Button>
+                </form>
+              </Section>
+              )}
               {/* Order info */}
               <Section icon={ScrollText} title="Order">
                 <dl className="grid grid-cols-2 gap-y-1 text-xs">
@@ -321,130 +454,7 @@ export function OrderDetailsDrawer({ open, onOpenChange, orderId }: Props) {
                 </label>
                 )}
               </Section>
-
-              {/* Type-specific fulfilment */}
-              {kind === "digital" && (
-                <Section icon={ScrollText} title="Digital delivery">
-                  <dl className="grid grid-cols-2 gap-y-1 text-xs">
-                    <dt className="text-muted-foreground">Access</dt>
-                    <dd className="text-right capitalize">
-                      {order.confirmation_status === "confirmed" ? "Granted" : "Locked"}
-                    </dd>
-                    <dt className="text-muted-foreground">Delivery email</dt>
-                    <dd className="text-right">{order.email ?? "—"}</dd>
-                  </dl>
-                </Section>
-              )}
-              {kind === "service" && (
-                <Section icon={ScrollText} title="Service workflow">
-                  <ServiceWorkflowPanel orderId={order.id} open={true} />
-                </Section>
-              )}
-              {kind === "subscription" && (
-                <Section icon={ScrollText} title="Subscription">
-                  <SubscriptionOrderPanel orderId={order.id} fallback={fulfil} />
-                </Section>
-              )}
-
-
-              {/* Courier + fraud */}
-              {isPhysical && (
-              <Section icon={Truck} title="Courier & Risk">
-                <div className="flex items-center justify-between gap-2">
-                  {cachedFraud ? <RiskBadge risk={(cachedFraud as any).risk} /> : <span className="text-xs text-muted-foreground">Checking…</span>}
-                  <Button size="sm" variant="outline" onClick={() => setFraudOpen(true)}>
-                    <ShieldCheck className="mr-1 h-3 w-3" /> {cachedFraud ? "View / Re-check" : "Fraud Check"}
-                  </Button>
-                </div>
-                {cachedFraud && (
-                  <>
-                    <div className="mt-2 grid grid-cols-2 gap-2 text-xs">
-                      <MiniStat label="Total Orders" value={(cachedFraud as any).total_orders ?? 0} />
-                      <MiniStat label="Successful" value={(cachedFraud as any).successful ?? 0} />
-                      <MiniStat label="Returned" value={(cachedFraud as any).returned ?? 0} />
-                      <MiniStat label="Cancelled" value={(cachedFraud as any).cancelled ?? 0} />
-                      <MiniStat label="COD Success" value={`${(cachedFraud as any).cod_success_rate ?? 0}%`} />
-                      <MiniStat label="Last Delivery" value={(cachedFraud as any).last_delivery ? new Date((cachedFraud as any).last_delivery).toLocaleDateString() : "—"} />
-                    </div>
-                    {Array.isArray((cachedFraud as any).courier_history) && (cachedFraud as any).courier_history.length > 0 && (
-                      <details className="mt-2 rounded-lg border p-2.5">
-                        <summary className="cursor-pointer text-[11px] font-medium">Courier History</summary>
-                        <ul className="mt-1.5 space-y-1 text-[11px]">
-                          {(cachedFraud as any).courier_history.map((c: any, i: number) => (
-                            <li key={i} className="flex items-center justify-between">
-                              <span className="capitalize">{c.courier}</span>
-                              <span className="text-muted-foreground">{c.success}/{c.total} · {c.rate}%</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </details>
-                    )}
-                    <div className="mt-2 flex flex-wrap items-center justify-between gap-1 text-[10px] text-muted-foreground">
-                      <span>Last Checked: {new Date((cachedFraud as any).checked_at).toLocaleString()}</span>
-                      <span>
-                        {Math.min((cachedFraud as any).check_count ?? 1, (cachedFraud as any).max_checks ?? 2)}/{(cachedFraud as any).max_checks ?? 2} · <span className="capitalize">{(cachedFraud as any).last_check_source ?? "system"}</span>
-                      </span>
-                    </div>
-                  </>
-                )}
-              </Section>
-              )}
-
-              {/* Timeline */}
-              <Section icon={ScrollText} title="Timeline">
-                <ol className="space-y-2">
-                  {timeline.map((t) => (
-                    <li key={t.id} className="flex items-start gap-2 text-xs">
-                      <span className="mt-1 h-1.5 w-1.5 rounded-full bg-primary" />
-                      <div>
-                        <div className="font-medium">{STAGE_LABEL[t.stage] ?? t.stage}</div>
-                        <div className="text-muted-foreground">{new Date(t.created_at).toLocaleString()}</div>
-                      </div>
-                    </li>
-                  ))}
-                  {timeline.length === 0 && <li className="text-xs text-muted-foreground">No events yet.</li>}
-                </ol>
-              </Section>
-
-              {/* Courier tracking editor */}
-              {isPhysical && (
-              <Section icon={Truck} title="Courier tracking">
-                {(order.courier_name || order.courier_tracking_id || order.courier_status) && (
-                  <div className="mb-2 rounded-md bg-muted/40 p-2 text-xs">
-                    {order.courier_name && <div><span className="text-muted-foreground">Courier:</span> {order.courier_name}</div>}
-                    {order.courier_tracking_id && <div><span className="text-muted-foreground">Tracking:</span> <span className="font-mono">{order.courier_tracking_id}</span></div>}
-                    {order.courier_status && <div><span className="text-muted-foreground">Status:</span> {order.courier_status}</div>}
-                    {order.courier_last_synced_at && <div className="text-[10px] text-muted-foreground">Updated {new Date(order.courier_last_synced_at).toLocaleString()}</div>}
-                  </div>
-                )}
-                <form onSubmit={submitCourier} className="space-y-2">
-                  <Input placeholder="Courier (e.g. Pathao, Steadfast)" value={courier.name} onChange={(e) => setCourier((c) => ({ ...c, name: e.target.value }))} className="h-8 text-xs" />
-                  <Input placeholder="Tracking ID" value={courier.tracking} onChange={(e) => setCourier((c) => ({ ...c, tracking: e.target.value }))} className="h-8 text-xs" />
-                  <Input placeholder="Status (e.g. In Transit)" value={courier.status} onChange={(e) => setCourier((c) => ({ ...c, status: e.target.value }))} className="h-8 text-xs" />
-                  <Button type="submit" size="sm" variant="outline" disabled={savingCourier}>{savingCourier ? "Saving…" : "Update courier"}</Button>
-                </form>
-              </Section>
-              )}
-
-              {/* Notes */}
-              <Section icon={ScrollText} title="Internal Notes">
-                <ul className="space-y-1.5">
-                  {notes.map((n) => (
-                    <li key={n.id} className="group flex items-start justify-between gap-2 rounded bg-muted/40 p-2 text-xs">
-                      <div>
-                        <div>{n.body}</div>
-                        <div className="mt-0.5 text-[10px] text-muted-foreground">{new Date(n.created_at).toLocaleString()}</div>
-                      </div>
-                      <button onClick={() => remove(n.id)} className="opacity-60 hover:opacity-100"><Trash2 className="h-3 w-3 text-destructive" /></button>
-                    </li>
-                  ))}
-                  {notes.length === 0 && <li className="text-xs text-muted-foreground">No notes yet.</li>}
-                </ul>
-                <form onSubmit={submitNote} className="mt-2 space-y-2">
-                  <Textarea rows={2} value={note} onChange={(e) => setNote(e.target.value)} placeholder="Add internal note…" className="text-xs" />
-                  <Button type="submit" size="sm" variant="outline" disabled={!note.trim()}>Add note</Button>
-                </form>
-              </Section>
+              </aside>
             </div>
           )}
         </SheetContent>
