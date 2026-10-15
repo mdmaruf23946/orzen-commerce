@@ -837,47 +837,14 @@ export function ProductDialog({
       id: "variants",
       label: "Variants",
       content: (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-muted-foreground">Options like Color, Size, Storage. Values are comma-separated.</p>
-            <Button type="button" size="sm" variant="outline" onClick={addOption}><Plus className="mr-1 h-3 w-3" />Option</Button>
-          </div>
-          {variants.options.map((opt, i) => (
-            <div key={i} className="grid gap-2 rounded-md border p-3 sm:grid-cols-[1fr_2fr_auto]">
-              <Input value={opt.name} onChange={(e) => setOptionName(i, e.target.value)} placeholder="Option name" />
-              <Input value={opt.values.join(", ")} onChange={(e) => setOptionValues(i, e.target.value)} placeholder="Red, Blue, Green" />
-              <Button type="button" size="sm" variant="ghost" onClick={() => removeOption(i)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
-            </div>
-          ))}
-          {variants.items.length > 0 && (
-            <div className="overflow-x-auto rounded-md border">
-              <table className="w-full text-xs">
-                <thead className="bg-muted/50">
-                  <tr>
-                    <th className="p-2 text-left">Variant</th>
-                    <th className="p-2 text-left">SKU</th>
-                    <th className="p-2 text-left">Price</th>
-                    <th className="p-2 text-left">Discount</th>
-                    <th className="p-2 text-left">Stock</th>
-                    <th className="p-2 text-left">Barcode</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {variants.items.map((it) => (
-                    <tr key={it.id} className="border-t">
-                      <td className="p-2 font-medium">{Object.values(it.options).join(" / ")}</td>
-                      <td className="p-2"><Input className="h-8" value={it.sku ?? ""} onChange={(e) => updateItem(it.id, { sku: e.target.value })} /></td>
-                      <td className="p-2"><Input className="h-8 w-20" type="number" min={0} value={it.price ?? ""} onChange={(e) => updateItem(it.id, { price: e.target.value === "" ? null : Number(e.target.value) })} /></td>
-                      <td className="p-2"><Input className="h-8 w-20" type="number" min={0} value={it.discount ?? ""} onChange={(e) => updateItem(it.id, { discount: e.target.value === "" ? null : Number(e.target.value) })} /></td>
-                      <td className="p-2"><Input className="h-8 w-20" type="number" min={0} value={it.stock ?? ""} onChange={(e) => updateItem(it.id, { stock: e.target.value === "" ? null : Number(e.target.value) })} /></td>
-                      <td className="p-2"><Input className="h-8" value={it.barcode ?? ""} onChange={(e) => updateItem(it.id, { barcode: e.target.value })} /></td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
+        <VariantBuilder
+          variants={variants}
+          setVariants={setVariants as any}
+          excluded={excludedVariants}
+          setExcluded={setExcludedVariants}
+          images={[image, ...gallery].filter(Boolean) as string[]}
+          basePrice={finalPrice}
+        />
       ),
     },
     {
@@ -1157,6 +1124,97 @@ export function ProductDialog({
     },
   ];
 
+  const T = (id: string) => tabs.find((t) => t.id === id)!.content;
+  const variantsOn = variants.items.length > 0;
+  const activeItems = variants.items.filter((i) => !excludedVariants.includes(i.id));
+  const issues: string[] = [];
+  if (!name.trim()) issues.push("পণ্যের নাম দিন (ধাপ ১)");
+  if (!regularPrice || reg <= 0) issues.push("দাম দিন (ধাপ ২)");
+  if (sale != null && sale >= reg) issues.push("অফার দাম মূল দামের চেয়ে কম হতে হবে");
+  if (!image) issues.push("একটি ছবি দিলে বিক্রি ভালো হয় (ঐচ্ছিক)");
+  if (variants.options.length && !activeItems.length) issues.push("Variant চালু আছে কিন্তু কোনো value নেই");
+  const prices = activeItems.map((i) => i.price ?? finalPrice);
+  const priceText = prices.length && Math.min(...prices) !== Math.max(...prices)
+    ? `৳${Math.min(...prices)} – ৳${Math.max(...prices)}`
+    : `৳${(prices[0] ?? finalPrice).toFixed(0)}`;
+  const totalStock = variantsOn ? activeItems.reduce((s, i) => s + Number(i.stock ?? 0), 0) : stock;
+
+  const physicalSteps = [
+    {
+      id: "basic",
+      label: "Basic info",
+      content: (
+        <div className="space-y-6">
+          {T("general")}
+          <div className="border-t pt-4">{T("media")}</div>
+        </div>
+      ),
+    },
+    {
+      id: "price",
+      label: "Price, Stock & Variants",
+      content: (
+        <div className="space-y-5">
+          {T("pricing")}
+          {!variantsOn ? (
+            T("inventory")
+          ) : (
+            <p className="rounded-md bg-muted/40 p-2 text-xs text-muted-foreground">
+              Variant চালু আছে — মোট স্টক combination থেকে হিসাব হবে ({totalStock})।
+            </p>
+          )}
+          {T("variants")}
+          <More title="ওজন, মাপ ও ডেলিভারি (ঐচ্ছিক)">{T("shipping")}</More>
+        </div>
+      ),
+    },
+    {
+      id: "review",
+      label: "Review & Publish",
+      content: (
+        <div className="space-y-4">
+          <div className="flex gap-3 rounded-xl border p-3">
+            {image ? (
+              <img src={image.startsWith("http") ? image : `/api/img/${image}`} alt="" className="h-20 w-20 shrink-0 rounded-lg border object-cover" />
+            ) : (
+              <div className="grid h-20 w-20 shrink-0 place-items-center rounded-lg border bg-muted text-[10px] text-muted-foreground">No image</div>
+            )}
+            <div className="min-w-0 flex-1 space-y-1 text-sm">
+              <p className="truncate font-semibold">{name || "(নাম নেই)"}</p>
+              <p className="text-primary font-semibold">{priceText}{hasDiscount && <span className="ml-2 text-xs text-muted-foreground line-through">৳{reg}</span>}</p>
+              <p className="text-xs text-muted-foreground">
+                {categories.find((c) => c.id === categoryId)?.name ?? "No category"} · Stock {totalStock}
+                {variantsOn && ` · ${activeItems.length} variants`}
+              </p>
+            </div>
+          </div>
+          {variantsOn && (
+            <div className="flex flex-wrap gap-1.5">
+              {activeItems.slice(0, 30).map((i) => (
+                <span key={i.id} className="rounded-full border px-2 py-0.5 text-[11px]">
+                  {Object.values(i.options).join(" / ")} · ৳{i.price ?? finalPrice} · {i.stock ?? 0}
+                </span>
+              ))}
+            </div>
+          )}
+          {issues.length > 0 ? (
+            <ul className="space-y-1 rounded-md border border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive">
+              {issues.map((m) => <li key={m}>• {m}</li>)}
+            </ul>
+          ) : (
+            <p className="rounded-md bg-primary/10 p-3 text-xs text-primary">সব ঠিক আছে — নিচের বাটনে চাপ দিয়ে Publish করুন।</p>
+          )}
+          {T("visibility")}
+          <More title="Attributes / Specifications">{T("attributes")}</More>
+          <More title="Payment, Warranty ও Return">{T("purchase")}</More>
+          <More title="Related products">{T("related")}</More>
+          <More title="SEO">{T("seo")}</More>
+          <More title="AI Assist">{T("ai")}</More>
+        </div>
+      ),
+    },
+  ];
+
   const visibleTabs = isDigital
     ? [
         ...tabs.filter((t) => t.id === "general" || t.id === "media"),
@@ -1165,7 +1223,7 @@ export function ProductDialog({
       ]
     : isService || isSubscription
       ? tabs.filter((t) => t.id !== "inventory" && t.id !== "shipping" && t.id !== "variants")
-      : tabs;
+      : physicalSteps;
 
 
 
