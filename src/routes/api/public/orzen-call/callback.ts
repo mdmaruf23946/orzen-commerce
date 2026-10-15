@@ -108,7 +108,7 @@ export const Route = createFileRoute("/api/public/orzen-call/callback")({
           // Resolve each item to a store product (id, sku, or name).
           const resolved: { product_id: string; name: string; price: number; qty: number }[] = [];
           for (const it of items) {
-            let q = supabaseAdmin.from("products").select("id,name,price,sale_price,status").eq("store_id", store);
+            let q = supabaseAdmin.from("products").select("id,name,price,status").eq("store_id", store);
             if (it.product_id) q = q.eq("id", it.product_id);
             else if (it.sku) q = q.eq("sku", it.sku);
             else if (it.name) q = q.ilike("name", `%${it.name.replace(/[%_]/g, "")}%`);
@@ -116,7 +116,7 @@ export const Route = createFileRoute("/api/public/orzen-call/callback")({
             const { data: rows } = await q.limit(1);
             const p = (rows ?? [])[0] as any;
             if (!p) return Response.json({ ok: false, error: `product not found: ${it.product_id ?? it.sku ?? it.name}` }, { status: 404 });
-            const price = Number(p.sale_price && Number(p.sale_price) > 0 ? p.sale_price : p.price) || 0;
+            const price = Number(p.price) || 0;
             resolved.push({ product_id: p.id, name: p.name, price, qty: it.qty });
           }
           const itemsTotal = resolved.reduce((a, r) => a + r.price * r.qty, 0);
