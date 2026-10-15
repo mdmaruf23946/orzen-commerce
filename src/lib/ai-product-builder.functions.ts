@@ -116,15 +116,16 @@ export const generateProductDraft = createServerFn({ method: "POST" })
       throw new Error("Please add at least one image or description");
     }
 
-    // Enforce ai-tmp namespace for uploaded images (defence in depth).
-    for (const p of data.imagePaths) {
-      if (/^https?:\/\//i.test(p)) continue;
-      if (!p.startsWith(`${storeId}/`)) {
-        throw new Error("Invalid image path");
-      }
+    // Only this store's own files (or public links) are sent to the AI; anything
+    // else is skipped instead of failing the whole request.
+    const safePaths = data.imagePaths
+      .map((p) => p.trim().replace(/^\/?api\/img\//, "").replace(/^\/+/, ""))
+      .filter((p) => /^https?:\/\//i.test(p) || (p.startsWith(`${storeId}/`) && !p.includes("..")));
+    if (!safePaths.length && !data.description?.trim()) {
+      throw new Error("Please add at least one image or description");
     }
 
-    const imageUrls = await signImages(supabase, data.imagePaths);
+    const imageUrls = await signImages(supabase, safePaths);
 
     // Runs on the platform owner's own provider keys (Winner Admin → AI).
     const { routedStructuredModel } = await import("@/lib/ai-provider.server");

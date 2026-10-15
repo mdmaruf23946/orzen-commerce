@@ -382,7 +382,7 @@ function CheckoutPage() {
           area: area || undefined,
           paymentMethod: method,
           txnId: isManual ? txnId : undefined,
-          items: items.map((i) => ({ productId: i.productId, qty: i.qty })),
+          items: items.map((i) => ({ productId: i.productId, qty: i.qty, variantId: i.variantId })),
           couponCode: coupon?.code,
           deliveryZoneId: zoneId ?? undefined,
           customerToken: customerToken ?? undefined,

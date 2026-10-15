@@ -43,6 +43,7 @@ async function draftFor(p: { name: string; brand?: string | null; category?: str
   try {
     text = await routedChatCompletion({
       jsonOnly: true,
+      modelOverride: "google/gemini-2.5-flash",
       maxTokens: 700,
       temperature: 0.6,
       messages: [

@@ -6,6 +6,8 @@ export type CartItem = {
   price: number;
   image: string | null;
   qty: number;
+  variantId?: string;
+  variantLabel?: string;
 };
 
 const key = (slug: string) => `cart:${slug}`;
@@ -28,7 +30,7 @@ export function writeCart(slug: string, items: CartItem[]) {
 
 export function addToCart(slug: string, item: CartItem) {
   const items = readCart(slug);
-  const idx = items.findIndex((i) => i.productId === item.productId);
+  const idx = items.findIndex((i) => i.productId === item.productId && (i.variantId ?? "") === (item.variantId ?? ""));
   if (idx >= 0) items[idx].qty += item.qty;
   else items.push(item);
   writeCart(slug, items);
