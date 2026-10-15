@@ -308,6 +308,24 @@ export function ProductDialog({
   const [digFree, setDigFree] = useState<boolean>(dig0.free ?? false);
   const [digSaleStart, setDigSaleStart] = useState<string>(dig0.sale_window?.start ?? "");
   const [digSaleEnd, setDigSaleEnd] = useState<string>(dig0.sale_window?.end ?? "");
+  // License tiers (Personal / Commercial …) — saved as variants with option "License"
+  // so storefront picker, cart and server pricing reuse the variant path.
+  const [licenses, setLicenses] = useState<{ id: string; name: string; price: string; description: string }[]>(() => {
+    const v = editing?.variants;
+    if (editing?.product_type !== "digital" || !v || !Array.isArray(v.items)) return [];
+    return v.items
+      .filter((it: any) => it?.options?.License)
+      .map((it: any) => ({
+        id: String(it.id),
+        name: String(it.options.License),
+        price: it.price != null ? String(it.price) : "",
+        description: String(it.description ?? ""),
+      }));
+  });
+  const cleanLicenses = licenses
+    .filter((l) => l.name.trim() && Number(l.price) > 0)
+    .map((l) => ({ id: l.id, name: l.name.trim(), price: Number(l.price), description: l.description.trim() }));
+  const newLicId = () => `lic_${Math.random().toString(36).slice(2, 10)}`;
 
   const [addingCat, setAddingCat] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -528,7 +546,14 @@ export function ProductDialog({
         shipping_info: shippingInfo || null,
         is_featured: isFeatured,
         specifications: specs.filter((s) => s.key.trim()),
-        variants: variants.options.length
+        variants: isDigital
+          ? cleanLicenses.length && !digFree
+            ? {
+                options: [{ name: "License", values: cleanLicenses.map((l) => l.name) }],
+                items: cleanLicenses.map((l) => ({ id: l.id, options: { License: l.name }, price: l.price, description: l.description })),
+              }
+            : { options: [], items: [] }
+          : variants.options.length
           ? {
               options: variants.options.filter((o) => o.name.trim() && o.values.length),
               items: variants.items.filter((i) => !excludedVariants.includes(i.id)),
