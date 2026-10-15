@@ -1244,12 +1244,72 @@ export function ProductDialog({
     },
   ];
 
+  const D = (id: string) => digitalTabs.find((t) => t.id === id)!.content;
+  const digIssues: string[] = [];
+  if (!name.trim()) digIssues.push("পণ্যের নাম দিন (ধাপ ১)");
+  if (!digFree && (!regularPrice || reg <= 0)) digIssues.push("দাম দিন অথবা 'Free product' চালু করুন (ধাপ ২)");
+  if (sale != null && sale >= reg && !digFree) digIssues.push("অফার দাম মূল দামের চেয়ে কম হতে হবে");
+  if (!digFiles.length && !digExternalUrl.trim()) digIssues.push("ফাইল আপলোড করুন বা ডাউনলোড লিংক দিন (ধাপ ২)");
+  if (!image) digIssues.push("একটি কভার ছবি দিলে ভালো হয় (ঐচ্ছিক)");
+  const digitalSteps = [
+    {
+      id: "basic",
+      label: "Basic info",
+      content: (
+        <div className="space-y-6">
+          {T("general")}
+          <div className="border-t pt-4">{T("media")}</div>
+        </div>
+      ),
+    },
+    {
+      id: "price",
+      label: "Price, File & Download",
+      content: (
+        <div className="space-y-5">
+          {T("pricing")}
+          <div className="border-t pt-4">{D("digital-files")}</div>
+          <div className="border-t pt-4">{D("download")}</div>
+        </div>
+      ),
+    },
+    {
+      id: "review",
+      label: "Review & Publish",
+      content: (
+        <div className="space-y-4">
+          <div className="flex gap-3 rounded-xl border p-3">
+            {image ? (
+              <img src={image.startsWith("http") ? image : `/api/img/${image}`} alt="" className="h-20 w-20 shrink-0 rounded-lg border object-cover" />
+            ) : (
+              <div className="grid h-20 w-20 shrink-0 place-items-center rounded-lg border bg-muted text-[10px] text-muted-foreground">No image</div>
+            )}
+            <div className="min-w-0 flex-1 space-y-1 text-sm">
+              <p className="truncate font-semibold">{name || "(নাম নেই)"}</p>
+              <p className="font-semibold text-primary">{digFree ? "Free" : `৳${finalPrice.toFixed(0)}`}</p>
+              <p className="text-xs text-muted-foreground">
+                {digFiles.length} file{digFiles.length === 1 ? "" : "s"}{digExternalUrl ? " · external link" : ""} · {digMode === "instant" ? "Instant download" : "Manual approval"}
+              </p>
+            </div>
+          </div>
+          {digIssues.length ? (
+            <ul className="space-y-1 rounded-md border border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive">
+              {digIssues.map((m) => <li key={m}>• {m}</li>)}
+            </ul>
+          ) : (
+            <p className="rounded-md bg-primary/10 p-3 text-xs text-primary">সব ঠিক আছে — নিচের বাটনে চাপ দিয়ে Publish করুন।</p>
+          )}
+          {T("visibility")}
+          <More title="Version, Platform ও Changelog">{D("file-info")}</More>
+          <More title="SEO">{T("seo")}</More>
+          <More title="AI Assist">{T("ai")}</More>
+        </div>
+      ),
+    },
+  ];
+
   const visibleTabs = isDigital
-    ? [
-        ...tabs.filter((t) => t.id === "general" || t.id === "media"),
-        ...digitalTabs,
-        ...tabs.filter((t) => t.id === "pricing" || t.id === "visibility" || t.id === "seo"),
-      ]
+    ? digitalSteps
     : isService || isSubscription
       ? tabs.filter((t) => t.id !== "inventory" && t.id !== "shipping" && t.id !== "variants")
       : physicalSteps;
