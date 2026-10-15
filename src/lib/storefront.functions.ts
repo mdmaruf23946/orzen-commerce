@@ -1,3 +1,4 @@
+import * as variantHelpers from "@/lib/product-variants";
 import { swr } from "@/lib/swr-cache";
 // Public server functions: storefront reads + guest checkout.
 import { createServerFn } from "@tanstack/react-start";
@@ -543,7 +544,7 @@ export const getProduct = createServerFn({ method: "GET" })
     const { data: p, error } = await (sb as any)
       .from("storefront_products")
       .select(
-        "id,name,slug,description,short_description,price,old_price,stock,status,primary_image_url,gallery,store_id,brand,sku,category_id,features,specifications,video_url,warranty,return_policy,meta,product_type,total_sold,rating,created_at,updated_at",
+        "id,name,slug,description,short_description,price,old_price,stock,status,primary_image_url,gallery,store_id,brand,sku,category_id,features,specifications,video_url,warranty,return_policy,meta,product_type,total_sold,rating,created_at,updated_at,variants",
       )
       .eq("id", data.productId)
       .eq("store_id", data.storeId)
@@ -790,6 +791,7 @@ export const listProductsByIds = createServerFn({ method: "GET" })
 const itemSchema = z.object({
   productId: z.string().uuid(),
   qty: z.number().int().min(1).max(99),
+  variantId: z.string().max(200).optional(),
 });
 
 export const validateCoupon = createServerFn({ method: "POST" })
@@ -967,7 +969,7 @@ export const placeOrder = createServerFn({ method: "POST" })
     const ids = data.items.map((i) => i.productId);
     const { data: products, error: pErr } = await (sb as any)
       .from("storefront_products")
-      .select("id,name,price,stock,status,product_type,meta")
+      .select("id,name,price,stock,status,product_type,meta,variants")
       .in("id", ids)
       .eq("store_id", data.storeId);
     if (pErr) throw new Error(pErr.message);
@@ -1023,11 +1025,21 @@ export const placeOrder = createServerFn({ method: "POST" })
         throw new Error(`Not enough stock for ${p.name}`);
       }
 
-      subtotal += Number(p.price) * i.qty;
+      let unit = Number(p.price);
+      let nameSnap = p.name as string;
+      if (i.variantId) {
+        const { readVariants, variantPrice, variantLabel } = variantHelpers;
+        const v = readVariants((p as any).variants).items.find((x) => x.id === i.variantId);
+        if (!v) throw new Error(`Selected option is no longer available for ${p.name}`);
+        if (!stockless && v.stock != null && Number(v.stock) < i.qty) throw new Error(`Not enough stock for ${p.name} (${variantLabel(v)})`);
+        unit = variantPrice(v, unit);
+        nameSnap = `${p.name} — ${variantLabel(v)}`.slice(0, 300);
+      }
+      subtotal += unit * i.qty;
       return {
         product_id: p.id,
-        name_snapshot: p.name,
-        price_snapshot: p.price,
+        name_snapshot: nameSnap,
+        price_snapshot: unit,
         qty: i.qty,
       };
     });

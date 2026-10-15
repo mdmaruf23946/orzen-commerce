@@ -14,6 +14,7 @@ import {
 } from "@/lib/seo";
 
 import { toast } from "sonner";
+import { readVariants, variantPrice, variantLabel } from "@/lib/product-variants";
 import {
   getProduct,
   getStoreBySlug,
@@ -134,11 +135,20 @@ function ProductPage() {
     });
   }, [product?.id, slug]);
 
-  const price = Number(product!.price);
-  const oldPrice = product!.old_price != null ? Number(product!.old_price) : null;
+  const vdata = useMemo(() => readVariants((product as any)?.variants), [product?.id]);
+  const [picked, setPicked] = useState<Record<string, string>>({});
+  const variant = vdata.options.length
+    ? vdata.items.find((it) => vdata.options.every((o) => it.options[o.name] === picked[o.name])) ?? null
+    : null;
+  const needsChoice = vdata.options.length > 0 && !variant;
+  const basePrice = Number(product!.price);
+  const price = variant ? variantPrice(variant, basePrice) : basePrice;
+  const vRegular = variant && Number(variant.price) > price ? Number(variant.price) : null;
+  const oldPrice = variant ? vRegular : product!.old_price != null ? Number(product!.old_price) : null;
+  const shownStock = variant && variant.stock != null ? Number(variant.stock) : product!.stock;
   const inStock =
     product!.status !== "draft" &&
-    (isStockless((product as any)!.product_type) || product!.stock > 0);
+    (isStockless((product as any)!.product_type) || shownStock > 0);
 
 
   const meta = (product!.meta ?? {}) as Record<string, any>;
@@ -195,18 +205,24 @@ function ProductPage() {
     staleTime: 60_000,
   });
 
-  function add() {
+  function add(): boolean {
+    if (needsChoice) {
+      toast.error("আগে অপশন বেছে নিন (যেমন সাইজ/কালার)");
+      return false;
+    }
     addToCart(slug, {
       productId: product!.id,
-      name: product!.name,
+      name: variant ? `${product!.name} (${Object.values(variant.options).join(" / ")})` : product!.name,
       price,
-      image: product!.primary_image_url,
+      image: variant?.image || product!.primary_image_url,
       qty,
+      ...(variant ? { variantId: variant.id, variantLabel: variantLabel(variant) } : {}),
     });
     toast.success("Added to cart");
+    return true;
   }
   function buy() {
-    add();
+    if (!add()) return;
     navigate({ to: "/store/$slug/checkout", params: { slug } });
   }
 
@@ -263,11 +279,47 @@ function ProductPage() {
               </ul>
             )}
 
+            {vdata.options.length > 0 && (
+              <div className="mt-4 space-y-3">
+                {vdata.options.map((o) => (
+                  <div key={o.name}>
+                    <p className="mb-1.5 text-sm font-medium">
+                      {o.name}
+                      {picked[o.name] && <span className="ml-1 text-muted-foreground">: {picked[o.name]}</span>}
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {o.values.map((val) => {
+                        const exists = vdata.items.some((it) =>
+                          it.options[o.name] === val &&
+                          vdata.options.every((x) => x.name === o.name || !picked[x.name] || it.options[x.name] === picked[x.name]),
+                        );
+                        const on = picked[o.name] === val;
+                        return (
+                          <button
+                            key={val}
+                            type="button"
+                            disabled={!exists}
+                            onClick={() => setPicked((p) => ({ ...p, [o.name]: on ? "" : val }))}
+                            className={`rounded-full border px-3.5 py-1.5 text-sm transition ${on ? "border-sf-accent bg-sf-accent text-white" : "hover:border-sf-accent"} ${!exists ? "cursor-not-allowed opacity-40 line-through" : ""}`}
+                          >
+                            {val}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+                {variant?.image && (
+                  <img src={variant.image.startsWith("http") ? variant.image : `/api/img/${variant.image}`} alt="" className="h-20 w-20 rounded-lg border object-cover" />
+                )}
+              </div>
+            )}
+
             <div ref={buyBoxRef} className="mt-4">
               <BuyBox
                 price={price}
                 oldPrice={oldPrice}
-                stock={product!.stock}
+                stock={shownStock}
                 status={product!.status}
                 productType={(product as any)!.product_type}
                 qty={qty}

@@ -43,7 +43,7 @@ export function reconcileCartItems(
     }
     let item = i;
     const livePrice = Number(p.price ?? i.price);
-    if (Number.isFinite(livePrice) && livePrice !== i.price) {
+    if (!(i as any).variantId && Number.isFinite(livePrice) && livePrice !== i.price) {
       notices.push({
         kind: "price",
         productId: i.productId,
