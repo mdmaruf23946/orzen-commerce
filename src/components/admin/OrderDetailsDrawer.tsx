@@ -215,7 +215,7 @@ export function OrderDetailsDrawer({ open, onOpenChange, orderId }: Props) {
         </>
       )}
       <Sheet open={open} onOpenChange={onOpenChange}>
-        <SheetContent side="right" className="w-full overflow-y-auto bg-muted p-0 sm:max-w-full lg:max-w-[1280px]">
+        <SheetContent side="right" className="w-full overflow-y-auto overflow-x-hidden bg-muted p-0 sm:max-w-full lg:max-w-[1280px]">
           <SheetHeader className="sr-only"><SheetTitle>Order Details</SheetTitle></SheetHeader>
 
           <div className="space-y-4 p-3 sm:p-5 lg:p-6">
@@ -289,7 +289,7 @@ export function OrderDetailsDrawer({ open, onOpenChange, orderId }: Props) {
                     </div>
                 </Card>
 
-                  <div className={`grid gap-4 ${isPhysical ? "lg:grid-cols-[300px_minmax(0,1fr)]" : ""} lg:items-stretch`}>
+                  <div className={`grid min-w-0 grid-cols-1 gap-4 ${isPhysical ? "lg:grid-cols-[300px_minmax(0,1fr)]" : ""} lg:items-stretch`}>
                   <OurRecord phone={order.phone} enabled={open} />
                   {isPhysical && (
                     <Card>
@@ -501,7 +501,7 @@ function variantPairs(it: any): [string, string][] {
 }
 
 function Card({ children, className = "" }: { children: React.ReactNode; className?: string }) {
-  return <section className={`rounded-2xl border bg-card shadow-sm ${className}`}>{children}</section>;
+  return <section className={`min-w-0 rounded-2xl border bg-card shadow-sm ${className}`}>{children}</section>;
 }
 function CardHead({ icon: Icon, title, sub, action }: { icon: any; title: string; sub?: string; action?: React.ReactNode }) {
   return (
