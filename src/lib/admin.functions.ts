@@ -520,6 +520,8 @@ export const updateOrderStatus = createServerFn({ method: "POST" })
     const dbStatus = isFollow ? "pending" : data.status;
     const { data: cur } = await supabase.from("orders").select("status").eq("id", data.id).eq("store_id", store.id).maybeSingle();
     if (!cur) throw new Error("Order not found");
+    if ((cur as any).status === "cancelled" && data.status !== "cancelled")
+      throw new Error("বাতিল (Cancelled) অর্ডার আর আগের অবস্থায় ফেরানো যায় না।");
     if (isFollow && (cur as any).status !== "pending")
       throw new Error("No Response / On Hold / Incomplete শুধু Pending অর্ডারে দেওয়া যায়।");
     if (data.status === "processing" && (cur as any).status !== "confirmed" && (cur as any).status !== "processing")
