@@ -168,21 +168,41 @@ export function OrderDetailsDrawer({ open, onOpenChange, orderId }: Props) {
           side="right"
           className="w-full overflow-y-auto bg-muted/30 p-0 sm:max-w-3xl lg:max-w-5xl xl:max-w-6xl"
         >
-          <SheetHeader className="sticky top-0 z-10 border-b bg-background px-4 py-3">
-            <SheetTitle className="flex items-center justify-between gap-2 text-base">
-              <span className="truncate">Order Details</span>
+          <SheetHeader className="sticky top-0 z-10 border-b bg-background px-4 py-3 pr-12 sm:px-6">
+            <SheetTitle className="flex items-center justify-between gap-3 text-base">
+              <span className="min-w-0">
+                <span className="flex flex-wrap items-center gap-2">
+                  <span className="truncate font-semibold">
+                    {order ? (order.invoice_no ?? `#${orderId.slice(0, 8).toUpperCase()}`) : "Order Details"}
+                  </span>
+                  {order?.status && (
+                    <span className="rounded-full border bg-primary/10 px-2 py-0.5 text-[11px] font-medium capitalize text-primary">
+                      {String(order.status).replace(/_/g, " ")}
+                    </span>
+                  )}
+                  {order?.payment_method && (
+                    <span className="rounded-full border bg-muted px-2 py-0.5 text-[11px] font-medium uppercase text-muted-foreground">
+                      {order.payment_method}
+                    </span>
+                  )}
+                </span>
+                {order?.created_at && (
+                  <span className="mt-0.5 block text-xs font-normal text-muted-foreground">
+                    {new Date(order.created_at).toLocaleString()}
+                  </span>
+                )}
+              </span>
               {order?.invoice_no && (
                 <Link
                   to="/admin/invoice/$orderId"
                   params={{ orderId }}
                   target="_blank"
-                  className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs font-normal hover:bg-muted"
+                  className="inline-flex shrink-0 items-center gap-1 rounded-md border px-2.5 py-1.5 text-xs font-medium hover:bg-muted"
                 >
-                  <Printer className="h-3 w-3" /> Invoice
+                  <Printer className="h-3.5 w-3.5" /> Invoice
                 </Link>
               )}
             </SheetTitle>
-
           </SheetHeader>
 
           {isLoading || !order ? (
@@ -194,18 +214,16 @@ export function OrderDetailsDrawer({ open, onOpenChange, orderId }: Props) {
               <Section icon={Package} title="Product" action={editBtn(() => setEditItems(true))}>
                 <ul className="divide-y">
                   {items.map((it, i) => (
-                    <li key={i} className="space-y-3 py-3">
-                      <div className="mx-auto h-32 w-32 shrink-0 overflow-hidden rounded-xl border bg-muted sm:h-36 sm:w-36">
+                    <li key={i} className="flex items-center gap-3 py-3 sm:gap-4">
+                      <div className="h-16 w-16 shrink-0 overflow-hidden rounded-lg border bg-muted sm:h-20 sm:w-20">
                         <ProductImage url={it.products?.primary_image_url} alt={it.name_snapshot} />
                       </div>
-                      <div className="text-center">
-                        <div className="text-sm font-medium">{it.name_snapshot}</div>
-                        {it.products?.sku && <div className="text-[10px] text-muted-foreground">SKU: {it.products.sku}</div>}
-                        <div className="mt-1 flex items-center justify-center gap-2 text-xs text-muted-foreground">
-                          <span>Qty {it.qty} · ৳{Number(it.price_snapshot).toFixed(0)}</span>
-                          <span className="font-semibold text-foreground">৳{(Number(it.price_snapshot) * it.qty).toFixed(0)}</span>
-                        </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="line-clamp-2 text-sm font-medium">{it.name_snapshot}</div>
+                        {it.products?.sku && <div className="mt-0.5 text-[11px] text-muted-foreground">SKU: {it.products.sku}</div>}
+                        <div className="mt-1 text-xs text-muted-foreground">৳{Number(it.price_snapshot).toFixed(0)} × {it.qty}</div>
                       </div>
+                      <div className="shrink-0 text-right text-sm font-semibold">৳{(Number(it.price_snapshot) * it.qty).toFixed(0)}</div>
                     </li>
                   ))}
                 </ul>
