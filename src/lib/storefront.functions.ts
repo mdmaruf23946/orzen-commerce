@@ -1698,9 +1698,10 @@ export const trackOrderPublic = createServerFn({ method: "POST" })
     const storeId = store.id as string;
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const raw = data.query.trim().replace(/^#/, "");
+    const { toAsciiDigits } = await import("@/lib/order-lookup.server");
+    const raw = toAsciiDigits(data.query.trim()).replace(/^#/, "").trim();
     const digits = raw.replace(/[^0-9]/g, "");
-    const isPhone = digits.length >= 9 && digits.length === raw.replace(/[+\-\s]/g, "").length;
+    const isPhone = digits.length >= 9 && digits.length === raw.replace(/[+\-\s()]/g, "").length;
 
     const sel =
       "id,invoice_no,order_type,status,payment_status,payment_method,created_at,subtotal,delivery_amount,discount_amount,customer_name,phone,area,courier_name,courier_tracking_id,courier_status,customer_id";

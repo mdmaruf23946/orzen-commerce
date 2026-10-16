@@ -2243,7 +2243,10 @@ function toolsForTurn(ctx: AgentContext, messages: any[]) {
   const drop: string[] = [];
   if (!/compare|তুলনা|vs|পার্থক্য|difference|কোনটা ভালো/i.test(text)) drop.push("compareProducts");
   if (!/brand|ব্র্যান্ড|ব্রান্ড/i.test(text)) drop.push("listBrands");
-  if (!/track|ট্র্যাক|কোথায়|কই|order|অর্ডার|invoice|\d{5,}/i.test(text)) drop.push("trackOrder");
+  if (
+    !/track|ট্র্যাক|ট্রাক|কোথায়|কই|কবে|কখন|পাব|আসবে|পাঠা|ডেলিভারি|deliver|parcel|পার্সেল|status|স্ট্যাটাস|order|অর্ডার|অডার|invoice|ইনভয়েস|[\d০-৯][\d০-৯\s\-]{4,}/i.test(text)
+  )
+    drop.push("trackOrder");
   for (const k of drop) delete all[k];
   return all;
 }

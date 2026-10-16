@@ -400,7 +400,7 @@ function isProductIntent(text: string) {
 
 function isOrderStatusIntent(text: string) {
   // Tracking, status, cancel, return, refund — must be handled by the AI agent (trackOrder tool), not the buy flow.
-  return /(where.*(is|are).*(my )?order|track.*order|order.*(status|track)|cancel.*order|return.*order|refund|আমার অর্ডার কোথায়|অর্ডার কোথায়|অর্ডার (ট্র্যাক|ট্রাক|ষ্ট্যাটাস|স্ট্যাটাস|স্টেটাস|status)|অর্ডার (বাতিল|ক্যান্সেল|cancel)|রিটার্ন|ফেরত)/i.test(text);
+  return /(where.*(is|are).*(my )?order|track.*order|order.*(status|track)|cancel.*order|return.*order|refund|when.*(arrive|deliver|get)|(order|parcel|percel).{0,15}(koi|kothay|kobe|kokhon|pabo|ashbe|asbe|pathaisen|pathiyechen)|(অর্ডার|অডার|পার্সেল|পারসেল|প্রোডাক্ট|জিনিস|মাল).{0,20}(কোথায়|কই|কবে|কখন|পাব|পাবো|আসবে|আসবো|পাঠা|পাঠানো|ডেলিভারি|খবর|অবস্থা|আপডেট|ট্র্যাক|ট্রাক|স্ট্যাটাস|স্টেটাস|status)|(কবে|কখন).{0,12}(পাব|পাবো|আসবে|ডেলিভারি)|ডেলিভারি (হয়েছে|হইছে|হবে কবে|কবে)|অর্ডার (বাতিল|ক্যান্সেল|cancel)|রিটার্ন|ফেরত)/i.test(text);
 }
 
 function isOrderIntent(text: string) {
