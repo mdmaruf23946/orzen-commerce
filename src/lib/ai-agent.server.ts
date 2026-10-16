@@ -394,8 +394,8 @@ Payment methods allowed: ${payLine}.
 Ask ${orderFlow.collection_style === "combined" ? "all missing fields in ONE short numbered message" : "ONE missing field per message"}. Save each field with collectOrderInfo; never re-ask collected fields.
 When all required fields exist call finalizeOrder and send its confirmation as written. On error "duplicate_blocked" send the returned reply and stop. On "not_orderable_in_messenger" stop and call sendProductLink.
 ${allowRelated ? "After success you may offer 2-3 add-ons (getRelatedProducts)." : "After success just thank the customer."}
-Tracking: use trackOrder with invoice or phone.`
-      : `# Orders\nPhysical products can be ordered here (collectOrderInfo → finalizeOrder). Tracking: trackOrder.`;
+Tracking: call trackOrder (it finds orders from every channel). If it needs a phone, ask for the mobile number used to order.`
+      : `# Orders\nPhysical products can be ordered here (collectOrderInfo → finalizeOrder). Order status questions ("order kothay", "kobe asbe"): call trackOrder first; if it returns need=phone, ask for the mobile number used to order; when the customer sends a number, call trackOrder with it.`;
 
   const typeSection = nonPhysicalInPlay
     ? `# Non-physical products
@@ -2030,27 +2030,34 @@ export function buildTools(ctx: AgentContext) {
 
     tools.trackOrder = tool({
       description:
-        "Look up an order's live status. Provide orderId, invoice_no, or the customer's phone.",
+        "Look up the customer's orders (placed on ANY channel: website, landing page, phone call, Messenger, WhatsApp). Pass phone and/or invoice_no. If omitted, the customer's known number (e.g. WhatsApp) is used automatically.",
       inputSchema: z.object({
-        orderId: z.string().uuid().optional(),
         invoice_no: z.string().optional(),
         phone: z.string().optional(),
       }),
-      execute: async ({ orderId, invoice_no, phone }) => {
-        let q = sb
-          .from("orders")
-          .select(
-            "id,invoice_no,status,customer_name,courier_name,courier_tracking_id,courier_status,created_at",
-          )
-          .eq("store_id", storeId)
-          .order("created_at", { ascending: false })
-          .limit(3);
-        if (orderId) q = q.eq("id", orderId);
-        else if (invoice_no) q = q.eq("invoice_no", invoice_no);
-        else if (phone) q = q.eq("phone", String(phone).replace(/\D/g, ""));
-        else return { orders: [] };
-        const { data } = await q;
-        return { orders: data ?? [] };
+      execute: async ({ invoice_no, phone }) => {
+        const { lookupOrders, extractPhone, TRACKING_GUIDE } = await import("./order-lookup.server");
+        let usedPhone = phone ? extractPhone(phone) ?? phone : null;
+        let source: "given" | "known" | "none" = usedPhone ? "given" : "none";
+        if (!usedPhone && convId) {
+          const { data: conv } = await sb
+            .from("ai_conversations")
+            .select("phone")
+            .eq("id", convId)
+            .maybeSingle();
+          if ((conv as any)?.phone) {
+            usedPhone = (conv as any).phone;
+            source = "known";
+          }
+        }
+        if (!usedPhone && !invoice_no) {
+          return { orders: [], need: "phone", instruction: TRACKING_GUIDE };
+        }
+        const orders = await lookupOrders(sb, storeId, { phone: usedPhone, invoice: invoice_no });
+        if (orders.length && source === "given" && convId) {
+          await sb.from("ai_conversations").update({ phone: usedPhone } as never).eq("id", convId);
+        }
+        return { phone_source: source, orders, instruction: TRACKING_GUIDE };
       },
     });
 

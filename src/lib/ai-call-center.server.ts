@@ -256,7 +256,11 @@ Rules you must always follow:
 - Never change prices, offer discounts or promise anything that is not confirmed
   by the store data.
 - If you do not know something, say so and offer to have the store contact them.
-- Confirm important details (name, address, quantity) by repeating them back.`;
+- Confirm important details (name, address, quantity) by repeating them back.
+- Order status questions ("where is my order?"): call track_order with caller_phone
+  set to the caller's number FIRST — do not ask for the number. Only if no order is
+  found on the caller's number, say so and ask which number they ordered with,
+  then call track_order with that phone.`;
 
 export function buildStorePrompt(opts: {
   base: string;

@@ -73,6 +73,7 @@ export type Gender = (typeof GENDERS)[number];
 
 export const AI_TOOLS = [
   { key: "get_order", label: "Get Order" },
+  { key: "track_order", label: "Track Order (Caller ID)" },
   { key: "confirm_order", label: "Confirm Order" },
   { key: "cancel_order", label: "Cancel Order" },
   { key: "update_order", label: "Update Order" },
