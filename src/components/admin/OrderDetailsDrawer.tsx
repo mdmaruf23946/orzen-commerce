@@ -25,6 +25,7 @@ import { SubscriptionOrderPanel } from "@/components/admin/subscriptions/Subscri
 import { getOrderCallDetails } from "@/lib/call-center.functions";
 
 import { toast } from "sonner";
+import { nextStatuses } from "@/components/admin/orders/OrderCard";
 import { EditCustomerDialog, EditItemsDialog } from "@/components/admin/orders/OrderEditDialogs";
 import { OrderEditHistory } from "@/components/admin/orders/OrderEditHistory";
 
