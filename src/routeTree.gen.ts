@@ -140,6 +140,8 @@ import { Route as AuthenticatedOwnerUsersRouteImport } from './routes/_authentic
 import { Route as AuthenticatedOwnerWebhooksRouteImport } from './routes/_authenticated/owner/webhooks'
 import { Route as AccessInviteTokenRouteImport } from './routes/access.invite.$token'
 import { Route as ApiAiChatRouteImport } from './routes/api/ai/chat'
+import { Route as ApiCallSyncOrdersRouteImport } from './routes/api/call-sync/orders'
+import { Route as ApiCallSyncProductsRouteImport } from './routes/api/call-sync/products'
 import { Route as ApiImgSplatRouteImport } from './routes/api/img.$'
 import { Route as ApiPublicDeploymentHealthRouteImport } from './routes/api/public/deployment-health'
 import { Route as ApiPublicVersionRouteImport } from './routes/api/public/version'
@@ -230,6 +232,7 @@ import { Route as AuthenticatedOwnerNotificationCenterIndexRouteImport } from '.
 import { Route as AuthenticatedOwnerNotificationCenterSplatRouteImport } from './routes/_authenticated/owner/notification-center.$'
 import { Route as AuthenticatedOwnerSubscriptionPayIndexRouteImport } from './routes/_authenticated/owner/subscription-pay.index'
 import { Route as AuthenticatedOwnerSubscriptionPayProvidersRouteImport } from './routes/_authenticated/owner/subscription-pay.providers'
+import { Route as ApiCallSyncOrdersIdRouteImport } from './routes/api/call-sync/orders.$id'
 import { Route as ApiPublicAiAdminMessengerWebhookRouteImport } from './routes/api/public/ai-admin/messenger-webhook'
 import { Route as ApiPublicAiAdminWebhookRouteImport } from './routes/api/public/ai-admin/webhook'
 import { Route as ApiPublicAiCallsToolRouteImport } from './routes/api/public/ai-calls/tool'
@@ -270,6 +273,7 @@ import { Route as StoreSlugOrderOrderIdRouteImport } from './routes/store/$slug/
 import { Route as StoreSlugProductProductIdRouteImport } from './routes/store/$slug/product.$productId'
 import { Route as AuthenticatedAdminBillingCheckoutPackageIdRouteImport } from './routes/_authenticated/admin/billing.checkout.$packageId'
 import { Route as AuthenticatedOwnerCommunicationHistoryIdRouteImport } from './routes/_authenticated/owner/communication.history.$id'
+import { Route as ApiCallSyncOrdersIdStatusRouteImport } from './routes/api/call-sync/orders.$id.status'
 import { Route as ApiPublicLandingPagesConnectionIdOrdersRouteImport } from './routes/api/public/landing-pages/$connectionId/orders'
 import { Route as ApiPublicSubscriptionPayWebhookProviderRouteImport } from './routes/api/public/subscription-pay/webhook.$provider'
 import { Route as ApiPublicLandingPagesConnectionIdApiOrdersRouteImport } from './routes/api/public/landing-pages/$connectionId/api.orders'
@@ -1018,6 +1022,16 @@ const ApiAiChatRoute = ApiAiChatRouteImport.update({
   path: '/api/ai/chat',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiCallSyncOrdersRoute = ApiCallSyncOrdersRouteImport.update({
+  id: '/api/call-sync/orders',
+  path: '/api/call-sync/orders',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiCallSyncProductsRoute = ApiCallSyncProductsRouteImport.update({
+  id: '/api/call-sync/products',
+  path: '/api/call-sync/products',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiImgSplatRoute = ApiImgSplatRouteImport.update({
   id: '/api/img/$',
   path: '/api/img/$',
@@ -1539,6 +1553,11 @@ const AuthenticatedOwnerSubscriptionPayProvidersRoute =
     path: '/providers',
     getParentRoute: () => AuthenticatedOwnerSubscriptionPayRouteRoute,
   } as any)
+const ApiCallSyncOrdersIdRoute = ApiCallSyncOrdersIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => ApiCallSyncOrdersRoute,
+} as any)
 const ApiPublicAiAdminMessengerWebhookRoute =
   ApiPublicAiAdminMessengerWebhookRouteImport.update({
     id: '/api/public/ai-admin/messenger-webhook',
@@ -1758,6 +1777,12 @@ const AuthenticatedOwnerCommunicationHistoryIdRoute =
     path: '/$id',
     getParentRoute: () => AuthenticatedOwnerCommunicationHistoryRoute,
   } as any)
+const ApiCallSyncOrdersIdStatusRoute =
+  ApiCallSyncOrdersIdStatusRouteImport.update({
+    id: '/status',
+    path: '/status',
+    getParentRoute: () => ApiCallSyncOrdersIdRoute,
+  } as any)
 const ApiPublicLandingPagesConnectionIdOrdersRoute =
   ApiPublicLandingPagesConnectionIdOrdersRouteImport.update({
     id: '/api/public/landing-pages/$connectionId/orders',
@@ -1924,6 +1949,8 @@ export interface FileRoutesByFullPath {
   '/owner/webhooks': typeof AuthenticatedOwnerWebhooksRoute
   '/access/invite/$token': typeof AccessInviteTokenRoute
   '/api/ai/chat': typeof ApiAiChatRoute
+  '/api/call-sync/orders': typeof ApiCallSyncOrdersRouteWithChildren
+  '/api/call-sync/products': typeof ApiCallSyncProductsRoute
   '/api/img/$': typeof ApiImgSplatRoute
   '/api/public/deployment-health': typeof ApiPublicDeploymentHealthRoute
   '/api/public/version': typeof ApiPublicVersionRoute
@@ -2003,6 +2030,7 @@ export interface FileRoutesByFullPath {
   '/owner/communication/templates': typeof AuthenticatedOwnerCommunicationTemplatesRoute
   '/owner/notification-center/$': typeof AuthenticatedOwnerNotificationCenterSplatRoute
   '/owner/subscription-pay/providers': typeof AuthenticatedOwnerSubscriptionPayProvidersRoute
+  '/api/call-sync/orders/$id': typeof ApiCallSyncOrdersIdRouteWithChildren
   '/api/public/ai-admin/messenger-webhook': typeof ApiPublicAiAdminMessengerWebhookRoute
   '/api/public/ai-admin/webhook': typeof ApiPublicAiAdminWebhookRoute
   '/api/public/ai-calls/tool': typeof ApiPublicAiCallsToolRoute
@@ -2056,6 +2084,7 @@ export interface FileRoutesByFullPath {
   '/owner/subscription-pay/': typeof AuthenticatedOwnerSubscriptionPayIndexRoute
   '/admin/billing/checkout/$packageId': typeof AuthenticatedAdminBillingCheckoutPackageIdRoute
   '/owner/communication/history/$id': typeof AuthenticatedOwnerCommunicationHistoryIdRoute
+  '/api/call-sync/orders/$id/status': typeof ApiCallSyncOrdersIdStatusRoute
   '/api/public/landing-pages/$connectionId/orders': typeof ApiPublicLandingPagesConnectionIdOrdersRoute
   '/api/public/subscription-pay/webhook/$provider': typeof ApiPublicSubscriptionPayWebhookProviderRoute
   '/api/public/landing-pages/$connectionId/api/orders': typeof ApiPublicLandingPagesConnectionIdApiOrdersRoute
@@ -2179,6 +2208,8 @@ export interface FileRoutesByTo {
   '/owner/webhooks': typeof AuthenticatedOwnerWebhooksRoute
   '/access/invite/$token': typeof AccessInviteTokenRoute
   '/api/ai/chat': typeof ApiAiChatRoute
+  '/api/call-sync/orders': typeof ApiCallSyncOrdersRouteWithChildren
+  '/api/call-sync/products': typeof ApiCallSyncProductsRoute
   '/api/img/$': typeof ApiImgSplatRoute
   '/api/public/deployment-health': typeof ApiPublicDeploymentHealthRoute
   '/api/public/version': typeof ApiPublicVersionRoute
@@ -2258,6 +2289,7 @@ export interface FileRoutesByTo {
   '/owner/communication/templates': typeof AuthenticatedOwnerCommunicationTemplatesRoute
   '/owner/notification-center/$': typeof AuthenticatedOwnerNotificationCenterSplatRoute
   '/owner/subscription-pay/providers': typeof AuthenticatedOwnerSubscriptionPayProvidersRoute
+  '/api/call-sync/orders/$id': typeof ApiCallSyncOrdersIdRouteWithChildren
   '/api/public/ai-admin/messenger-webhook': typeof ApiPublicAiAdminMessengerWebhookRoute
   '/api/public/ai-admin/webhook': typeof ApiPublicAiAdminWebhookRoute
   '/api/public/ai-calls/tool': typeof ApiPublicAiCallsToolRoute
@@ -2311,6 +2343,7 @@ export interface FileRoutesByTo {
   '/owner/subscription-pay': typeof AuthenticatedOwnerSubscriptionPayIndexRoute
   '/admin/billing/checkout/$packageId': typeof AuthenticatedAdminBillingCheckoutPackageIdRoute
   '/owner/communication/history/$id': typeof AuthenticatedOwnerCommunicationHistoryIdRoute
+  '/api/call-sync/orders/$id/status': typeof ApiCallSyncOrdersIdStatusRoute
   '/api/public/landing-pages/$connectionId/orders': typeof ApiPublicLandingPagesConnectionIdOrdersRoute
   '/api/public/subscription-pay/webhook/$provider': typeof ApiPublicSubscriptionPayWebhookProviderRoute
   '/api/public/landing-pages/$connectionId/api/orders': typeof ApiPublicLandingPagesConnectionIdApiOrdersRoute
@@ -2449,6 +2482,8 @@ export interface FileRoutesById {
   '/_authenticated/owner/webhooks': typeof AuthenticatedOwnerWebhooksRoute
   '/access/invite/$token': typeof AccessInviteTokenRoute
   '/api/ai/chat': typeof ApiAiChatRoute
+  '/api/call-sync/orders': typeof ApiCallSyncOrdersRouteWithChildren
+  '/api/call-sync/products': typeof ApiCallSyncProductsRoute
   '/api/img/$': typeof ApiImgSplatRoute
   '/api/public/deployment-health': typeof ApiPublicDeploymentHealthRoute
   '/api/public/version': typeof ApiPublicVersionRoute
@@ -2528,6 +2563,7 @@ export interface FileRoutesById {
   '/_authenticated/owner/communication/templates': typeof AuthenticatedOwnerCommunicationTemplatesRoute
   '/_authenticated/owner/notification-center/$': typeof AuthenticatedOwnerNotificationCenterSplatRoute
   '/_authenticated/owner/subscription-pay/providers': typeof AuthenticatedOwnerSubscriptionPayProvidersRoute
+  '/api/call-sync/orders/$id': typeof ApiCallSyncOrdersIdRouteWithChildren
   '/api/public/ai-admin/messenger-webhook': typeof ApiPublicAiAdminMessengerWebhookRoute
   '/api/public/ai-admin/webhook': typeof ApiPublicAiAdminWebhookRoute
   '/api/public/ai-calls/tool': typeof ApiPublicAiCallsToolRoute
@@ -2581,6 +2617,7 @@ export interface FileRoutesById {
   '/_authenticated/owner/subscription-pay/': typeof AuthenticatedOwnerSubscriptionPayIndexRoute
   '/_authenticated/admin/billing/checkout/$packageId': typeof AuthenticatedAdminBillingCheckoutPackageIdRoute
   '/_authenticated/owner/communication/history/$id': typeof AuthenticatedOwnerCommunicationHistoryIdRoute
+  '/api/call-sync/orders/$id/status': typeof ApiCallSyncOrdersIdStatusRoute
   '/api/public/landing-pages/$connectionId/orders': typeof ApiPublicLandingPagesConnectionIdOrdersRoute
   '/api/public/subscription-pay/webhook/$provider': typeof ApiPublicSubscriptionPayWebhookProviderRoute
   '/api/public/landing-pages/$connectionId/api/orders': typeof ApiPublicLandingPagesConnectionIdApiOrdersRoute
@@ -2719,6 +2756,8 @@ export interface FileRouteTypes {
     | '/owner/webhooks'
     | '/access/invite/$token'
     | '/api/ai/chat'
+    | '/api/call-sync/orders'
+    | '/api/call-sync/products'
     | '/api/img/$'
     | '/api/public/deployment-health'
     | '/api/public/version'
@@ -2798,6 +2837,7 @@ export interface FileRouteTypes {
     | '/owner/communication/templates'
     | '/owner/notification-center/$'
     | '/owner/subscription-pay/providers'
+    | '/api/call-sync/orders/$id'
     | '/api/public/ai-admin/messenger-webhook'
     | '/api/public/ai-admin/webhook'
     | '/api/public/ai-calls/tool'
@@ -2851,6 +2891,7 @@ export interface FileRouteTypes {
     | '/owner/subscription-pay/'
     | '/admin/billing/checkout/$packageId'
     | '/owner/communication/history/$id'
+    | '/api/call-sync/orders/$id/status'
     | '/api/public/landing-pages/$connectionId/orders'
     | '/api/public/subscription-pay/webhook/$provider'
     | '/api/public/landing-pages/$connectionId/api/orders'
@@ -2974,6 +3015,8 @@ export interface FileRouteTypes {
     | '/owner/webhooks'
     | '/access/invite/$token'
     | '/api/ai/chat'
+    | '/api/call-sync/orders'
+    | '/api/call-sync/products'
     | '/api/img/$'
     | '/api/public/deployment-health'
     | '/api/public/version'
@@ -3053,6 +3096,7 @@ export interface FileRouteTypes {
     | '/owner/communication/templates'
     | '/owner/notification-center/$'
     | '/owner/subscription-pay/providers'
+    | '/api/call-sync/orders/$id'
     | '/api/public/ai-admin/messenger-webhook'
     | '/api/public/ai-admin/webhook'
     | '/api/public/ai-calls/tool'
@@ -3106,6 +3150,7 @@ export interface FileRouteTypes {
     | '/owner/subscription-pay'
     | '/admin/billing/checkout/$packageId'
     | '/owner/communication/history/$id'
+    | '/api/call-sync/orders/$id/status'
     | '/api/public/landing-pages/$connectionId/orders'
     | '/api/public/subscription-pay/webhook/$provider'
     | '/api/public/landing-pages/$connectionId/api/orders'
@@ -3243,6 +3288,8 @@ export interface FileRouteTypes {
     | '/_authenticated/owner/webhooks'
     | '/access/invite/$token'
     | '/api/ai/chat'
+    | '/api/call-sync/orders'
+    | '/api/call-sync/products'
     | '/api/img/$'
     | '/api/public/deployment-health'
     | '/api/public/version'
@@ -3322,6 +3369,7 @@ export interface FileRouteTypes {
     | '/_authenticated/owner/communication/templates'
     | '/_authenticated/owner/notification-center/$'
     | '/_authenticated/owner/subscription-pay/providers'
+    | '/api/call-sync/orders/$id'
     | '/api/public/ai-admin/messenger-webhook'
     | '/api/public/ai-admin/webhook'
     | '/api/public/ai-calls/tool'
@@ -3375,6 +3423,7 @@ export interface FileRouteTypes {
     | '/_authenticated/owner/subscription-pay/'
     | '/_authenticated/admin/billing/checkout/$packageId'
     | '/_authenticated/owner/communication/history/$id'
+    | '/api/call-sync/orders/$id/status'
     | '/api/public/landing-pages/$connectionId/orders'
     | '/api/public/subscription-pay/webhook/$provider'
     | '/api/public/landing-pages/$connectionId/api/orders'
@@ -3414,6 +3463,8 @@ export interface RootRouteChildren {
   DotwellKnownOrzenDomainVerificationTokenRoute: typeof DotwellKnownOrzenDomainVerificationTokenRoute
   AccessInviteTokenRoute: typeof AccessInviteTokenRoute
   ApiAiChatRoute: typeof ApiAiChatRoute
+  ApiCallSyncOrdersRoute: typeof ApiCallSyncOrdersRouteWithChildren
+  ApiCallSyncProductsRoute: typeof ApiCallSyncProductsRoute
   ApiImgSplatRoute: typeof ApiImgSplatRoute
   ApiPublicDeploymentHealthRoute: typeof ApiPublicDeploymentHealthRoute
   ApiPublicVersionRoute: typeof ApiPublicVersionRoute
@@ -4376,6 +4427,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAiChatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/call-sync/orders': {
+      id: '/api/call-sync/orders'
+      path: '/api/call-sync/orders'
+      fullPath: '/api/call-sync/orders'
+      preLoaderRoute: typeof ApiCallSyncOrdersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/call-sync/products': {
+      id: '/api/call-sync/products'
+      path: '/api/call-sync/products'
+      fullPath: '/api/call-sync/products'
+      preLoaderRoute: typeof ApiCallSyncProductsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/img/$': {
       id: '/api/img/$'
       path: '/api/img/$'
@@ -5006,6 +5071,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedOwnerSubscriptionPayProvidersRouteImport
       parentRoute: typeof AuthenticatedOwnerSubscriptionPayRouteRoute
     }
+    '/api/call-sync/orders/$id': {
+      id: '/api/call-sync/orders/$id'
+      path: '/$id'
+      fullPath: '/api/call-sync/orders/$id'
+      preLoaderRoute: typeof ApiCallSyncOrdersIdRouteImport
+      parentRoute: typeof ApiCallSyncOrdersRoute
+    }
     '/api/public/ai-admin/messenger-webhook': {
       id: '/api/public/ai-admin/messenger-webhook'
       path: '/api/public/ai-admin/messenger-webhook'
@@ -5285,6 +5357,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/owner/communication/history/$id'
       preLoaderRoute: typeof AuthenticatedOwnerCommunicationHistoryIdRouteImport
       parentRoute: typeof AuthenticatedOwnerCommunicationHistoryRoute
+    }
+    '/api/call-sync/orders/$id/status': {
+      id: '/api/call-sync/orders/$id/status'
+      path: '/status'
+      fullPath: '/api/call-sync/orders/$id/status'
+      preLoaderRoute: typeof ApiCallSyncOrdersIdStatusRouteImport
+      parentRoute: typeof ApiCallSyncOrdersIdRoute
     }
     '/api/public/landing-pages/$connectionId/orders': {
       id: '/api/public/landing-pages/$connectionId/orders'
@@ -5972,6 +6051,28 @@ const StoreSlugRouteRouteWithChildren = StoreSlugRouteRoute._addFileChildren(
   StoreSlugRouteRouteChildren,
 )
 
+interface ApiCallSyncOrdersIdRouteChildren {
+  ApiCallSyncOrdersIdStatusRoute: typeof ApiCallSyncOrdersIdStatusRoute
+}
+
+const ApiCallSyncOrdersIdRouteChildren: ApiCallSyncOrdersIdRouteChildren = {
+  ApiCallSyncOrdersIdStatusRoute: ApiCallSyncOrdersIdStatusRoute,
+}
+
+const ApiCallSyncOrdersIdRouteWithChildren =
+  ApiCallSyncOrdersIdRoute._addFileChildren(ApiCallSyncOrdersIdRouteChildren)
+
+interface ApiCallSyncOrdersRouteChildren {
+  ApiCallSyncOrdersIdRoute: typeof ApiCallSyncOrdersIdRouteWithChildren
+}
+
+const ApiCallSyncOrdersRouteChildren: ApiCallSyncOrdersRouteChildren = {
+  ApiCallSyncOrdersIdRoute: ApiCallSyncOrdersIdRouteWithChildren,
+}
+
+const ApiCallSyncOrdersRouteWithChildren =
+  ApiCallSyncOrdersRoute._addFileChildren(ApiCallSyncOrdersRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
@@ -6005,6 +6106,8 @@ const rootRouteChildren: RootRouteChildren = {
     DotwellKnownOrzenDomainVerificationTokenRoute,
   AccessInviteTokenRoute: AccessInviteTokenRoute,
   ApiAiChatRoute: ApiAiChatRoute,
+  ApiCallSyncOrdersRoute: ApiCallSyncOrdersRouteWithChildren,
+  ApiCallSyncProductsRoute: ApiCallSyncProductsRoute,
   ApiImgSplatRoute: ApiImgSplatRoute,
   ApiPublicDeploymentHealthRoute: ApiPublicDeploymentHealthRoute,
   ApiPublicVersionRoute: ApiPublicVersionRoute,
