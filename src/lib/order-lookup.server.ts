@@ -2,18 +2,25 @@
 // (website chat, Messenger, WhatsApp, AI phone calls) so an order placed on
 // any channel can be tracked from any other one by phone or invoice number.
 
-/** Last 10 digits of a Bangladeshi number in any format (+880 / 880 / 01…). */
+const BN_DIGITS = "০১২৩৪৫৬৭৮৯";
+/** Convert Bengali digits (০-৯) to ASCII digits. */
+export function toAsciiDigits(s: string | null | undefined): string {
+  return String(s ?? "").replace(/[০-৯]/g, (c) => String(BN_DIGITS.indexOf(c)));
+}
+
+/** Last 10 digits of a Bangladeshi number in any format (+880 / 880 / 01… / Bengali digits). */
 export function phoneTail(p: string | null | undefined): string | null {
-  const d = String(p ?? "").replace(/\D/g, "");
+  const d = toAsciiDigits(p).replace(/\D/g, "");
   return d.length >= 10 ? d.slice(-10) : null;
 }
 
-/** Pull the first BD mobile number out of free text ("amar number 017…"). */
+/** Pull the first BD mobile number out of free text ("amar number ০১৭১২-৩৪৫ ৬৭৮"). */
 export function extractPhone(text: string | null | undefined): string | null {
-  const bn = "০১২৩৪৫৬৭৮৯";
-  const ascii = String(text ?? "").replace(/[০-৯]/g, (c) => String(bn.indexOf(c)));
-  const m = ascii.replace(/[\s-]/g, "").match(/(?:\+?88)?01[3-9]\d{8}/);
-  return m ? m[0] : null;
+  const cleaned = toAsciiDigits(text).replace(/[\s\-_().,]/g, "");
+  const m = cleaned.match(/(?:\+?88)?0?1[3-9]\d{8}/);
+  if (!m) return null;
+  const raw = m[0].replace(/^\+?88/, "");
+  return raw.startsWith("0") ? raw : `0${raw}`;
 }
 
 const STATUS_BN: Record<string, string> = {

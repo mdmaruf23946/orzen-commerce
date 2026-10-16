@@ -20,7 +20,7 @@ export type FastPathResult = {
 } | null;
 
 function phoneTail(p: string | null | undefined) {
-  const d = String(p ?? "").replace(/\D/g, "");
+  const d = String(p ?? "").replace(/[০-৯]/g, (c) => String("০১২৩৪৫৬৭৮৯".indexOf(c))).replace(/\D/g, "");
   return d.length >= 10 ? d.slice(-10) : null;
 }
 

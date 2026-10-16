@@ -90,10 +90,8 @@ export const Route = createFileRoute("/api/public/ai-calls/tool")({
               status: order.status,
               address: [order.address, order.area].filter(Boolean).join(", "),
               payment_method: order.payment_method,
-              total:
-                Number(order.subtotal ?? 0) +
-                Number(order.delivery_amount ?? 0) -
-                Number(order.discount_amount ?? 0),
+              // orders.subtotal already stores the grand total.
+              total: Number(order.subtotal ?? 0),
               items: (items ?? []).map((i: any) => ({
                 name: i.name_snapshot,
                 qty: i.qty,
