@@ -51,8 +51,30 @@ export const getOrzenCallSettings = createServerFn({ method: "GET" })
         ? `${originOf()}/api/public/orzen-call/callback?s=${storeId}&k=${token}`
         : null,
       connected_at: row?.connected_at ?? null,
+      secret: token ?? null,
+      outcome_map: readOutcomeMap(info),
+      last_synced: [info.last_full_sync, info.last_orders_sync, info.last_test_ok ? info.last_test : null]
+        .filter(Boolean).sort().pop() ?? null,
+      last_test: (info.last_test as string) ?? null,
+      last_test_ok: (info.last_test_ok as boolean) ?? null,
+      last_test_message: (info.last_test_message as string) ?? null,
     };
   });
+
+export type OutcomeMap = { confirm: "confirmed" | "processing"; cancel: "cancelled" | "on_hold"; no_answer: "no_response" | "on_hold" | "none" };
+function readOutcomeMap(info: any): OutcomeMap {
+  const m = info?.outcome_map ?? {};
+  return {
+    confirm: m.confirm === "processing" ? "processing" : "confirmed",
+    cancel: m.cancel === "on_hold" ? "on_hold" : "cancelled",
+    no_answer: ["on_hold", "none"].includes(m.no_answer) ? m.no_answer : "no_response",
+  };
+}
+const OutcomeSchema = z.object({
+  confirm: z.enum(["confirmed", "processing"]),
+  cancel: z.enum(["cancelled", "on_hold"]),
+  no_answer: z.enum(["no_response", "on_hold", "none"]),
+});
 
 const UrlSchema = z.string().trim().max(500).refine((v) => {
   try {
@@ -67,7 +89,7 @@ const UrlSchema = z.string().trim().max(500).refine((v) => {
 export const saveOrzenCallSettings = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) =>
-    z.object({ webhook_url: UrlSchema, auto_orders: z.boolean(), auto_products: z.boolean() }).parse(d),
+    z.object({ webhook_url: UrlSchema, auto_orders: z.boolean(), auto_products: z.boolean(), outcome_map: OutcomeSchema.optional() }).parse(d),
   )
   .handler(async ({ data, context }) => {
     const storeId = await ownStore(context);
@@ -82,7 +104,13 @@ export const saveOrzenCallSettings = createServerFn({ method: "POST" })
         status: "connected",
         encrypted_token: token,
         token_preview: token.slice(0, 6) + "…",
-        account_info: { webhook_url: data.webhook_url, auto_orders: data.auto_orders, auto_products: data.auto_products },
+        account_info: {
+          ...(row?.account_info ?? {}),
+          webhook_url: data.webhook_url,
+          auto_orders: data.auto_orders,
+          auto_products: data.auto_products,
+          outcome_map: data.outcome_map ?? readOutcomeMap(row?.account_info),
+        },
         connected_at: row?.status === "connected" ? undefined : now,
         updated_at: now,
       } as never,
@@ -329,7 +357,7 @@ export const sendOrzenTestPing = createServerFn({ method: "POST" })
     const { supabaseAdmin, row } = await loadRow(storeId);
     if (row) {
       await supabaseAdmin.from("voice_provider_connections")
-        .update({ account_info: { ...(row.account_info ?? {}), last_test: new Date().toISOString(), last_test_ok: r.ok } } as never)
+        .update({ account_info: { ...(row.account_info ?? {}), last_test: new Date().toISOString(), last_test_ok: r.ok, last_test_message: r.ok ? "Webhook link is working." : r.message } } as never)
         .eq("store_id", storeId).eq("provider", "orzen_call");
     }
     return r.ok ? { ok: true, message: "Test sent — your webhook link is working." } : r;
@@ -348,4 +376,45 @@ export const resendOrzenOrder = createServerFn({ method: "POST" })
     const { order_items, subtotal, ...rest } = o as any;
     const r = await postToOrzen(storeId, "order.created", { ...rest, total: subtotal, items: order_items ?? [], resend: true });
     return r.ok ? { ok: true, message: "Order sent to Orzen Call" } : r;
+  });
+
+export const regenerateOrzenSecret = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const storeId = await ownStore(context);
+    const { supabaseAdmin, row } = await loadRow(storeId);
+    if (!row) return { ok: false, message: "Save settings first." };
+    const { randomBytes } = await import("node:crypto");
+    const token = randomBytes(24).toString("hex");
+    const { error } = await supabaseAdmin.from("voice_provider_connections")
+      .update({ encrypted_token: token, token_preview: token.slice(0, 6) + "…", updated_at: new Date().toISOString() } as never)
+      .eq("store_id", storeId).eq("provider", "orzen_call");
+    if (error) return { ok: false, message: "Could not create a new secret." };
+    return { ok: true, message: "New secret created — update it in Orzen Call." };
+  });
+
+export const syncPendingOrzenOrders = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const storeId = await ownStore(context);
+    const { supabaseAdmin, row } = await loadRow(storeId);
+    if (row?.status !== "connected") return { ok: false, message: "Orzen Call is not connected." };
+    const { data: rows } = await supabaseAdmin
+      .from("orders")
+      .select("id,invoice_no,status,followup_status,customer_name,phone,address,area,payment_method,delivery_amount,discount_amount,subtotal,notes,created_at,order_items(product_id,name_snapshot,price_snapshot,qty)")
+      .eq("store_id", storeId).eq("status", "pending")
+      .order("created_at", { ascending: false }).limit(1000);
+    const list = ((rows ?? []) as any[]).map(({ order_items, subtotal, ...o }) => ({ ...o, order_id: o.id, total: subtotal, items: order_items ?? [] }));
+    if (!list.length) return { ok: true, message: "No pending orders to sync." };
+    let sent = 0;
+    for (let i = 0; i < list.length; i += 25) {
+      const chunk = list.slice(i, i + 25);
+      const r = await postToOrzen(storeId, "orders.sync", { action: "pending_sync", orders: chunk });
+      if (!r.ok) return { ok: false, message: `${r.message} (${sent} of ${list.length} sent)` };
+      sent += chunk.length;
+    }
+    await supabaseAdmin.from("voice_provider_connections")
+      .update({ account_info: { ...(row.account_info ?? {}), last_orders_sync: new Date().toISOString(), last_orders_sync_count: sent } } as never)
+      .eq("store_id", storeId).eq("provider", "orzen_call");
+    return { ok: true, message: `${sent} pending orders sent to Orzen Call` };
   });

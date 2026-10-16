@@ -65,7 +65,7 @@ export const Route = createFileRoute("/api/public/orzen-call/callback")({
       POST: async ({ request }) => {
         const url = new URL(request.url);
         const store = url.searchParams.get("s") ?? "";
-        const key = url.searchParams.get("k") ?? "";
+        const key = url.searchParams.get("k") || request.headers.get("x-orzen-secret") || "";
         if (!/^[0-9a-f-]{36}$/i.test(store) || key.length < 16) return Response.json({ ok: false, error: "unauthorized" }, { status: 401 });
         let body: z.infer<typeof Body>;
         try {
@@ -77,7 +77,7 @@ export const Route = createFileRoute("/api/public/orzen-call/callback")({
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
         const { data: conn } = await supabaseAdmin
           .from("voice_provider_connections")
-          .select("encrypted_token,status")
+          .select("encrypted_token,status,account_info")
           .eq("store_id", store)
           .eq("provider", "orzen_call")
           .maybeSingle();
@@ -87,7 +87,27 @@ export const Route = createFileRoute("/api/public/orzen-call/callback")({
           timingSafeEqual(Buffer.from(token), Buffer.from(key));
         if (!ok) return Response.json({ ok: false, error: "unauthorized" }, { status: 401 });
 
+        const now = new Date().toISOString();
         const event = (body.event ?? "").toLowerCase();
+        // Merchant's call-outcome mapping (Orzen Call settings).
+        const om = ((conn as any)?.account_info?.outcome_map ?? {}) as Record<string, string>;
+        const applyOutcome = async (o: { id: string; status: string }, next: "confirmed" | "cancelled") => {
+          if (next === "cancelled" && om.cancel === "on_hold") {
+            if (o.status !== "pending") return { error: null, status: o.status };
+            const { error } = await supabaseAdmin.from("orders").update({ followup_status: "on_hold", status_source: "ai_call" } as never).eq("id", o.id).eq("store_id", store);
+            return { error, status: "on_hold" };
+          }
+          const patch: Record<string, unknown> = { status: next, status_source: "ai_call" };
+          if (next === "confirmed") patch.confirmed_at = now;
+          const { error } = await supabaseAdmin.from("orders").update(patch as never).eq("id", o.id).eq("store_id", store);
+          if (!error && next === "confirmed" && om.confirm === "processing") {
+            const r2 = await supabaseAdmin.from("orders").update({ status: "processing", status_source: "ai_call" } as never).eq("id", o.id).eq("store_id", store);
+            return { error: r2.error, status: "processing" };
+          }
+          return { error, status: next };
+        };
+        const mapNoAnswer = (f: "no_response" | "on_hold" | null) =>
+          f === "no_response" ? (om.no_answer === "none" ? null : om.no_answer === "on_hold" ? "on_hold" : "no_response") : f;
         const findOrder = async () => {
           const sel = "id,status,customer_name,phone";
           if (body.order_id || body.invoice_no) {
@@ -105,7 +125,6 @@ export const Route = createFileRoute("/api/public/orzen-call/callback")({
           }
           return null;
         };
-        const now = new Date().toISOString();
 
         // (1) New order placed over the phone by the AI agent.
         if (event === "order.created" || event === "order.new") {
@@ -161,7 +180,8 @@ export const Route = createFileRoute("/api/public/orzen-call/callback")({
 
         if (event === "order.status_changed") {
           const st = body.status ?? body.call_status;
-          const follow = mapFollowup(st);
+          const follow = mapNoAnswer(mapFollowup(st));
+          if (mapFollowup(st) && !follow) return Response.json({ ok: true, skipped: true });
           if (follow) {
             const o = await findOrder();
             if (!o) return Response.json({ ok: false, error: "order not found" }, { status: 404 });
@@ -174,12 +194,15 @@ export const Route = createFileRoute("/api/public/orzen-call/callback")({
           const o = await findOrder();
           if (!o) return Response.json({ ok: false, error: "order not found" }, { status: 404 });
           if (o.status === next) return Response.json({ ok: true, order_id: o.id, status: next, unchanged: true });
-          const patch: Record<string, unknown> = { status: next, status_source: "ai_call" };
-          if (next === "confirmed") patch.confirmed_at = now;
-          const { error } = await supabaseAdmin.from("orders").update(patch as never).eq("id", o.id).eq("store_id", store);
-          if (error) return Response.json({ ok: false, error: "update failed" }, { status: 500 });
+          if (next === "pending") {
+            const { error } = await supabaseAdmin.from("orders").update({ status: "pending", status_source: "ai_call" } as never).eq("id", o.id).eq("store_id", store);
+            if (error) return Response.json({ ok: false, error: "update failed" }, { status: 500 });
+            return Response.json({ ok: true, order_id: o.id, status: next });
+          }
+          const res = await applyOutcome(o, next);
+          if (res.error) return Response.json({ ok: false, error: "update failed" }, { status: 500 });
           // Status-only change: no call happened, so no call record is created.
-          return Response.json({ ok: true, order_id: o.id, status: next });
+          return Response.json({ ok: true, order_id: o.id, status: res.status });
         }
 
         // (1) Call completed / legacy: one record per call_id.
@@ -234,7 +257,7 @@ export const Route = createFileRoute("/api/public/orzen-call/callback")({
 
         if (o && !decided && o.status === "pending") {
           // Not reached / asked to call later → No Response / On Hold (never Confirmed without explicit consent).
-          const follow = mapFollowup(body.status) ?? (callStatus !== "completed" ? "no_response" : null);
+          const follow = mapNoAnswer(mapFollowup(body.status) ?? (callStatus !== "completed" ? "no_response" : null));
           if (follow) {
             await supabaseAdmin.from("orders").update({ followup_status: follow, status_source: "ai_call" } as never)
               .eq("id", o.id).eq("store_id", store).eq("status", "pending");
@@ -243,10 +266,8 @@ export const Route = createFileRoute("/api/public/orzen-call/callback")({
         }
         if (!o || !decided) return Response.json({ ok: true, logged: !logErr, order_id: o?.id ?? null, call_status: callStatus });
         if (o.status !== "pending") return Response.json({ ok: true, logged: !logErr, skipped: true, status: o.status });
-        const patch: Record<string, unknown> = { status: next, status_source: "ai_call" };
-        if (next === "confirmed") patch.confirmed_at = now;
-        await supabaseAdmin.from("orders").update(patch as never).eq("id", o.id).eq("store_id", store).eq("status", "pending");
-        return Response.json({ ok: true, logged: !logErr, order_id: o.id, status: next });
+        const res = await applyOutcome(o, next as "confirmed" | "cancelled");
+        return Response.json({ ok: true, logged: !logErr, order_id: o.id, status: res.status });
       },
     },
   },
