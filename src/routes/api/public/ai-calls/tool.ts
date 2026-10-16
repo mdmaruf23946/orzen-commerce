@@ -56,6 +56,27 @@ export const Route = createFileRoute("/api/public/ai-calls/tool")({
         }
 
         switch (tool) {
+          case "track_order":
+          case "find_orders_by_phone": {
+            // Inbound call: the caller ID is checked first, so a customer calling
+            // from the number they ordered with is never asked for it again.
+            const { lookupOrders, extractPhone, TRACKING_GUIDE } = await import(
+              "@/lib/order-lookup.server"
+            );
+            const given = String(params["phone"] ?? "").trim();
+            const caller = String(params["caller_phone"] ?? params["from"] ?? "").trim();
+            const invoice = String(params["invoice_no"] ?? params["order_id"] ?? "").trim() || null;
+            const phone = (given && (extractPhone(given) ?? given)) || caller || null;
+            if (!phone && !invoice) {
+              return Response.json({ orders: [], need: "phone", instruction: TRACKING_GUIDE });
+            }
+            const orders = await lookupOrders(sb, storeId, { phone, invoice });
+            return Response.json({
+              phone_source: given ? "spoken" : caller ? "caller_id" : "none",
+              orders,
+              instruction: TRACKING_GUIDE,
+            });
+          }
           case "get_order": {
             const order = await loadOrder();
             if (!order) return Response.json({ error: "Order not found" });
