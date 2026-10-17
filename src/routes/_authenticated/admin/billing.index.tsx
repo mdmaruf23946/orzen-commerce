@@ -16,6 +16,7 @@ import { FEATURE_KEYS, FEATURE_LABELS, ALWAYS_INCLUDED, PLAN_FEATURE_GROUPS, HIG
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import WalletPanel from "@/components/admin/billing/WalletPanel";
+import AiCreditsPanel from "@/components/admin/billing/AiCreditsPanel";
 import { getFooterSettings } from "@/lib/footer.functions";
 import { openSubscriptionInvoice } from "@/lib/subscription-invoice-print";
 import { usePlatformBranding, resolvePlacement } from "@/lib/platform-branding";
@@ -305,6 +306,9 @@ function BillingPage() {
 
       {/* Merchant Wallet */}
       <WalletPanel />
+
+      {/* AI Credits (separate purchase) */}
+      <AiCreditsPanel />
 
       {/* 3. Billing Cycle Selector */}
       <section>
