@@ -512,6 +512,35 @@ export const verifyPayment = createServerFn({ method: "POST" })
       .eq("id", pay.store_id);
     if (stErr) throw new Error(stErr.message);
 
+    // Extra money beyond the plan price goes to the merchant's Ad Fund wallet.
+    let adFundCredit = 0;
+    try {
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const adm: any = supabaseAdmin;
+      let expected = Number(pkg.price ?? 0);
+      if (pay.invoice_no) {
+        const { data: inv } = await adm.from("subscription_invoices")
+          .select("total").eq("invoice_no", pay.invoice_no).maybeSingle();
+        if (inv?.total != null) expected = Number(inv.total);
+      }
+      const excess = Math.round((Number(pay.amount) - expected) * 100) / 100;
+      if (expected > 0 && excess > 0 && store?.owner_user_id) {
+        const { creditWallet } = await import("./wallet.server");
+        const res = await creditWallet(adm, {
+          userId: store.owner_user_id,
+          amount: excess,
+          type: "topup",
+          invoiceId: null,
+          reference: `EXCESS-${pay.id}`,
+          note: `Extra ৳${excess} from ${pkg.name} payment added to Ad Fund`,
+          storeId: pay.store_id,
+        });
+        if (res?.ok || res?.already) adFundCredit = excess;
+      }
+    } catch (e) {
+      console.error("[verifyPayment] ad fund credit failed", (e as Error).message);
+    }
+
     await sb.from("subscription_notifications").insert({
       store_id: pay.store_id,
       type: "payment_success",
