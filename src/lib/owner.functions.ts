@@ -596,7 +596,7 @@ export const extendSubscription = createServerFn({ method: "POST" })
       .update({ expires_at: base.toISOString(), subscription_status: "active" })
       .eq("id", data.storeId);
     if (error) throw new Error(error.message);
-    return { ok: true, adFundCredit };
+    return { ok: true };
   });
 
 export const setSubscriptionStatus = createServerFn({ method: "POST" })
