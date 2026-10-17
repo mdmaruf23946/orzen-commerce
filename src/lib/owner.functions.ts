@@ -841,7 +841,9 @@ export const getStoreUsage = createServerFn({ method: "POST" })
   .inputValidator((d) => z.object({ storeId: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     await assertOwner(context.supabase, context.userId);
-    const sb: any = context.supabase;
+    // Owner verified above; admin client so per-store RLS doesn't hide counts.
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const sb: any = supabaseAdmin;
     const last30 = new Date(Date.now() - 30 * 86400000).toISOString();
 
     const [
@@ -854,27 +856,35 @@ export const getStoreUsage = createServerFn({ method: "POST" })
       { data: recentPayments },
     ] = await Promise.all([
       sb.from("stores")
-        .select("*, subscription_packages(name,price,product_limit,order_limit,customer_limit,storage_mb)")
+        .select("*, subscription_packages(name,price,product_limit,order_limit,customer_limit,storage_mb,features,duration_days)")
         .eq("id", data.storeId).maybeSingle(),
-      sb.from("products").select("*", { count: "exact", head: true }).eq("store_id", data.storeId),
-      sb.from("orders").select("*", { count: "exact", head: true }).eq("store_id", data.storeId),
-      sb.from("orders").select("*", { count: "exact", head: true })
+      sb.from("products").select("id", { count: "exact", head: true }).eq("store_id", data.storeId),
+      sb.from("orders").select("id", { count: "exact", head: true }).eq("store_id", data.storeId),
+      sb.from("orders").select("id", { count: "exact", head: true })
         .eq("store_id", data.storeId).gte("created_at", last30),
-      sb.from("orders").select("subtotal,discount_amount,delivery_amount,status,phone,created_at").eq("store_id", data.storeId),
+      sb.from("orders").select("subtotal,status,phone,created_at").eq("store_id", data.storeId),
       sb.from("ai_usage").select("cost_usd,prompt_tokens,completion_tokens,created_at")
         .eq("store_id", data.storeId).gte("created_at", last30),
-      sb.from("payments").select("id,amount,status,method,created_at,invoice_no")
+      sb.from("payments").select("id,amount,status,method,created_at,invoice_no,purpose")
         .eq("store_id", data.storeId).order("created_at", { ascending: false }).limit(10),
     ]);
 
-    const orderTotal = (o: any) =>
-      Number(o.subtotal || 0) + Number(o.delivery_amount || 0) - Number(o.discount_amount || 0);
+    // orders.subtotal already stores the grand total.
+    const statusCounts: Record<string, number> = {};
+    for (const o of revenueRows ?? []) statusCounts[o.status] = (statusCounts[o.status] ?? 0) + 1;
     const revenue = (revenueRows ?? [])
       .filter((o: any) => o.status === "delivered" || o.status === "confirmed" || o.status === "processing")
-      .reduce((a: number, o: any) => a + orderTotal(o), 0);
+      .reduce((a: number, o: any) => a + Number(o.subtotal || 0), 0);
     const customers = new Set((revenueRows ?? []).map((o: any) => o.phone).filter(Boolean)).size;
     const aiCost = (aiRows ?? []).reduce((a: number, r: any) => a + Number(r.cost_usd || 0), 0);
     const aiTokens = (aiRows ?? []).reduce((a: number, r: any) => a + (Number(r.prompt_tokens || 0) + Number(r.completion_tokens || 0)), 0);
+
+    let adFund = 0;
+    if (store?.owner_user_id) {
+      const { data: w } = await sb.from("merchant_wallets").select("balance")
+        .eq("user_id", store.owner_user_id).maybeSingle();
+      adFund = Number(w?.balance ?? 0);
+    }
 
     return {
       store,
@@ -884,7 +894,9 @@ export const getStoreUsage = createServerFn({ method: "POST" })
         orders30d: orders30 ?? 0,
         customers,
       },
+      statusCounts,
       revenue,
+      adFund,
       ai: { cost: aiCost, tokens: aiTokens, requests: (aiRows ?? []).length },
       recentPayments: recentPayments ?? [],
     };
