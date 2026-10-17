@@ -2145,6 +2145,10 @@ export async function logUsage(storeId: string | null, model: string, usage: any
       cost_usd: estimateCostUsd(model, pt, ct),
       kind,
     });
+    // AI credit tracking (Messenger/WhatsApp/Web chat). Never blocks a reply.
+    if (storeId && pt + ct > 0) {
+      await (sb as any).rpc("consume_ai_credits", { _store: storeId, _tokens: pt + ct, _channel: kind });
+    }
   } catch {
     /* swallow */
   }
