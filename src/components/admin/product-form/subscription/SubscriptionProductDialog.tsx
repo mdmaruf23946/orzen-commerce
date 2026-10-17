@@ -333,7 +333,7 @@ export function SubscriptionProductDialog({
         cost_price: 0,
         stock: 0,
         status: nextStatus,
-        primary_image_url: image,
+        primary_image_url: image || gallery[0] || null,
         gallery,
         video_url: introVideo.trim() || null,
         category_id: categoryId || null,
