@@ -375,7 +375,6 @@ function CheckoutPage() {
                 Pay ৳{planCalc.total.toLocaleString()}
               </Button>
             </div>
-            {pack && <p className="mt-2 text-xs text-amber-600">Wallet দিয়ে শুধু plan-এর টাকা কাটবে; extra credit নিতে নিচের bKash/Nagad payment ব্যবহার করুন।</p>}
             {!enough && (
               <div className="mt-3 rounded-xl bg-amber-50 dark:bg-amber-500/10 p-3 text-sm text-amber-900 dark:text-amber-200">
                 Not enough balance — you need ৳{(planCalc.total - balance).toLocaleString()} more.{" "}
