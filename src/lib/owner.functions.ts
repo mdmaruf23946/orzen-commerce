@@ -336,7 +336,7 @@ export const verifyPayment = createServerFn({ method: "POST" })
       .maybeSingle();
     const { data: pkg } = await sb
       .from("subscription_packages")
-      .select("id,duration_days,name,price")
+      .select("id,duration_days,name,price,ai_credits_included")
       .eq("id", pay.package_id)
       .maybeSingle();
 

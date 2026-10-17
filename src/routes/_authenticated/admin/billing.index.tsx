@@ -55,6 +55,7 @@ type Plan = {
   landing_page_limit?: number | null;
   features?: Record<string, any> | null;
   feature_summary?: string[] | null;
+  ai_credits_included?: number | null;
 };
 
 const TIER_NAME: Record<string, string> = {
@@ -417,6 +418,13 @@ function BillingPage() {
                     </>
                   )}
                 </div>
+
+                {Number(p.ai_credits_included) > 0 && (
+                  <div className="mt-2 flex items-center gap-1.5 rounded-lg border border-primary/30 bg-primary/10 px-2 py-1.5 text-xs font-semibold text-primary">
+                    <Sparkles className="h-3.5 w-3.5" /> {Number(p.ai_credits_included).toLocaleString()} AI credits free
+                    <span className="ml-auto text-[10px] font-normal text-muted-foreground">+ আরও নেওয়া যাবে</span>
+                  </div>
+                )}
 
                 {/* Limits */}
                 <ul className="mt-3 space-y-1.5 text-sm">
