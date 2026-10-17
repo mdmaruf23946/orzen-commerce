@@ -393,6 +393,10 @@ function UsageSheet({ storeId, onClose }: { storeId: string | null; onClose: () 
                   <div className="text-muted-foreground">Revenue</div>
                   <div className="font-semibold">৳{Number((data as any)?.revenue ?? 0).toFixed(0)}</div>
                 </div>
+                <div className="col-span-2 rounded-md bg-primary/10 p-2">
+                  <div className="text-muted-foreground">Ad Fund (wallet)</div>
+                  <div className="font-semibold text-primary">৳{Number((data as any)?.adFund ?? 0).toLocaleString()}</div>
+                </div>
               </div>
             </div>
 

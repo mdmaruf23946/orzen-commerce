@@ -301,6 +301,8 @@ export const verifyPayment = createServerFn({ method: "POST" })
         id: z.string().uuid(),
         approve: z.boolean(),
         notes: z.string().max(500).optional(),
+        // Amount the owner actually received (may differ from what the merchant claimed).
+        receivedAmount: z.number().min(0).max(10_000_000).optional(),
       })
       .parse(d),
   )
@@ -316,6 +318,14 @@ export const verifyPayment = createServerFn({ method: "POST" })
       .maybeSingle();
     if (!pay) throw new Error("Payment not found");
     if (pay.status === "paid") throw new Error("Already verified");
+    if (data.approve && typeof data.receivedAmount === "number") {
+      const r = Math.round(data.receivedAmount * 100) / 100;
+      if (r !== Number(pay.amount)) {
+        const { error: aErr } = await sb.from("payments").update({ amount: r }).eq("id", pay.id);
+        if (aErr) throw new Error(aErr.message);
+        pay.amount = r;
+      }
+    }
 
     const { data: store } = await sb
       .from("stores")
@@ -324,7 +334,7 @@ export const verifyPayment = createServerFn({ method: "POST" })
       .maybeSingle();
     const { data: pkg } = await sb
       .from("subscription_packages")
-      .select("id,duration_days,name")
+      .select("id,duration_days,name,price")
       .eq("id", pay.package_id)
       .maybeSingle();
 
@@ -502,6 +512,35 @@ export const verifyPayment = createServerFn({ method: "POST" })
       .eq("id", pay.store_id);
     if (stErr) throw new Error(stErr.message);
 
+    // Extra money beyond the plan price goes to the merchant's Ad Fund wallet.
+    let adFundCredit = 0;
+    try {
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const adm: any = supabaseAdmin;
+      let expected = Number(pkg.price ?? 0);
+      if (pay.invoice_no) {
+        const { data: inv } = await adm.from("subscription_invoices")
+          .select("total").eq("invoice_no", pay.invoice_no).maybeSingle();
+        if (inv?.total != null) expected = Number(inv.total);
+      }
+      const excess = Math.round((Number(pay.amount) - expected) * 100) / 100;
+      if (expected > 0 && excess > 0 && store?.owner_user_id) {
+        const { creditWallet } = await import("./wallet.server");
+        const res = await creditWallet(adm, {
+          userId: store.owner_user_id,
+          amount: excess,
+          type: "topup",
+          invoiceId: null,
+          reference: `EXCESS-${pay.id}`,
+          note: `Extra ৳${excess} from ${pkg.name} payment added to Ad Fund`,
+          storeId: pay.store_id,
+        });
+        if (res?.ok || res?.already) adFundCredit = excess;
+      }
+    } catch (e) {
+      console.error("[verifyPayment] ad fund credit failed", (e as Error).message);
+    }
+
     await sb.from("subscription_notifications").insert({
       store_id: pay.store_id,
       type: "payment_success",
@@ -528,7 +567,7 @@ export const verifyPayment = createServerFn({ method: "POST" })
         relatedPaymentId: pay.id,
       });
     }
-    return { ok: true, invoice_no: invoiceNo };
+    return { ok: true, invoice_no: invoiceNo, adFundCredit };
   });
 
 export const retryEmailLog = createServerFn({ method: "POST" })
@@ -841,7 +880,9 @@ export const getStoreUsage = createServerFn({ method: "POST" })
   .inputValidator((d) => z.object({ storeId: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     await assertOwner(context.supabase, context.userId);
-    const sb: any = context.supabase;
+    // Owner verified above; admin client so per-store RLS doesn't hide counts.
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const sb: any = supabaseAdmin;
     const last30 = new Date(Date.now() - 30 * 86400000).toISOString();
 
     const [
@@ -854,27 +895,35 @@ export const getStoreUsage = createServerFn({ method: "POST" })
       { data: recentPayments },
     ] = await Promise.all([
       sb.from("stores")
-        .select("*, subscription_packages(name,price,product_limit,order_limit,customer_limit,storage_mb)")
+        .select("*, subscription_packages(name,price,product_limit,order_limit,customer_limit,storage_mb,features,duration_days)")
         .eq("id", data.storeId).maybeSingle(),
-      sb.from("products").select("*", { count: "exact", head: true }).eq("store_id", data.storeId),
-      sb.from("orders").select("*", { count: "exact", head: true }).eq("store_id", data.storeId),
-      sb.from("orders").select("*", { count: "exact", head: true })
+      sb.from("products").select("id", { count: "exact", head: true }).eq("store_id", data.storeId),
+      sb.from("orders").select("id", { count: "exact", head: true }).eq("store_id", data.storeId),
+      sb.from("orders").select("id", { count: "exact", head: true })
         .eq("store_id", data.storeId).gte("created_at", last30),
-      sb.from("orders").select("subtotal,discount_amount,delivery_amount,status,phone,created_at").eq("store_id", data.storeId),
+      sb.from("orders").select("subtotal,status,phone,created_at").eq("store_id", data.storeId),
       sb.from("ai_usage").select("cost_usd,prompt_tokens,completion_tokens,created_at")
         .eq("store_id", data.storeId).gte("created_at", last30),
-      sb.from("payments").select("id,amount,status,method,created_at,invoice_no")
+      sb.from("payments").select("id,amount,status,method,created_at,invoice_no,purpose")
         .eq("store_id", data.storeId).order("created_at", { ascending: false }).limit(10),
     ]);
 
-    const orderTotal = (o: any) =>
-      Number(o.subtotal || 0) + Number(o.delivery_amount || 0) - Number(o.discount_amount || 0);
+    // orders.subtotal already stores the grand total.
+    const statusCounts: Record<string, number> = {};
+    for (const o of revenueRows ?? []) statusCounts[o.status] = (statusCounts[o.status] ?? 0) + 1;
     const revenue = (revenueRows ?? [])
       .filter((o: any) => o.status === "delivered" || o.status === "confirmed" || o.status === "processing")
-      .reduce((a: number, o: any) => a + orderTotal(o), 0);
+      .reduce((a: number, o: any) => a + Number(o.subtotal || 0), 0);
     const customers = new Set((revenueRows ?? []).map((o: any) => o.phone).filter(Boolean)).size;
     const aiCost = (aiRows ?? []).reduce((a: number, r: any) => a + Number(r.cost_usd || 0), 0);
     const aiTokens = (aiRows ?? []).reduce((a: number, r: any) => a + (Number(r.prompt_tokens || 0) + Number(r.completion_tokens || 0)), 0);
+
+    let adFund = 0;
+    if (store?.owner_user_id) {
+      const { data: w } = await sb.from("merchant_wallets").select("balance")
+        .eq("user_id", store.owner_user_id).maybeSingle();
+      adFund = Number(w?.balance ?? 0);
+    }
 
     return {
       store,
@@ -884,7 +933,9 @@ export const getStoreUsage = createServerFn({ method: "POST" })
         orders30d: orders30 ?? 0,
         customers,
       },
+      statusCounts,
       revenue,
+      adFund,
       ai: { cost: aiCost, tokens: aiTokens, requests: (aiRows ?? []).length },
       recentPayments: recentPayments ?? [],
     };
