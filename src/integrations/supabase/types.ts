@@ -5993,6 +5993,10 @@ export type Database = {
       }
       payments: {
         Row: {
+          ai_credit_bundle_id: string | null
+          ai_credits_extra: number
+          ai_credits_granted: boolean
+          ai_credits_price: number
           amount: number
           created_at: string
           customer_email: string | null
@@ -6014,6 +6018,10 @@ export type Database = {
           verified_by: string | null
         }
         Insert: {
+          ai_credit_bundle_id?: string | null
+          ai_credits_extra?: number
+          ai_credits_granted?: boolean
+          ai_credits_price?: number
           amount: number
           created_at?: string
           customer_email?: string | null
@@ -6035,6 +6043,10 @@ export type Database = {
           verified_by?: string | null
         }
         Update: {
+          ai_credit_bundle_id?: string | null
+          ai_credits_extra?: number
+          ai_credits_granted?: boolean
+          ai_credits_price?: number
           amount?: number
           created_at?: string
           customer_email?: string | null
