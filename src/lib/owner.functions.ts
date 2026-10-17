@@ -301,6 +301,8 @@ export const verifyPayment = createServerFn({ method: "POST" })
         id: z.string().uuid(),
         approve: z.boolean(),
         notes: z.string().max(500).optional(),
+        // Amount the owner actually received (may differ from what the merchant claimed).
+        receivedAmount: z.number().min(0).max(10_000_000).optional(),
       })
       .parse(d),
   )
@@ -316,6 +318,14 @@ export const verifyPayment = createServerFn({ method: "POST" })
       .maybeSingle();
     if (!pay) throw new Error("Payment not found");
     if (pay.status === "paid") throw new Error("Already verified");
+    if (data.approve && typeof data.receivedAmount === "number") {
+      const r = Math.round(data.receivedAmount * 100) / 100;
+      if (r !== Number(pay.amount)) {
+        const { error: aErr } = await sb.from("payments").update({ amount: r }).eq("id", pay.id);
+        if (aErr) throw new Error(aErr.message);
+        pay.amount = r;
+      }
+    }
 
     const { data: store } = await sb
       .from("stores")
@@ -324,7 +334,7 @@ export const verifyPayment = createServerFn({ method: "POST" })
       .maybeSingle();
     const { data: pkg } = await sb
       .from("subscription_packages")
-      .select("id,duration_days,name")
+      .select("id,duration_days,name,price")
       .eq("id", pay.package_id)
       .maybeSingle();
 
