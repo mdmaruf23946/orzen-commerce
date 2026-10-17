@@ -21,6 +21,7 @@ import {
   getBillingSettings,
   computeCycleTotal,
   activateFreePlan,
+  listAiCreditPacks,
   type CycleKey,
 } from "@/lib/billing.functions";
 import { Button } from "@/components/ui/button";
@@ -83,6 +84,9 @@ function CheckoutPage() {
     staleTime: 5 * 60_000,
   });
 
+  const packsFn = useServerFn(listAiCreditPacks);
+  const { data: packs = [] } = useQuery({ queryKey: ["admin", "aiCreditPacks"], queryFn: () => packsFn() });
+  const [packId, setPackId] = useState<string | null>(null);
   const pkg = (plans ?? []).find((p: any) => p.id === packageId) as any;
   const [cycle, setCycle] = useState<CycleKey>(initialCycle);
   const [method, setMethod] = useState<MethodKey>("bkash");
@@ -111,7 +115,10 @@ function CheckoutPage() {
   if (!pkg) return <div className="p-8 text-sm text-muted-foreground">Loading plan…</div>;
 
   const s = settings ?? { discount_3m: 5, discount_6m: 10, discount_yearly: 20 };
-  const calc = computeCycleTotal(Number(pkg.price), cycle, s);
+  const planCalc = computeCycleTotal(Number(pkg.price), cycle, s);
+  const pack = packs.find((b) => b.id === packId) ?? null;
+  const calc = { ...planCalc, total: planCalc.total + (pack?.price_bdt ?? 0) };
+  const freeCredits = Number(pkg.ai_credits_included ?? 0);
 
   const enabledMethods = (["bkash", "nagad", "rocket"] as const).filter(
     (k) => methods?.[k]?.enabled,
@@ -163,6 +170,7 @@ function CheckoutPage() {
           sender_number: sender.trim(),
           customer_email: email.trim(),
           customer_note: note.trim() || undefined,
+          ai_credit_bundle_id: pack?.id ?? null,
         },
       });
       setSuccessId(res.paymentId);
@@ -227,7 +235,7 @@ function CheckoutPage() {
   }
 
   // Free plan — instant activation, no payment details required.
-  if (calc.total <= 0) {
+  if (planCalc.total <= 0) {
     return (
       <div className="mx-auto max-w-xl space-y-4 pb-10">
         <Link
@@ -290,6 +298,43 @@ function CheckoutPage() {
           )}
         </div>
       </div>
+
+      {/* AI credits */}
+      {(freeCredits > 0 || packs.length > 0) && (
+        <div className="rounded-2xl border bg-card p-4 shadow-sm">
+          <div className="flex items-center justify-between gap-2">
+            <Label className="text-xs uppercase tracking-wide text-muted-foreground">AI credits</Label>
+            {freeCredits > 0 && (
+              <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">✨ {freeCredits.toLocaleString()} free</span>
+            )}
+          </div>
+          {packs.length > 0 && (
+            <>
+              <p className="mt-1 text-xs text-muted-foreground">আরও credit লাগলে একটি বেছে নিন — দাম plan-এর সাথে যোগ হবে।</p>
+              <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
+                <button type="button" onClick={() => setPackId(null)}
+                  className={`rounded-lg border p-2 text-left text-sm ${!pack ? "border-primary bg-primary/5 ring-2 ring-primary/30" : "hover:border-foreground/30"}`}>
+                  <div className="font-semibold">{freeCredits.toLocaleString()} credits</div>
+                  <div className="text-[11px] text-muted-foreground">শুধু ফ্রি</div>
+                </button>
+                {packs.map((b) => (
+                  <button key={b.id} type="button" onClick={() => setPackId(b.id)}
+                    className={`rounded-lg border p-2 text-left text-sm ${pack?.id === b.id ? "border-primary bg-primary/5 ring-2 ring-primary/30" : "hover:border-foreground/30"}`}>
+                    <div className="font-semibold">{(freeCredits + b.credits).toLocaleString()} credits</div>
+                    <div className="text-[11px] text-muted-foreground">+{b.credits.toLocaleString()} · +৳{b.price_bdt.toLocaleString()}</div>
+                  </button>
+                ))}
+              </div>
+              {pack && (
+                <div className="mt-2 flex justify-between text-xs text-muted-foreground">
+                  <span>Plan ৳{planCalc.total.toLocaleString()} + credits ৳{pack.price_bdt.toLocaleString()}</span>
+                  <span className="font-semibold text-foreground">৳{calc.total.toLocaleString()}</span>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      )}
 
       {/* Cycle chips */}
       <div className="rounded-2xl border bg-card p-4 shadow-sm">

@@ -5,7 +5,7 @@ import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
 
 const PUBLIC_FIELDS =
-  "id,name,description,price,duration_days,billing_cycle,product_limit,order_limit,customer_limit,staff_limit,storage_mb,landing_page_limit,features,is_trial,trial_days,sort_order,plan_tier,feature_summary";
+  "id,name,description,price,duration_days,billing_cycle,product_limit,order_limit,customer_limit,staff_limit,storage_mb,landing_page_limit,features,is_trial,trial_days,sort_order,plan_tier,feature_summary,ai_credits_included";
 
 export const CYCLE_MONTHS = { monthly: 1, "3m": 3, "6m": 6, yearly: 12 } as const;
 export type CycleKey = keyof typeof CYCLE_MONTHS;
@@ -155,6 +155,7 @@ export const submitManualPayment = createServerFn({ method: "POST" })
           .regex(BD_PHONE, "Enter a valid Bangladesh mobile number"),
         customer_email: z.string().trim().email().max(255),
         customer_note: z.string().trim().max(500).optional().nullable(),
+        ai_credit_bundle_id: z.string().uuid().optional().nullable(),
       })
       .parse(d),
   )
@@ -181,7 +182,17 @@ export const submitManualPayment = createServerFn({ method: "POST" })
       discount_6m: Number((settings as any)?.discount_6m ?? 10),
       discount_yearly: Number((settings as any)?.discount_yearly ?? 20),
     };
-    const { months, total } = computeCycleTotal(Number(pkg.price), data.cycle, s);
+    const { months, total: planTotal } = computeCycleTotal(Number(pkg.price), data.cycle, s);
+    // Optional extra AI credit bundle — price always re-read on the server.
+    let bundle: { id: string; credits: number; price_bdt: number } | null = null;
+    if (data.ai_credit_bundle_id) {
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const { data: b } = await (supabaseAdmin as any).from("ai_credit_bundles")
+        .select("id,credits,price_bdt").eq("id", data.ai_credit_bundle_id).eq("is_active", true).maybeSingle();
+      if (!b) throw new Error("Selected credit pack is no longer available");
+      bundle = { id: b.id, credits: Number(b.credits), price_bdt: Number(b.price_bdt) };
+    }
+    const total = planTotal + (bundle?.price_bdt ?? 0);
 
     const { data: payment, error } = await (supabase.from("payments") as any)
       .insert({
@@ -194,7 +205,10 @@ export const submitManualPayment = createServerFn({ method: "POST" })
         customer_email: data.customer_email,
         customer_note: data.customer_note ?? null,
         status: "pending",
-        notes: `Cycle: ${data.cycle} (${months} mo). Awaiting verification.`,
+        ai_credit_bundle_id: bundle?.id ?? null,
+        ai_credits_extra: bundle?.credits ?? 0,
+        ai_credits_price: bundle?.price_bdt ?? 0,
+        notes: `Cycle: ${data.cycle} (${months} mo).${bundle ? ` +${bundle.credits} AI credits (৳${bundle.price_bdt}).` : ""} Awaiting verification.`,
       })
       .select("id")
       .single();
@@ -373,4 +387,13 @@ export const activateFreePlan = createServerFn({ method: "POST" })
       .then(() => null, () => null);
 
     return { ok: true, expires_at: newExpiry.toISOString() };
+  });
+
+export const listAiCreditPacks = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async () => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data } = await (supabaseAdmin as any).from("ai_credit_bundles")
+      .select("id,name,credits,price_bdt").eq("is_active", true).order("sort_order").order("credits");
+    return ((data ?? []) as any[]).map((b) => ({ id: b.id as string, name: b.name as string, credits: Number(b.credits), price_bdt: Number(b.price_bdt) }));
   });

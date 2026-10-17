@@ -78,6 +78,9 @@ function PackagesPage() {
               <div>Landing pages: {p.landing_page_limit ? p.landing_page_limit : "∞"}</div>
               <div>Sort: {p.sort_order ?? 0}</div>
             </div>
+            {Number(p.ai_credits_included) > 0 && (
+              <div className="mt-2 inline-block rounded-full bg-primary px-2 py-0.5 text-[11px] font-semibold text-primary-foreground">✨ {Number(p.ai_credits_included).toLocaleString()} AI credits free</div>
+            )}
             <div className="mt-2 flex flex-wrap gap-1">
               {PLAN_DISPLAY_FEATURES
                 .filter((g) => p.is_trial || displayFeatureOn(p.features ?? {}, g.flags))
@@ -123,6 +126,7 @@ function PackageDialog({ editing, onClose, onSaved }: { editing: any; onClose: (
     trial_days: editing?.trial_days ?? 0,
     features: (editing?.features ?? {}) as Record<string, boolean>,
     sort_order: editing?.sort_order ?? 0,
+    ai_credits_included: editing?.ai_credits_included ?? 0,
   }));
   const [saving, setSaving] = useState(false);
   const set = (k: string, v: any) => setForm((f: any) => ({ ...f, [k]: v }));
@@ -147,6 +151,7 @@ function PackageDialog({ editing, onClose, onSaved }: { editing: any; onClose: (
           landing_page_limit: Number(form.landing_page_limit) || 0,
           trial_days: Number(form.trial_days) || 0,
           sort_order: Number(form.sort_order) || 0,
+          ai_credits_included: Math.max(0, Math.floor(Number(form.ai_credits_included) || 0)),
         },
       });
       toast.success("Saved");
@@ -186,6 +191,11 @@ function PackageDialog({ editing, onClose, onSaved }: { editing: any; onClose: (
                 </div>
                 <div className="space-y-1.5"><Label>Duration (days)</Label><Input type="number" min={1} required value={form.duration_days} onChange={(e) => set("duration_days", e.target.value)} /></div>
                 <div className="space-y-1.5"><Label>Sort order</Label><Input type="number" value={form.sort_order} onChange={(e) => set("sort_order", e.target.value)} /></div>
+              </div>
+              <div className="space-y-1.5 rounded-md border border-primary/30 bg-primary/5 p-3">
+                <Label>Free AI credits included</Label>
+                <Input type="number" min={0} value={form.ai_credits_included} onChange={(e) => set("ai_credits_included", e.target.value)} />
+                <p className="text-xs text-muted-foreground">এই package কিনলে merchant কত AI credit ফ্রি পাবে (Messenger, WhatsApp, Web chat)। 0 = নেই।</p>
               </div>
               <label className="flex items-center gap-2 text-sm"><Switch checked={form.is_active} onCheckedChange={(v) => set("is_active", v)} /> Active</label>
             </TabsContent>
