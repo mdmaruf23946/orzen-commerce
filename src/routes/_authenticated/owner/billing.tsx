@@ -43,11 +43,27 @@ function BillingPage() {
     queryFn: () => payFn({ data: { status: status || undefined } }),
   });
 
-  async function approve(id: string) {
-    setBusyId(id);
+  const [approveTarget, setApproveTarget] = useState<any | null>(null);
+  const [received, setReceived] = useState("");
+
+  function approve(p: any) {
+    setApproveTarget(p);
+    setReceived(String(Number(p.amount ?? 0)));
+  }
+
+  async function confirmApprove() {
+    if (!approveTarget) return;
+    const amt = Number(received);
+    if (!Number.isFinite(amt) || amt < 0) { toast.error("সঠিক টাকার পরিমাণ দিন"); return; }
+    setBusyId(approveTarget.id);
     try {
-      await verify({ data: { id, approve: true } });
-      toast.success("Payment verified — subscription activated");
+      const res: any = await verify({ data: { id: approveTarget.id, approve: true, receivedAmount: amt } });
+      toast.success(
+        res?.adFundCredit > 0
+          ? `Approved — ৳${res.adFundCredit} added to Ad Fund`
+          : "Payment approved",
+      );
+      setApproveTarget(null);
       qc.invalidateQueries({ queryKey: ["owner", "payments"] });
       qc.invalidateQueries({ queryKey: ["owner", "billingStats"] });
     } catch (e) { toast.error((e as Error).message); }
@@ -159,7 +175,7 @@ function BillingPage() {
                       {p.status === "pending" && (
                         <>
                           <Button size="sm" variant="outline" onClick={() => { setRejectTarget(p); setRejectReason(""); }} disabled={busyId === p.id}>Reject</Button>
-                          <Button size="sm" onClick={() => approve(p.id)} disabled={busyId === p.id}>Approve</Button>
+                          <Button size="sm" onClick={() => approve(p)} disabled={busyId === p.id}>Approve</Button>
                         </>
                       )}
                       <button
@@ -230,6 +246,59 @@ function BillingPage() {
           </tbody>
         </table>
       </div>
+
+      <Dialog open={!!approveTarget} onOpenChange={(o) => !o && setApproveTarget(null)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Approve payment</DialogTitle></DialogHeader>
+          {approveTarget && (() => {
+            const isTopup = approveTarget.purpose === "wallet_topup";
+            const price = Number(approveTarget.subscription_packages?.price ?? 0);
+            const amt = Number(received) || 0;
+            const extra = !isTopup && price > 0 ? Math.round((amt - price) * 100) / 100 : 0;
+            return (
+              <div className="space-y-3 text-sm">
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="rounded-lg border p-2">
+                    <div className="text-xs text-muted-foreground">{isTopup ? "Type" : "Plan price"}</div>
+                    <div className="font-semibold">{isTopup ? "Ad Fund top-up" : `৳${price} · ${approveTarget.subscription_packages?.name ?? ""}`}</div>
+                  </div>
+                  <div className="rounded-lg border p-2">
+                    <div className="text-xs text-muted-foreground">Merchant submitted</div>
+                    <div className="font-semibold">৳{Number(approveTarget.amount)}</div>
+                  </div>
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  {approveTarget.method ?? "—"} · TxnID {approveTarget.txn_id ?? "—"} · {approveTarget.sender_number ?? ""}
+                </div>
+                <div>
+                  <Label htmlFor="recv">Actually received (৳)</Label>
+                  <input
+                    id="recv"
+                    type="number"
+                    min={0}
+                    step="0.01"
+                    value={received}
+                    onChange={(e) => setReceived(e.target.value)}
+                    className="mt-1 w-full rounded-md border bg-background px-3 py-2"
+                  />
+                  <p className="mt-1 text-xs text-muted-foreground">যত টাকা আসলে পেয়েছেন সেটা বসান — এই পরিমাণই approve হবে।</p>
+                </div>
+                {isTopup ? (
+                  <div className="rounded-lg bg-primary/10 p-2 text-xs">Ad Fund-এ যোগ হবে: <b>৳{amt}</b></div>
+                ) : extra > 0 ? (
+                  <div className="rounded-lg bg-primary/10 p-2 text-xs">Plan চালু হবে, অতিরিক্ত <b>৳{extra}</b> Ad Fund-এ যোগ হবে।</div>
+                ) : extra < 0 ? (
+                  <div className="rounded-lg bg-destructive/10 p-2 text-xs text-destructive">Plan মূল্যের চেয়ে ৳{Math.abs(extra)} কম পাওয়া গেছে।</div>
+                ) : null}
+              </div>
+            );
+          })()}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setApproveTarget(null)}>Cancel</Button>
+            <Button onClick={confirmApprove} disabled={busyId === approveTarget?.id}>Approve</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={!!rejectTarget} onOpenChange={(o) => !o && setRejectTarget(null)}>
         <DialogContent>
