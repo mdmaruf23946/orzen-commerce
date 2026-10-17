@@ -450,8 +450,15 @@ export const listStoreBanners = createServerFn({ method: "GET" })
     });
   });
 
+/** Cover photo, falling back to the first gallery image when none was set. */
+function coverOf(p: any): string | null {
+  if (p?.primary_image_url) return p.primary_image_url;
+  const g = Array.isArray(p?.gallery) ? p.gallery : [];
+  return g.find((x: unknown) => typeof x === "string" && x) ?? null;
+}
+
 const PRODUCT_CARD_COLS =
-  "id,name,slug,price,old_price,stock,status,primary_image_url,category_id,is_featured,product_type,total_sold,rating,created_at,updated_at";
+  "id,name,slug,price,old_price,stock,status,primary_image_url,gallery,category_id,is_featured,product_type,total_sold,rating,created_at,updated_at";
 
 export const listStoreProducts = createServerFn({ method: "GET" })
   .inputValidator((d) =>
@@ -476,7 +483,7 @@ export const listStoreProducts = createServerFn({ method: "GET" })
     if (data.limit) q = q.limit(data.limit);
     const { data: products, error } = await q;
     if (error) throw new Error(error.message);
-    return (products ?? []).map((p: any) => ({ ...p, primary_image_url: imgUrl(p.primary_image_url) }));
+    return (products ?? []).map((p: any) => ({ ...p, primary_image_url: imgUrl(coverOf(p)) }));
     });
   });
 
@@ -504,7 +511,7 @@ export const listBestSellingProducts = createServerFn({ method: "GET" })
     if (pErr) throw new Error(pErr.message);
     const order = new Map(topIds.map((id: string, i: number) => [id, i]));
     return (products ?? [])
-      .map((p: any) => ({ ...p, primary_image_url: imgUrl(p.primary_image_url) }))
+      .map((p: any) => ({ ...p, primary_image_url: imgUrl(coverOf(p)) }))
       .sort((a: any, b: any) => (order.get(a.id)! - order.get(b.id)!));
     });
   });
@@ -607,7 +614,7 @@ export const getProduct = createServerFn({ method: "GET" })
       ...p,
       meta: safeMeta,
       digital,
-      primary_image_url: imgUrl(p.primary_image_url),
+      primary_image_url: imgUrl(coverOf(p)),
       gallery: gallery.map((g) => imgUrl(g)!).filter(Boolean),
     };
   });
@@ -633,7 +640,7 @@ export const listRelatedProducts = createServerFn({ method: "GET" })
     if (data.categoryId) {
       const { data: cat } = await (sb as any)
         .from("storefront_products")
-        .select("id,name,slug,price,old_price,stock,status,primary_image_url,category_id,product_type")
+        .select("id,name,slug,price,old_price,stock,status,primary_image_url,gallery,category_id,product_type")
         .eq("store_id", data.storeId)
         .eq("category_id", data.categoryId)
         .neq("id", data.excludeId)
@@ -645,14 +652,14 @@ export const listRelatedProducts = createServerFn({ method: "GET" })
     if (data.strictCategory) {
       return rows
         .slice(0, limit)
-        .map((p) => ({ ...p, primary_image_url: imgUrl(p.primary_image_url) }));
+        .map((p) => ({ ...p, primary_image_url: imgUrl(coverOf(p)) }));
     }
     if (rows.length < 6) {
       const need = limit - rows.length;
       const have = new Set(rows.map((r) => r.id));
       const { data: extra } = await (sb as any)
         .from("storefront_products")
-        .select("id,name,slug,price,old_price,stock,status,primary_image_url,category_id,product_type")
+        .select("id,name,slug,price,old_price,stock,status,primary_image_url,gallery,category_id,product_type")
         .eq("store_id", data.storeId)
         .neq("id", data.excludeId)
         .neq("status", "draft")
@@ -663,7 +670,7 @@ export const listRelatedProducts = createServerFn({ method: "GET" })
         if (!have.has(r.id)) rows.push(r);
       }
     }
-    return rows.map((p) => ({ ...p, primary_image_url: imgUrl(p.primary_image_url) }));
+    return rows.map((p) => ({ ...p, primary_image_url: imgUrl(coverOf(p)) }));
   });
 
 export const listProductReviews = createServerFn({ method: "GET" })
@@ -726,7 +733,7 @@ export const listProductsByIds = createServerFn({ method: "GET" })
     const sb = publicClient();
     const { data: rows, error } = await (sb as any)
       .from("storefront_products")
-      .select("id,name,slug,price,old_price,stock,status,primary_image_url,category_id,product_type,meta")
+      .select("id,name,slug,price,old_price,stock,status,primary_image_url,gallery,category_id,product_type,meta")
       .eq("store_id", data.storeId)
       .in("id", data.ids)
       .neq("status", "draft");
@@ -740,7 +747,7 @@ export const listProductsByIds = createServerFn({ method: "GET" })
 
       return {
         ...rest,
-        primary_image_url: imgUrl(p.primary_image_url),
+        primary_image_url: imgUrl(coverOf(p)),
         digital:
           p.product_type === "digital"
             ? {

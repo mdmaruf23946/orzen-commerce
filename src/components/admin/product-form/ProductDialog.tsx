@@ -537,7 +537,7 @@ export function ProductDialog({
                 .reduce((s, i) => s + Number(i.stock ?? 0), 0)
             : Number(stock),
         status,
-        primary_image_url: image,
+        primary_image_url: image || gallery[0] || null,
         gallery,
         video_url: primaryVideoUrl,
         category_id: categoryId || null,
