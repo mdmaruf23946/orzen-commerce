@@ -544,7 +544,7 @@ function Page() {
                   {d.status !== "active" && (
                     <div className="space-y-2 rounded-md bg-muted/40 p-3 text-xs">
                       <div className="font-medium">
-                        যেখান থেকে ডোমেইন কিনেছেন, সেখানকার DNS সেটিংসে এই রেকর্ডগুলো বসান:
+                        আপনার Domain Provider-এর DNS Records প্যানেলে নিচের রেকর্ডগুলো যুক্ত করুন:
                       </div>
                       <RecordRow
                         type="TXT"
@@ -560,7 +560,7 @@ function Page() {
                         />
                       )}
                       <p className="text-[11px] text-muted-foreground">
-                        রেকর্ড বসানোর পর "Check now" চাপুন। SSL (https) আমরা নিজে থেকেই চালু করে দেব।
+                        তথ্যগুলো সংরক্ষণ করে "Check now" বাটনে চাপুন। ভেরিফিকেশন সফল হলে সিকিউর SSL (HTTPS) প্ল্যাটফর্ম থেকেই স্বয়ংক্রিয়ভাবে চালু হবে।
                         {apex && " Root domain-এ CNAME না বসলে www সাবডোমেইন ব্যবহার করুন।"}
                       </p>
                     </div>
