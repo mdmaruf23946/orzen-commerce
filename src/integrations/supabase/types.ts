@@ -1270,6 +1270,101 @@ export type Database = {
           },
         ]
       }
+      ai_credit_bundles: {
+        Row: {
+          created_at: string
+          credits: number
+          id: string
+          is_active: boolean
+          name: string
+          price_bdt: number
+          sort_order: number
+        }
+        Insert: {
+          created_at?: string
+          credits: number
+          id?: string
+          is_active?: boolean
+          name: string
+          price_bdt?: number
+          sort_order?: number
+        }
+        Update: {
+          created_at?: string
+          credits?: number
+          id?: string
+          is_active?: boolean
+          name?: string
+          price_bdt?: number
+          sort_order?: number
+        }
+        Relationships: []
+      }
+      ai_credit_ledger: {
+        Row: {
+          channel: string | null
+          created_at: string
+          delta: number
+          id: string
+          kind: string
+          note: string | null
+          store_id: string
+          tokens: number | null
+        }
+        Insert: {
+          channel?: string | null
+          created_at?: string
+          delta: number
+          id?: string
+          kind: string
+          note?: string | null
+          store_id: string
+          tokens?: number | null
+        }
+        Update: {
+          channel?: string | null
+          created_at?: string
+          delta?: number
+          id?: string
+          kind?: string
+          note?: string | null
+          store_id?: string
+          tokens?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_credit_ledger_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_credit_settings: {
+        Row: {
+          enforce_limits: boolean
+          id: boolean
+          tokens_per_credit: number
+          updated_at: string
+          visible_to_merchants: boolean
+        }
+        Insert: {
+          enforce_limits?: boolean
+          id?: boolean
+          tokens_per_credit?: number
+          updated_at?: string
+          visible_to_merchants?: boolean
+        }
+        Update: {
+          enforce_limits?: boolean
+          id?: boolean
+          tokens_per_credit?: number
+          updated_at?: string
+          visible_to_merchants?: boolean
+        }
+        Relationships: []
+      }
       ai_global_settings: {
         Row: {
           brand_voice: string | null
@@ -8477,6 +8572,38 @@ export type Database = {
           },
         ]
       }
+      store_ai_credits: {
+        Row: {
+          balance: number
+          lifetime_used: number
+          store_id: string
+          token_carry: number
+          updated_at: string
+        }
+        Insert: {
+          balance?: number
+          lifetime_used?: number
+          store_id: string
+          token_carry?: number
+          updated_at?: string
+        }
+        Update: {
+          balance?: number
+          lifetime_used?: number
+          store_id?: string
+          token_carry?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_ai_credits_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: true
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       store_ai_identities: {
         Row: {
           channel: string
@@ -10974,6 +11101,7 @@ export type Database = {
       }
       subscription_packages: {
         Row: {
+          ai_credits_included: number
           billing_cycle: string
           created_at: string
           customer_limit: number | null
@@ -10996,6 +11124,7 @@ export type Database = {
           trial_days: number
         }
         Insert: {
+          ai_credits_included?: number
           billing_cycle?: string
           created_at?: string
           customer_limit?: number | null
@@ -11018,6 +11147,7 @@ export type Database = {
           trial_days?: number
         }
         Update: {
+          ai_credits_included?: number
           billing_cycle?: string
           created_at?: string
           customer_limit?: number | null
@@ -12081,6 +12211,10 @@ export type Database = {
         Args: { _job_id: string; _wake_token: string }
         Returns: Json
       }
+      consume_ai_credits: {
+        Args: { _channel: string; _store: string; _tokens: number }
+        Returns: number
+      }
       create_chat_order: {
         Args: {
           _idem_key: string
@@ -12284,6 +12418,10 @@ export type Database = {
         Returns: Json
       }
       get_store_template_for_seed: { Args: never; Returns: Json }
+      grant_ai_credits: {
+        Args: { _credits: number; _kind: string; _note: string; _store: string }
+        Returns: number
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

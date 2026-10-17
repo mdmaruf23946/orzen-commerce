@@ -78,6 +78,13 @@
       "when": 1791987981816,
       "tag": "0010_checkout_drafts",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1792241324628,
+      "tag": "0011_ai_credit_system",
+      "breakpoints": true
     }
   ]
 }
