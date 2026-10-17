@@ -94,6 +94,7 @@ import { Route as AuthenticatedOwnerAdsRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedOwnerAiRouteImport } from './routes/_authenticated/owner/ai'
 import { Route as AuthenticatedOwnerAiAdminRouteRouteImport } from './routes/_authenticated/owner/ai-admin.route'
 import { Route as AuthenticatedOwnerAiCallCenterRouteImport } from './routes/_authenticated/owner/ai-call-center'
+import { Route as AuthenticatedOwnerAiCreditsRouteImport } from './routes/_authenticated/owner/ai-credits'
 import { Route as AuthenticatedOwnerAiUsageRouteImport } from './routes/_authenticated/owner/ai-usage'
 import { Route as AuthenticatedOwnerApiRouteImport } from './routes/_authenticated/owner/api'
 import { Route as AuthenticatedOwnerAuditRouteImport } from './routes/_authenticated/owner/audit'
@@ -752,6 +753,12 @@ const AuthenticatedOwnerAiCallCenterRoute =
   AuthenticatedOwnerAiCallCenterRouteImport.update({
     id: '/ai-call-center',
     path: '/ai-call-center',
+    getParentRoute: () => AuthenticatedOwnerRouteRoute,
+  } as any)
+const AuthenticatedOwnerAiCreditsRoute =
+  AuthenticatedOwnerAiCreditsRouteImport.update({
+    id: '/ai-credits',
+    path: '/ai-credits',
     getParentRoute: () => AuthenticatedOwnerRouteRoute,
   } as any)
 const AuthenticatedOwnerAiUsageRoute =
@@ -1906,6 +1913,7 @@ export interface FileRoutesByFullPath {
   '/owner/ads': typeof AuthenticatedOwnerAdsRoute
   '/owner/ai': typeof AuthenticatedOwnerAiRoute
   '/owner/ai-call-center': typeof AuthenticatedOwnerAiCallCenterRoute
+  '/owner/ai-credits': typeof AuthenticatedOwnerAiCreditsRoute
   '/owner/ai-usage': typeof AuthenticatedOwnerAiUsageRoute
   '/owner/api': typeof AuthenticatedOwnerApiRoute
   '/owner/audit': typeof AuthenticatedOwnerAuditRoute
@@ -2165,6 +2173,7 @@ export interface FileRoutesByTo {
   '/owner/ads': typeof AuthenticatedOwnerAdsRoute
   '/owner/ai': typeof AuthenticatedOwnerAiRoute
   '/owner/ai-call-center': typeof AuthenticatedOwnerAiCallCenterRoute
+  '/owner/ai-credits': typeof AuthenticatedOwnerAiCreditsRoute
   '/owner/ai-usage': typeof AuthenticatedOwnerAiUsageRoute
   '/owner/api': typeof AuthenticatedOwnerApiRoute
   '/owner/audit': typeof AuthenticatedOwnerAuditRoute
@@ -2439,6 +2448,7 @@ export interface FileRoutesById {
   '/_authenticated/owner/ads': typeof AuthenticatedOwnerAdsRoute
   '/_authenticated/owner/ai': typeof AuthenticatedOwnerAiRoute
   '/_authenticated/owner/ai-call-center': typeof AuthenticatedOwnerAiCallCenterRoute
+  '/_authenticated/owner/ai-credits': typeof AuthenticatedOwnerAiCreditsRoute
   '/_authenticated/owner/ai-usage': typeof AuthenticatedOwnerAiUsageRoute
   '/_authenticated/owner/api': typeof AuthenticatedOwnerApiRoute
   '/_authenticated/owner/audit': typeof AuthenticatedOwnerAuditRoute
@@ -2713,6 +2723,7 @@ export interface FileRouteTypes {
     | '/owner/ads'
     | '/owner/ai'
     | '/owner/ai-call-center'
+    | '/owner/ai-credits'
     | '/owner/ai-usage'
     | '/owner/api'
     | '/owner/audit'
@@ -2972,6 +2983,7 @@ export interface FileRouteTypes {
     | '/owner/ads'
     | '/owner/ai'
     | '/owner/ai-call-center'
+    | '/owner/ai-credits'
     | '/owner/ai-usage'
     | '/owner/api'
     | '/owner/audit'
@@ -3245,6 +3257,7 @@ export interface FileRouteTypes {
     | '/_authenticated/owner/ads'
     | '/_authenticated/owner/ai'
     | '/_authenticated/owner/ai-call-center'
+    | '/_authenticated/owner/ai-credits'
     | '/_authenticated/owner/ai-usage'
     | '/_authenticated/owner/api'
     | '/_authenticated/owner/audit'
@@ -4103,6 +4116,13 @@ declare module '@tanstack/react-router' {
       path: '/ai-call-center'
       fullPath: '/owner/ai-call-center'
       preLoaderRoute: typeof AuthenticatedOwnerAiCallCenterRouteImport
+      parentRoute: typeof AuthenticatedOwnerRouteRoute
+    }
+    '/_authenticated/owner/ai-credits': {
+      id: '/_authenticated/owner/ai-credits'
+      path: '/ai-credits'
+      fullPath: '/owner/ai-credits'
+      preLoaderRoute: typeof AuthenticatedOwnerAiCreditsRouteImport
       parentRoute: typeof AuthenticatedOwnerRouteRoute
     }
     '/_authenticated/owner/ai-usage': {
@@ -5862,6 +5882,7 @@ interface AuthenticatedOwnerRouteRouteChildren {
   AuthenticatedOwnerAdsRoute: typeof AuthenticatedOwnerAdsRoute
   AuthenticatedOwnerAiRoute: typeof AuthenticatedOwnerAiRoute
   AuthenticatedOwnerAiCallCenterRoute: typeof AuthenticatedOwnerAiCallCenterRoute
+  AuthenticatedOwnerAiCreditsRoute: typeof AuthenticatedOwnerAiCreditsRoute
   AuthenticatedOwnerAiUsageRoute: typeof AuthenticatedOwnerAiUsageRoute
   AuthenticatedOwnerApiRoute: typeof AuthenticatedOwnerApiRoute
   AuthenticatedOwnerAuditRoute: typeof AuthenticatedOwnerAuditRoute
@@ -5919,6 +5940,7 @@ const AuthenticatedOwnerRouteRouteChildren: AuthenticatedOwnerRouteRouteChildren
     AuthenticatedOwnerAdsRoute: AuthenticatedOwnerAdsRoute,
     AuthenticatedOwnerAiRoute: AuthenticatedOwnerAiRoute,
     AuthenticatedOwnerAiCallCenterRoute: AuthenticatedOwnerAiCallCenterRoute,
+    AuthenticatedOwnerAiCreditsRoute: AuthenticatedOwnerAiCreditsRoute,
     AuthenticatedOwnerAiUsageRoute: AuthenticatedOwnerAiUsageRoute,
     AuthenticatedOwnerApiRoute: AuthenticatedOwnerApiRoute,
     AuthenticatedOwnerAuditRoute: AuthenticatedOwnerAuditRoute,
