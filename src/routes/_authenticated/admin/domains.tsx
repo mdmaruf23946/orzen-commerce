@@ -550,21 +550,12 @@ function Page() {
                         name={`_orzen-verify.${d.hostname}`}
                         value={d.verification_token}
                       />
-                      {apex ? (
-                        <>
-                          <RecordRow type="A" name={d.hostname} value={settings.apexIp} />
-                          <p className="text-[11px] text-muted-foreground">
-                            আপনার DNS provider যদি CNAME flattening সাপোর্ট করে (যেমন Cloudflare),
-                            তাহলে A এর বদলে{" "}
-                            <code>
-                              {d.hostname} → {target}
-                            </code>{" "}
-                            CNAME ও ব্যবহার করা যাবে।
-                          </p>
-                        </>
-                      ) : (
-                        <RecordRow type="CNAME" name={d.hostname} value={target} />
-                      )}
+                      <RecordRow type="CNAME" name={apex ? "@" : d.hostname} value={target} />
+                      <p className="text-[11px] text-muted-foreground">
+                        Cloudflare ব্যবহার করলে এই CNAME-এর Proxy status অবশ্যই <b>"DNS only" (ধূসর মেঘ)</b> রাখবেন —
+                        কমলা মেঘ চালু থাকলে সাইট খুলবে না।
+                        {apex && " Root domain-এ CNAME বসাতে আপনার DNS provider-কে CNAME flattening সাপোর্ট করতে হবে (Cloudflare করে)।"}
+                      </p>
                       {d.cf_ownership?.name && d.cf_ownership?.value && (
                         <RecordRow
                           type="TXT"

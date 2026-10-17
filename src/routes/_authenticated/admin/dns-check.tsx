@@ -111,13 +111,14 @@ function Page() {
             />
             <StatusRow
               ok={r.pointsToPlatform}
-              label={`Points to platform (${r.expectedIp})`}
+              label={`Points to platform (CNAME → ${r.dnsTarget})`}
               detail={
                 r.records.a.length
                   ? `A records: ${r.records.a.join(", ")}`
                   : "No A record returned"
               }
             />
+            {r.isPlatformHost && (<>
             <StatusRow
               ok={r.wildcardCorrect}
               label={`Wildcard *.${r.rootDomain} configured`}
@@ -128,10 +129,11 @@ function Page() {
               }
             />
             <StatusRow
-              ok={r.records.rootA.includes(r.expectedIp)}
+              ok={r.rootOk}
               label={`Root domain ${r.rootDomain}`}
               detail={r.records.rootA.length ? `A → ${r.records.rootA.join(", ")}` : "No A record"}
             />
+            </>)}
             <StatusRow
               ok={r.records.dnsTargetA.length > 0}
               label={`Custom-domain CNAME target ${r.dnsTarget}`}
@@ -143,7 +145,20 @@ function Page() {
             />
           </div>
 
-          {!r.wildcardCorrect && (
+          {r.merchantProxied && (
+            <div className="flex items-start gap-2 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-200">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+              <div className="space-y-1">
+                <div className="font-semibold">Cloudflare Proxy চালু আছে (কমলা মেঘ)</div>
+                <div>
+                  আপনার Cloudflare DNS-এ <code>{r.host}</code> রেকর্ডটি <code>CNAME → {r.dnsTarget}</code> করুন
+                  এবং Proxy status <b>"DNS only" (ধূসর মেঘ)</b> করুন। Proxy চালু থাকলে Cloudflare সাইটটি ব্লক করে দেয়।
+                </div>
+              </div>
+            </div>
+          )}
+
+          {r.isPlatformHost && !r.wildcardCorrect && (
             <div className="flex items-start gap-2 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-200">
               <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
               <div className="space-y-1">
@@ -151,7 +166,7 @@ function Page() {
                 <div>
                   Add a wildcard <code>A</code> record at your DNS provider:
                   <br />
-                  <code>*.{r.rootDomain} → {r.expectedIp}</code>
+                  <code>*.{r.rootDomain} → {r.dnsTarget}</code>
                 </div>
                 <div>
                   Then connect <code>*.{r.rootDomain}</code> in the platform's Domain settings.

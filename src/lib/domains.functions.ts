@@ -103,7 +103,7 @@ async function platformDomainSettings(supabase: any): Promise<PlatformDomainSett
     rootDomain,
     loginHost: (s.login_host ?? "").toLowerCase(),
     dnsTarget: (s.dns_target ?? `stores.${rootDomain}`).toLowerCase(),
-    apexIp: s.apex_ip ?? "185.158.133.1",
+    apexIp: s.apex_ip ?? "",
   };
 }
 
@@ -113,6 +113,14 @@ function cloudflareConfigured() {
 }
 
 // ---------- Store admin ----------
+
+// Cloudflare edge ranges. A merchant domain answering with these IPs (and no
+// CNAME) is proxied by the merchant's own Cloudflare account ("orange cloud"),
+// which Cloudflare blocks with Error 1000 when pointed at another CF zone.
+const CF_PREFIXES = ["104.16.", "104.17.", "104.18.", "104.19.", "104.20.", "104.21.", "104.22.", "104.23.", "104.24.", "104.25.", "104.26.", "104.27.", "172.64.", "172.65.", "172.66.", "172.67.", "172.68.", "172.69.", "172.70.", "172.71.", "188.114.96.", "188.114.97.", "188.114.98.", "188.114.99.", "162.158.", "141.101.", "108.162.", "190.93.", "197.234.", "198.41.", "173.245."];
+function isCloudflareIp(ip: string) {
+  return CF_PREFIXES.some((p) => ip.startsWith(p));
+}
 
 export const listMyDomains = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
@@ -388,7 +396,7 @@ export const checkDomainVerification = createServerFn({ method: "POST" })
       const txtOk = txt.some((t) => t === row.verification_token);
       const pointedOk =
         cname.some((c) => c.toLowerCase() === target) ||
-        aRecords.includes(apexIp) ||
+        (apexIp !== "" && aRecords.includes(apexIp)) ||
         (await resolveA(target)).some((ip) => aRecords.includes(ip));
 
       let ownershipOk = txtOk;
@@ -408,8 +416,11 @@ export const checkDomainVerification = createServerFn({ method: "POST" })
         }
         if (!txtOk) method = "http";
       } else if (!reason) {
-        if (!pointedOk) {
-          reason = isApex(row.hostname)
+        const proxied = cname.length === 0 && aRecords.length > 0 && aRecords.every(isCloudflareIp);
+        if (!pointedOk && proxied) {
+          reason = `আপনার Cloudflare-এ ${row.hostname} রেকর্ডটির Proxy (কমলা মেঘ) চালু আছে। রেকর্ডটি CNAME → ${target} করুন এবং Proxy status "DNS only" (ধূসর মেঘ) করুন।`;
+        } else if (!pointedOk) {
+          reason = isApex(row.hostname) && apexIp
             ? `Not pointing to the platform yet — add an A record to ${apexIp} (or a CNAME to ${target} if your DNS supports flattening).`
             : `CNAME for ${row.hostname} is not pointing to ${target} yet.`;
         } else {
@@ -612,17 +623,23 @@ export const checkDnsResolution = createServerFn({ method: "POST" })
       resolveA(dnsTarget),
     ]);
 
-    const platformIps = new Set([apexIp, ...rootA, ...dnsTargetA]);
+    const platformIps = new Set([...(apexIp ? [apexIp] : []), ...rootA, ...dnsTargetA]);
+    const isPlatformHost = host === rootDomain || host.endsWith(`.${rootDomain}`);
+    const pointsToPlatform =
+      aList.some((ip) => platformIps.has(ip)) ||
+      cnameList.some((c) => c.toLowerCase() === dnsTarget);
 
     return {
       host,
       rootDomain,
       dnsTarget,
-      expectedIp: apexIp,
+      isPlatformHost,
+      merchantProxied:
+        !isPlatformHost && !pointsToPlatform && cnameList.length === 0 && aList.length > 0 && aList.every(isCloudflareIp),
+      expectedIp: dnsTarget,
       hostResolves: aList.length > 0 || cnameList.length > 0,
-      pointsToPlatform:
-        aList.some((ip) => platformIps.has(ip)) ||
-        cnameList.some((c) => c.toLowerCase() === dnsTarget),
+      pointsToPlatform,
+      rootOk: rootA.length > 0,
       wildcardWorks: wildcardList.length > 0,
       wildcardCorrect: wildcardList.some((ip) => platformIps.has(ip)),
       records: {
