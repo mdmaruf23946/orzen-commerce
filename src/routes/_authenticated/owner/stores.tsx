@@ -364,6 +364,8 @@ function StoreDrawer({ storeId, onClose }: { storeId: string | null; onClose: ()
               );
             })()}
 
+            <AiCreditsCard c={(data as any).aiCredits} />
+
             <div>
               <div className="mb-2 text-xs font-semibold uppercase text-muted-foreground">AI usage (30d)</div>
               <div className="grid grid-cols-3 gap-2 rounded-lg border p-3 text-center">
@@ -404,6 +406,29 @@ function StoreDrawer({ storeId, onClose }: { storeId: string | null; onClose: ()
         )}
       </SheetContent>
     </Sheet>
+  );
+}
+
+export function AiCreditsCard({ c }: { c?: { balance: number; used: number } }) {
+  const balance = Number(c?.balance ?? 0);
+  const used = Number(c?.used ?? 0);
+  const fmt = (n: number) => n.toLocaleString(undefined, { maximumFractionDigits: 2 });
+  return (
+    <div>
+      <div className="mb-2 text-xs font-semibold uppercase text-muted-foreground">AI Credits</div>
+      <div className="grid grid-cols-2 gap-2">
+        <div className="rounded-lg border border-primary/30 bg-primary/5 p-3">
+          <div className="text-xs text-muted-foreground">Balance (অবশিষ্ট)</div>
+          <div className="text-lg font-semibold text-primary">{fmt(balance)}</div>
+          <div className="text-[10px] text-muted-foreground">credits</div>
+        </div>
+        <div className="rounded-lg border p-3">
+          <div className="text-xs text-muted-foreground">Used (মোট খরচ)</div>
+          <div className="text-lg font-semibold">{fmt(used)}</div>
+          <div className="text-[10px] text-muted-foreground">credits</div>
+        </div>
+      </div>
+    </div>
   );
 }
 

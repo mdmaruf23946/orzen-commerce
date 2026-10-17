@@ -965,6 +965,14 @@ export const getStoreUsage = createServerFn({ method: "POST" })
       adFund = Number(w?.balance ?? 0);
     }
 
+    // AI credit balance + lifetime usage (table may be absent on older DBs → zeros).
+    let aiCredits = { balance: 0, used: 0 };
+    try {
+      const { data: c } = await sb.from("store_ai_credits").select("balance,lifetime_used")
+        .eq("store_id", data.storeId).maybeSingle();
+      aiCredits = { balance: Number(c?.balance ?? 0), used: Number(c?.lifetime_used ?? 0) };
+    } catch { /* keep zeros */ }
+
     return {
       store,
       counts: {
@@ -977,6 +985,7 @@ export const getStoreUsage = createServerFn({ method: "POST" })
       revenue,
       adFund,
       ai: { cost: aiCost, tokens: aiTokens, requests: (aiRows ?? []).length },
+      aiCredits,
       recentPayments: recentPayments ?? [],
     };
   });
