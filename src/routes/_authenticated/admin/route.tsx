@@ -38,6 +38,25 @@ import { EmailVerifyBanner, EmailVerifyGate } from "@/components/admin/EmailVeri
 import { sectionForPath, DELEGATE_ROLES } from "@/lib/panel-sections";
 import { getAccountProfile } from "@/lib/account-profile.functions";
 import { AccountAvatar } from "@/components/admin/AccountAvatar";
+import { getMyWallet } from "@/lib/wallet.functions";
+
+function AdFundChip() {
+  const walletFn = useServerFn(getMyWallet);
+  const { data } = useQuery({ queryKey: ["my-wallet"], queryFn: () => walletFn(), staleTime: 60_000 });
+  const bal = Number(data?.balance ?? 0);
+  return (
+    <Link
+      to="/admin/billing"
+      search={{ highlight: undefined, plan: undefined, from: undefined }}
+      className="flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/5 px-3 py-1.5 text-xs font-medium text-primary hover:bg-primary/10"
+      title="Ad Fund balance"
+    >
+      <Wallet className="h-3.5 w-3.5" />
+      <span className="hidden sm:inline">Ad Fund:</span>
+      <span className="font-semibold">৳{bal.toLocaleString()}</span>
+    </Link>
+  );
+}
 
 
 type BadgeKey =
@@ -578,6 +597,8 @@ function AdminLayout() {
             <span className="text-[11px] font-normal text-muted-foreground">Merchant Panel</span>
           </span>
         </button>
+        <div className="flex items-center gap-2">
+        {!access.isEmployee && <AdFundChip />}
         <button
           onClick={toggleDark}
           className="grid h-9 w-9 place-items-center rounded-full border"
@@ -585,6 +606,7 @@ function AdminLayout() {
         >
           {dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
         </button>
+        </div>
       </header>
 
       <div className="flex">
@@ -832,6 +854,7 @@ function AdminLayout() {
               />
             </div>
             <div className="ml-auto flex items-center gap-2">
+              {!access.isEmployee && <AdFundChip />}
               <Link
                 to="/admin/messenger-inbox"
                 className="relative grid h-9 w-9 place-items-center rounded-full border hover:bg-muted"
