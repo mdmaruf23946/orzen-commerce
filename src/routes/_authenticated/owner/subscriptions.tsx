@@ -400,6 +400,18 @@ function UsageSheet({ storeId, onClose }: { storeId: string | null; onClose: () 
               </div>
             </div>
 
+            <div className="grid grid-cols-2 gap-2 rounded-lg border bg-card p-3 text-[11px]">
+              <div className="col-span-2 text-xs font-semibold text-muted-foreground">AI Credits</div>
+              <div className="rounded-md bg-primary/10 p-2">
+                <div className="text-muted-foreground">Balance (অবশিষ্ট)</div>
+                <div className="font-semibold text-primary">{Number((data as any)?.aiCredits?.balance ?? 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}</div>
+              </div>
+              <div className="rounded-md bg-muted p-2">
+                <div className="text-muted-foreground">Used (মোট খরচ)</div>
+                <div className="font-semibold">{Number((data as any)?.aiCredits?.used ?? 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}</div>
+              </div>
+            </div>
+
             <div className="rounded-lg border bg-card p-3">
               <div className="text-xs font-semibold text-muted-foreground">AI usage (30d)</div>
               <div className="mt-2 grid grid-cols-3 gap-2 text-center text-[11px]">
