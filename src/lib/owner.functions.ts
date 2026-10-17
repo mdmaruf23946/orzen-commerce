@@ -567,7 +567,7 @@ export const verifyPayment = createServerFn({ method: "POST" })
         relatedPaymentId: pay.id,
       });
     }
-    return { ok: true, invoice_no: invoiceNo };
+    return { ok: true, invoice_no: invoiceNo, adFundCredit };
   });
 
 export const retryEmailLog = createServerFn({ method: "POST" })
