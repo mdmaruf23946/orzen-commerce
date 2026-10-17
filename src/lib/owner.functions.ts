@@ -395,6 +395,29 @@ export const verifyPayment = createServerFn({ method: "POST" })
       return { ok: true };
     }
 
+    // Standalone AI credit purchase: grant the pack's credits once, no plan change.
+    if ((pay as any).purpose === "ai_credits") {
+      const nowA = new Date().toISOString();
+      const credits = Number((pay as any).ai_credits_extra ?? 0);
+      if (!(pay as any).ai_credits_granted && credits > 0) {
+        const { error: gErr } = await sb.rpc("grant_ai_credits", {
+          _store: pay.store_id, _credits: credits, _kind: "purchase_manual",
+          _note: `${credits} credits via ${pay.method ?? "manual"} (payment ${pay.id.slice(0, 8)})`,
+        });
+        if (gErr) throw new Error(gErr.message);
+      }
+      const { error: uErr } = await sb.from("payments").update({
+        status: "paid", verified_by: context.userId, verified_at: nowA,
+        ai_credits_granted: true, notes: data.notes ?? "AI credits purchase verified",
+      }).eq("id", pay.id);
+      if (uErr) throw new Error(uErr.message);
+      await sb.from("subscription_notifications").insert({
+        store_id: pay.store_id, type: "payment_success",
+        meta: { payment_id: pay.id, purpose: "ai_credits", amount: Number(pay.amount), message: `${credits} AI credits added.` },
+      }).then(() => null, () => null);
+      return { ok: true, invoice_no: null };
+    }
+
     // Wallet top-up approval: credit the merchant wallet instead of a plan.
     if ((pay as any).purpose === "wallet_topup") {
       const nowT = new Date();
