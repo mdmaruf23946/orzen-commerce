@@ -133,6 +133,7 @@ export const upsertPackage = createServerFn({ method: "POST" })
         trial_days: z.number().int().min(0).max(365).default(0),
         features: z.record(z.string(), z.boolean()).default({}),
         sort_order: z.number().int().default(0),
+        ai_credits_included: z.number().int().min(0).max(10000000).default(0),
       })
       .parse(d),
   )
@@ -313,7 +314,7 @@ export const verifyPayment = createServerFn({ method: "POST" })
     const { data: pay } = await sb
       .from("payments")
       .select(
-        "id,store_id,package_id,amount,status,customer_email,method,txn_id,invoice_no,purpose",
+        "id,store_id,package_id,amount,status,customer_email,method,txn_id,invoice_no,purpose,ai_credits_extra,ai_credits_price,ai_credits_granted",
       )
       .eq("id", data.id)
       .maybeSingle();
@@ -513,6 +514,20 @@ export const verifyPayment = createServerFn({ method: "POST" })
       .eq("id", pay.store_id);
     if (stErr) throw new Error(stErr.message);
 
+    // AI credits: package's free credits + any extra pack bought with this payment (granted once).
+    try {
+      const free = Number((pkg as any).ai_credits_included ?? 0);
+      const extra = Number((pay as any).ai_credits_extra ?? 0);
+      if (!(pay as any).ai_credits_granted && (free + extra) > 0) {
+        const { error: gErr } = await sb.rpc("grant_ai_credits", {
+          _store: pay.store_id, _credits: free + extra, _kind: "plan_purchase",
+          _note: `${pkg.name}: ${free} free${extra ? ` + ${extra} extra` : ""} (payment ${pay.id.slice(0, 8)})`,
+        });
+        if (!gErr) await sb.from("payments").update({ ai_credits_granted: true }).eq("id", pay.id);
+        else console.error("[verifyPayment] credit grant failed", gErr.message);
+      }
+    } catch (e) { console.error("[verifyPayment] credit grant failed", (e as Error).message); }
+
     // Extra money beyond the plan price goes to the merchant's Ad Fund wallet.
     let adFundCredit = 0;
     try {
@@ -524,6 +539,7 @@ export const verifyPayment = createServerFn({ method: "POST" })
           .select("total").eq("invoice_no", pay.invoice_no).maybeSingle();
         if (inv?.total != null) expected = Number(inv.total);
       }
+      expected += Number((pay as any).ai_credits_price ?? 0);
       const excess = Math.round((Number(pay.amount) - expected) * 100) / 100;
       if (expected > 0 && excess > 0 && store?.owner_user_id) {
         const { creditWallet } = await import("./wallet.server");
