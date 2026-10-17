@@ -363,7 +363,7 @@ function CheckoutPage() {
       {/* Pay from wallet */}
       {(() => {
         const balance = Number(wallet?.balance ?? 0);
-        const enough = balance >= calc.total;
+        const enough = balance >= planCalc.total;
         return (
           <div className="rounded-2xl border bg-card p-5 shadow-sm">
             <div className="flex items-center justify-between gap-3">
@@ -402,12 +402,13 @@ function CheckoutPage() {
                 className="shrink-0 gap-1.5"
               >
                 {walletPaying ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wallet className="h-4 w-4" />}
-                Pay ৳{calc.total.toLocaleString()}
+{pack && <p className="text-xs text-amber-600">Wallet দিয়ে শুধু plan-এর টাকা কাটবে; extra credit নিতে নিচের bKash/Nagad payment ব্যবহার করুন।</p>}
+                Pay ৳{planCalc.total.toLocaleString()}
               </Button>
             </div>
             {!enough && (
               <div className="mt-3 rounded-xl bg-amber-50 dark:bg-amber-500/10 p-3 text-sm text-amber-900 dark:text-amber-200">
-                Not enough balance — you need ৳{(calc.total - balance).toLocaleString()} more.{" "}
+                Not enough balance — you need ৳{(planCalc.total - balance).toLocaleString()} more.{" "}
                 <Link to="/admin/billing" search={{} as never} className="font-semibold underline">
                   Add fund
                 </Link>
