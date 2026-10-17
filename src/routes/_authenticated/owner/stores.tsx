@@ -318,13 +318,51 @@ function StoreDrawer({ storeId, onClose }: { storeId: string | null; onClose: ()
               </div>
             </div>
 
-            <div>
-              <div className="mb-2 text-xs font-semibold uppercase text-muted-foreground">Revenue</div>
+            {Object.keys((data as any).statusCounts ?? {}).length > 0 && (
+              <div>
+                <div className="mb-2 text-xs font-semibold uppercase text-muted-foreground">Orders by status</div>
+                <div className="flex flex-wrap gap-1.5">
+                  {Object.entries((data as any).statusCounts).map(([k, v]) => (
+                    <span key={k} className="rounded-full border px-2 py-0.5 text-xs capitalize">
+                      {k.replace(/_/g, " ")}: <b>{v as number}</b>
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="grid grid-cols-2 gap-2">
               <div className="rounded-lg border p-3">
-                <div className="text-lg font-semibold">৳{Number(data.revenue).toFixed(0)}</div>
-                <div className="text-xs text-muted-foreground">Confirmed order value</div>
+                <div className="text-xs text-muted-foreground">Revenue</div>
+                <div className="text-lg font-semibold">৳{Number(data.revenue).toLocaleString()}</div>
+                <div className="text-[10px] text-muted-foreground">Confirmed order value</div>
+              </div>
+              <div className="rounded-lg border border-primary/30 bg-primary/5 p-3">
+                <div className="text-xs text-muted-foreground">Ad Fund</div>
+                <div className="text-lg font-semibold text-primary">৳{Number((data as any).adFund ?? 0).toLocaleString()}</div>
+                <div className="text-[10px] text-muted-foreground">Wallet balance</div>
               </div>
             </div>
+
+            {(() => {
+              const f = data.store.subscription_packages?.features;
+              const active = f && typeof f === "object"
+                ? Object.entries(f).filter(([, v]) => v === true || (typeof v === "number" && v > 0))
+                : [];
+              if (!active.length) return null;
+              return (
+                <div>
+                  <div className="mb-2 text-xs font-semibold uppercase text-muted-foreground">Active plan features</div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {active.map(([k, v]) => (
+                      <span key={k} className="rounded-md bg-muted px-2 py-0.5 text-[11px] capitalize">
+                        {k.replace(/_/g, " ")}{typeof v === "number" ? `: ${v}` : ""}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
 
             <div>
               <div className="mb-2 text-xs font-semibold uppercase text-muted-foreground">AI usage (30d)</div>
