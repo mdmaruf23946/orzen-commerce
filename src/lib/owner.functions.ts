@@ -1,3 +1,4 @@
+import { estimateCostUsd } from "./ai-pricing";
 // Platform-owner-only server functions.
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
@@ -1051,8 +1052,8 @@ export const aiControlCenterOverview = createServerFn({ method: "GET" })
       sb.from("ai_global_settings").select("*").eq("id", 1).maybeSingle(),
       sb.from("ai_usage").select("model,cost_usd,prompt_tokens,completion_tokens,created_at,store_id")
         .gte("created_at", last30),
-      sb.from("store_ai_config").select("*", { count: "exact", head: true }).eq("enabled", true),
-      sb.from("store_ai_config").select("*", { count: "exact", head: true }),
+      sb.from("stores").select("*", { count: "exact", head: true }).eq("status", "active"),
+      sb.from("stores").select("*", { count: "exact", head: true }),
     ]);
 
     let requests = 0, tokens = 0, cost = 0, req7 = 0, cost7 = 0;
@@ -1067,7 +1068,7 @@ export const aiControlCenterOverview = createServerFn({ method: "GET" })
     for (const r of usage ?? []) {
       requests++;
       const t = Number(r.prompt_tokens || 0) + Number(r.completion_tokens || 0);
-      const c = Number(r.cost_usd || 0);
+      const c = Number(r.cost_usd || 0) || estimateCostUsd(r.model, r.prompt_tokens, r.completion_tokens);
       tokens += t; cost += c;
       const created = new Date(r.created_at);
       if (created >= last7) { req7++; cost7 += c; }
