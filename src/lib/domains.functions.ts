@@ -377,9 +377,7 @@ export const checkDomainVerification = createServerFn({ method: "POST" })
           patch.status = row.status === "active" ? "active" : "pending";
           patch.ssl_status = cf.ssl?.status === "pending_validation" ? "issuing" : row.ssl_status;
           reason =
-            cf.verification_errors?.[0] ||
-            cf.ssl?.validation_errors?.[0]?.message ||
-            `Cloudflare status: ${cf.status} / SSL ${cf.ssl?.status ?? "unknown"}`;
+            "DNS রেকর্ড যাচাই ও SSL চালু হওয়ার অপেক্ষা চলছে। নিচের রেকর্ডগুলো আপনার ডোমেইন প্রোভাইডারে বসানো থাকলে কিছুক্ষণ পর আবার Check now চাপুন।";
         }
       } catch (e) {
         reason = (e as Error).message;
@@ -418,7 +416,7 @@ export const checkDomainVerification = createServerFn({ method: "POST" })
       } else if (!reason) {
         const proxied = cname.length === 0 && aRecords.length > 0 && aRecords.every(isCloudflareIp);
         if (!pointedOk && proxied) {
-          reason = `আপনার Cloudflare-এ ${row.hostname} রেকর্ডটির Proxy (কমলা মেঘ) চালু আছে। রেকর্ডটি CNAME → ${target} করুন এবং Proxy status "DNS only" (ধূসর মেঘ) করুন।`;
+          reason = `${row.hostname} এখনো অন্য জায়গায় যুক্ত আছে। আপনার ডোমেইন প্রোভাইডারের DNS-এ রেকর্ডটি CNAME → ${target} করুন।`;
         } else if (!pointedOk) {
           reason = isApex(row.hostname) && apexIp
             ? `Not pointing to the platform yet — add an A record to ${apexIp} (or a CNAME to ${target} if your DNS supports flattening).`

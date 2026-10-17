@@ -259,7 +259,7 @@ function Page() {
       if (r.ok) {
         toast.success(
           r.status && r.status !== "active"
-            ? "Subdomain connected — Cloudflare is issuing the certificate (a few minutes)."
+            ? "Subdomain connected — SSL certificate is being issued (a few minutes)."
             : "Subdomain is connected and live.",
         );
       } else if (r.reason === "not_configured") {
@@ -435,9 +435,8 @@ function Page() {
           <div className="flex items-start gap-2 rounded-md bg-amber-50 p-2 text-sm text-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
             <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
             <span className="min-w-0 break-words">
-              এই সাবডোমেইনটি এখনো লাইভ হয়নি। উপরের “Reconnect subdomain” চাপুন — প্ল্যাটফর্মে
-              Cloudflare API সেটআপ থাকলে এটি সাথে সাথে DNS + হোস্টিং-এ যুক্ত হয়ে যাবে (সার্টিফিকেট
-              ইস্যু হতে কয়েক মিনিট লাগতে পারে)।
+              এই সাবডোমেইনটি এখনো লাইভ হয়নি। উপরের “Reconnect subdomain” চাপুন — কয়েক মিনিটের
+              মধ্যে এটি লাইভ হয়ে যাবে।
             </span>
           </div>
         )}
@@ -457,9 +456,9 @@ function Page() {
           <div className="rounded-md border border-blue-200 bg-blue-50 p-3 text-xs text-blue-900 dark:border-blue-900 dark:bg-blue-950/40 dark:text-blue-200">
             <p className="font-semibold">কীভাবে কানেক্ট করবেন — ৪ ধাপ:</p>
             <ol className="mt-1 list-decimal space-y-0.5 pl-4">
-              <li>যেকোনো registrar (GoDaddy, Namecheap, Cloudflare) থেকে ডোমেইন কিনুন।</li>
+              <li>যেকোনো ডোমেইন প্রোভাইডার থেকে ডোমেইন কিনুন।</li>
               <li>
-                নিচে ডোমেইন যোগ করে দেখানো TXT + A/CNAME record গুলো registrar এর DNS panel এ বসান।
+                নিচে ডোমেইন যোগ করে দেখানো TXT + CNAME রেকর্ডগুলো প্রোভাইডারের DNS সেটিংসে বসান।
               </li>
               <li>
                 "Check now" চাপুন — verify হলে status "Verified" হবে (DNS ছড়াতে ৫ মিনিট–২৪ ঘণ্টা
@@ -544,18 +543,15 @@ function Page() {
 
                   {d.status !== "active" && (
                     <div className="space-y-2 rounded-md bg-muted/40 p-3 text-xs">
-                      <div className="font-medium">Add these DNS records at your registrar:</div>
+                      <div className="font-medium">
+                        যেখান থেকে ডোমেইন কিনেছেন, সেখানকার DNS সেটিংসে এই রেকর্ডগুলো বসান:
+                      </div>
                       <RecordRow
                         type="TXT"
                         name={`_orzen-verify.${d.hostname}`}
                         value={d.verification_token}
                       />
                       <RecordRow type="CNAME" name={apex ? "@" : d.hostname} value={target} />
-                      <p className="text-[11px] text-muted-foreground">
-                        Cloudflare ব্যবহার করলে এই CNAME-এর Proxy status অবশ্যই <b>"DNS only" (ধূসর মেঘ)</b> রাখবেন —
-                        কমলা মেঘ চালু থাকলে সাইট খুলবে না।
-                        {apex && " Root domain-এ CNAME বসাতে আপনার DNS provider-কে CNAME flattening সাপোর্ট করতে হবে (Cloudflare করে)।"}
-                      </p>
                       {d.cf_ownership?.name && d.cf_ownership?.value && (
                         <RecordRow
                           type="TXT"
@@ -563,6 +559,10 @@ function Page() {
                           value={d.cf_ownership.value}
                         />
                       )}
+                      <p className="text-[11px] text-muted-foreground">
+                        রেকর্ড বসানোর পর "Check now" চাপুন। SSL (https) আমরা নিজে থেকেই চালু করে দেব।
+                        {apex && " Root domain-এ CNAME না বসলে www সাবডোমেইন ব্যবহার করুন।"}
+                      </p>
                     </div>
                   )}
 

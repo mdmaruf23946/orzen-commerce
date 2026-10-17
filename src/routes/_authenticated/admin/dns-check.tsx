@@ -149,10 +149,9 @@ function Page() {
             <div className="flex items-start gap-2 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-200">
               <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
               <div className="space-y-1">
-                <div className="font-semibold">Cloudflare Proxy চালু আছে (কমলা মেঘ)</div>
+                <div className="font-semibold">ডোমেইনটি এখনো আমাদের সাথে যুক্ত হয়নি</div>
                 <div>
-                  আপনার Cloudflare DNS-এ <code>{r.host}</code> রেকর্ডটি <code>CNAME → {r.dnsTarget}</code> করুন
-                  এবং Proxy status <b>"DNS only" (ধূসর মেঘ)</b> করুন। Proxy চালু থাকলে Cloudflare সাইটটি ব্লক করে দেয়।
+                  আপনার ডোমেইন প্রোভাইডারের DNS-এ <code>{r.host}</code> রেকর্ডটি <code>CNAME → {r.dnsTarget}</code> করুন।
                 </div>
               </div>
             </div>
