@@ -2134,12 +2134,15 @@ export function buildTools(ctx: AgentContext) {
 export async function logUsage(storeId: string | null, model: string, usage: any, kind: string) {
   try {
     const sb = admin();
+    const pt = usage?.promptTokens ?? usage?.inputTokens ?? 0;
+    const ct = usage?.completionTokens ?? usage?.outputTokens ?? 0;
+    const { estimateCostUsd } = await import("./ai-pricing");
     await sb.from("ai_usage").insert({
       store_id: storeId,
       model,
-      prompt_tokens: usage?.promptTokens ?? usage?.inputTokens ?? 0,
-      completion_tokens: usage?.completionTokens ?? usage?.outputTokens ?? 0,
-      cost_usd: 0,
+      prompt_tokens: pt,
+      completion_tokens: ct,
+      cost_usd: estimateCostUsd(model, pt, ct),
       kind,
     });
   } catch {
