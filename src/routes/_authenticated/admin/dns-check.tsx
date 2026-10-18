@@ -153,6 +153,9 @@ function Page() {
                 <div>
                   আপনার ডোমেইন প্রোভাইডারের DNS-এ <code>{r.host}</code> রেকর্ডটি <code>CNAME → {r.dnsTarget}</code> করুন।
                 </div>
+                <div>
+                  Cloudflare ব্যবহার করলে রেকর্ডটির Proxy status <b>DNS only</b> (ধূসর মেঘ) করে সেভ করুন।
+                </div>
               </div>
             </div>
           )}
