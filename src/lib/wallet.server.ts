@@ -176,12 +176,14 @@ export async function payPlanFromWallet(
     return { ok: false, error: debit?.error ?? "Insufficient balance", balance: debit?.balance ?? 0, required: total };
   }
 
-  // Extend from the later of now / current expiry so renewals stack.
+  // Renewing the SAME plan stacks on the remaining time; switching to a
+  // different plan starts the new period from today.
   let start = now;
   if (args.storeId) {
-    const { data: st } = await sb.from("stores").select("expires_at").eq("id", args.storeId).maybeSingle();
+    const { data: st } = await sb.from("stores").select("expires_at, package_id").eq("id", args.storeId).maybeSingle();
     const cur = (st as any)?.expires_at ? new Date((st as any).expires_at) : null;
-    if (cur && cur > now) start = cur;
+    const samePlan = (st as any)?.package_id === args.packageId;
+    if (samePlan && cur && cur > now) start = cur;
   }
   const expires = new Date(start.getTime());
   expires.setMonth(expires.getMonth() + months);
