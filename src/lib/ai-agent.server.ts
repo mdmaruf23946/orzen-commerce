@@ -2337,7 +2337,8 @@ export async function generateAgentReply(opts: {
     }
   }
   const { result, modelId } = attempt;
-  void logUsage(opts.ctx.storeId, modelId, result.usage, "messenger");
+  // totalUsage sums every tool step; usage is only the last step.
+  void logUsage(opts.ctx.storeId, modelId, (result as any).totalUsage ?? result.usage, opts.ctx.channel ?? "messenger");
   try {
     const { setTraceMeta } = await import("./telemetry.server");
     const u: any = (result as any).usage ?? {};
