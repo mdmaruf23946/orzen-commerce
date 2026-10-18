@@ -314,7 +314,7 @@ export const verifyPayment = createServerFn({ method: "POST" })
     const { data: pay } = await sb
       .from("payments")
       .select(
-        "id,store_id,package_id,amount,status,customer_email,method,txn_id,invoice_no,purpose,ai_credits_extra,ai_credits_price,ai_credits_granted",
+        "id,store_id,package_id,amount,status,customer_email,method,txn_id,invoice_no,notes,purpose,ai_credits_extra,ai_credits_price,ai_credits_granted",
       )
       .eq("id", data.id)
       .maybeSingle();
