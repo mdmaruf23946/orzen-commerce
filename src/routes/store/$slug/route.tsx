@@ -345,7 +345,8 @@ function BrandMark({
       loading="eager"
     />
   ) : null;
-  const text = showName ? (
+  // With no uploaded logo, always show the store name so the header is never empty.
+  const text = showName || (!logoUrl && !nameLogoUrl) ? (
     <span className={`truncate font-semibold ${mobile ? "text-sm text-sf-ink" : "text-base"}`}>{name}</span>
   ) : null;
   if (mode === "text") return text;
