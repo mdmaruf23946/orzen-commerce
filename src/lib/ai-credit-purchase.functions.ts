@@ -30,18 +30,28 @@ export const getMyAiCredits = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { adm, store, pkg, elig } = await loadContext(context.userId);
-    const [c, b, w, l] = await Promise.all([
+    const now = new Date();
+    const dayStart = new Date(now.getTime() + 6 * 3600e3); dayStart.setUTCHours(0, 0, 0, 0);
+    const dayIso = new Date(dayStart.getTime() - 6 * 3600e3).toISOString();
+    const monStart = new Date(dayStart); monStart.setUTCDate(1);
+    const monIso = new Date(monStart.getTime() - 6 * 3600e3).toISOString();
+    const [c, b, w, l, u] = await Promise.all([
       adm.from("store_ai_credits").select("balance,lifetime_used").eq("store_id", store.id).maybeSingle(),
       adm.from("ai_credit_bundles").select("id,name,credits,price_bdt").eq("is_active", true).order("sort_order").order("credits"),
       adm.from("merchant_wallets").select("balance").eq("user_id", context.userId).maybeSingle(),
       adm.from("ai_credit_ledger").select("delta,kind,note,created_at").eq("store_id", store.id).order("created_at", { ascending: false }).limit(20),
+      adm.from("ai_credit_ledger").select("delta,created_at").eq("store_id", store.id).lt("delta", 0).gte("created_at", monIso).limit(20000),
     ]);
+    let usedToday = 0, usedMonth = 0;
+    for (const r of (u.data ?? []) as any[]) { const d = -Number(r.delta); usedMonth += d; if (String(r.created_at) >= dayIso) usedToday += d; }
     return {
       planName: (pkg?.name ?? null) as string | null,
       eligible: elig.ok,
       reason: elig.reason ?? null,
       balance: Number(c.data?.balance ?? 0),
       used: Number(c.data?.lifetime_used ?? 0),
+      usedToday: Math.round(usedToday * 100) / 100,
+      usedMonth: Math.round(usedMonth * 100) / 100,
       walletBalance: Number(w.data?.balance ?? 0),
       packs: ((b.data ?? []) as any[]).map((x) => ({ id: x.id as string, name: x.name as string, credits: Number(x.credits), price: Number(x.price_bdt) })),
       history: ((l.data ?? []) as any[]).map((x) => ({ delta: Number(x.delta), kind: String(x.kind), note: (x.note ?? null) as string | null, at: String(x.created_at) })),
