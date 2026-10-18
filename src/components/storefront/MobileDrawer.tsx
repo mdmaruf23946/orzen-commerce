@@ -106,20 +106,24 @@ export function MobileDrawer({
         <div className="flex h-full flex-col bg-sf-card">
           {/* Brand header — same logo as storefront header & footer */}
           <div className="flex items-center gap-3 border-b border-sf-line bg-sf-surface p-4">
-            {logoUrl ? (
-              <img src={logoUrl} alt="" className="h-11 w-11 shrink-0 rounded-full object-cover" />
-            ) : (
-              <div className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-sf-accent text-sm font-bold text-sf-on-accent">
-                {storeName.charAt(0)}
-              </div>
-            )}
             <div className="min-w-0 flex-1">
-              {nameLogo ? (
-                <img
-                  src={nameLogo}
-                  alt={storeName}
-                  className="h-7 w-auto max-w-[160px] object-contain"
-                />
+              {logoUrl || nameLogo ? (
+                <div className="flex min-w-0 items-center gap-2">
+                  {logoUrl && (
+                    <img
+                      src={logoUrl}
+                      alt={nameLogo ? "" : storeName}
+                      className="h-10 w-auto max-w-[200px] shrink-0 object-contain"
+                    />
+                  )}
+                  {nameLogo && (
+                    <img
+                      src={nameLogo}
+                      alt={storeName}
+                      className="h-8 w-auto min-w-0 max-w-[180px] shrink object-contain"
+                    />
+                  )}
+                </div>
               ) : (
                 <div className="truncate text-base font-bold text-sf-ink">{storeName}</div>
               )}

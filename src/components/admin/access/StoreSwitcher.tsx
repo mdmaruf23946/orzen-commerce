@@ -61,9 +61,16 @@ export function StoreSwitcher({ currentStoreId, storeName, storeIcon, color, rol
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="flex h-auto w-full justify-start gap-2.5 rounded-none border-b px-4 py-2.5 text-left transition-colors hover:bg-muted/50">
-          {mark(storeName, storeIcon)}
           <div className="min-w-0 flex-1 leading-tight">
-            <div className="truncate text-sm font-semibold">{storeName}</div>
+            {resolveStoreIcon({ logo_url: storeIcon }) ? (
+              <img
+                src={resolveStoreIcon({ logo_url: storeIcon })!}
+                alt={storeName}
+                className="h-8 w-auto max-w-[180px] object-contain"
+              />
+            ) : (
+              <div className="truncate text-sm font-semibold">{storeName}</div>
+            )}
             <div className="truncate text-[11px] text-muted-foreground">{roleLabel}</div>
           </div>
           {stores.length > 1 && <ChevronsUpDown className="h-4 w-4 shrink-0 text-muted-foreground" />}
