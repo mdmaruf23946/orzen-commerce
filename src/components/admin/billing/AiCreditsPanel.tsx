@@ -59,12 +59,21 @@ export default function AiCreditsPanel() {
           <Sparkles className="h-5 w-5 text-primary" />
           <h2 className="text-lg font-semibold">AI Credits</h2>
         </div>
-        <div className="text-right">
-          <div className="text-2xl font-bold">{data.balance.toLocaleString()}</div>
-          <div className="text-xs text-muted-foreground">credit বাকি · মোট খরচ {data.used.toLocaleString()}</div>
-        </div>
       </div>
-      <p className="mt-1 text-xs text-muted-foreground">Messenger, WhatsApp ও Web Chat-এর AI উত্তর এই credit থেকে কাটে।</p>
+      <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        {[
+          ["মোট বাকি", data.balance],
+          ["আজকের খরচ", (data as any).usedToday ?? 0],
+          ["এই মাসের খরচ", (data as any).usedMonth ?? 0],
+          ["সর্বমোট খরচ", data.used],
+        ].map(([label, v], i) => (
+          <div key={i} className={`rounded-xl border p-3 ${i === 0 ? "border-primary/30 bg-primary/5" : "bg-muted/30"}`}>
+            <div className="text-xs text-muted-foreground">{label as string}</div>
+            <div className={`mt-1 font-bold ${i === 0 ? "text-2xl text-primary" : "text-lg"}`}>{Number(v).toLocaleString()}</div>
+          </div>
+        ))}
+      </div>
+      <p className="mt-2 text-xs text-muted-foreground">Messenger, WhatsApp ও Web Chat-এর AI উত্তর এই credit থেকে কাটে।</p>
 
       {!data.eligible ? (
         <div className="mt-4 flex items-start gap-2 rounded-lg border border-dashed p-3 text-sm text-muted-foreground">
