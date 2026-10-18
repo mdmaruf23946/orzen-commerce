@@ -60,3 +60,11 @@ export function resolveStoreFavicon(store?: StoreLike | null): string | null {
     toDisplayUrl(store.seo?.favicon_url)
   );
 }
+
+/** Merchant panel identity: whichever logo the store uploaded (name logo → logo → icon). */
+export function resolveStoreBrandLogo(
+  store?: (StoreLike & { name_logo_url?: string | null }) | null,
+): string | null {
+  if (!store) return null;
+  return toDisplayUrl(store.name_logo_url) ?? toDisplayUrl(store.logo_url) ?? toDisplayUrl(store.icon_url);
+}

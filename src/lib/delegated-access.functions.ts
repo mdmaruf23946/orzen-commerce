@@ -115,16 +115,16 @@ export const listMyStores = createServerFn({ method: "GET" })
     const sb = await admin();
     const uid = context.userId;
     const [{ data: own }, { data: memberships }] = await Promise.all([
-      sb.from("stores").select("id,name,logo_url,primary_color").eq("owner_user_id", uid).maybeSingle(),
+      sb.from("stores").select("id,name,logo_url,name_logo_url,icon_url,primary_color").eq("owner_user_id", uid).maybeSingle(),
       sb
         .from("store_staff")
-        .select("store_id,role,access_type,expires_at,stores(id,name,logo_url,primary_color)")
+        .select("store_id,role,access_type,expires_at,stores(id,name,logo_url,name_logo_url,icon_url,primary_color)")
         .eq("user_id", uid)
         .eq("status", "active"),
     ]);
     const now = Date.now();
     const list: Array<{ id: string; name: string; logo: string | null; color: string | null; role: string; kind: "owner" | "employee" | "delegated" }> = [];
-    if (own) list.push({ id: own.id, name: own.name, logo: own.logo_url ?? null, color: own.primary_color ?? null, role: "Owner", kind: "owner" });
+    if (own) list.push({ id: own.id, name: own.name, logo: own.name_logo_url ?? own.logo_url ?? own.icon_url ?? null, color: own.primary_color ?? null, role: "Owner", kind: "owner" });
     for (const m of memberships ?? []) {
       if (m.expires_at && new Date(m.expires_at).getTime() <= now) continue;
       const s = (m as any).stores;
@@ -132,7 +132,7 @@ export const listMyStores = createServerFn({ method: "GET" })
       list.push({
         id: s.id,
         name: s.name,
-        logo: s.logo_url ?? null,
+        logo: s.name_logo_url ?? s.logo_url ?? s.icon_url ?? null,
         color: s.primary_color ?? null,
         role: ROLE_LABEL[m.role] ?? m.role,
         kind: m.access_type === "delegated" ? "delegated" : "employee",
