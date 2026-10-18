@@ -2146,8 +2146,11 @@ export async function logUsage(storeId: string | null, model: string, usage: any
       kind,
     });
     // AI credit tracking (Messenger/WhatsApp/Web chat). Never blocks a reply.
-    if (storeId && pt + ct > 0) {
-      await (sb as any).rpc("consume_ai_credits", { _store: storeId, _tokens: pt + ct, _channel: kind });
+    // Bill only the written reply: 1..100 tokens, prompt overhead excluded.
+    const { billableTokens } = await import("./ai-credit-billing");
+    const billed = billableTokens(ct);
+    if (storeId && billed > 0) {
+      await (sb as any).rpc("consume_ai_credits", { _store: storeId, _tokens: billed, _channel: kind });
     }
   } catch {
     /* swallow */

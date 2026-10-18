@@ -41,4 +41,4 @@ export function replyStyleInstruction(text: string | null | undefined): string {
 }
 
 export const SHORT_REPLY_RULE =
-  "LENGTH: Keep every reply short — 1 to 3 short sentences (about 50 words max). No long lists, no long intros, no repeated offers. Give details only if the customer asks.";
+  "LENGTH: Answer like a skilled shop assistant — as few words as fully answer the question. Simple messages: a few words. Complex questions: at most 3 short sentences (about 40 words), covering only the key facts (price, stock, delivery, next step). No greetings repeated, no intros, no filler, no lists, no repeated offers. Always finish the sentence; never stop mid-answer.";
