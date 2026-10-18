@@ -44,7 +44,7 @@ import { getMyAiCredits } from "@/lib/ai-credit-purchase.functions";
 function AiCreditsChip() {
   const fn = useServerFn(getMyAiCredits);
   const { data } = useQuery({ queryKey: ["my-ai-credits"], queryFn: () => fn(), staleTime: 60_000 });
-  const bal = Math.floor(Number(data?.balance ?? 0));
+  const bal = Number(data?.balance ?? 0);
   return (
     <Link
       to="/admin/billing"
@@ -54,7 +54,7 @@ function AiCreditsChip() {
     >
       <Sparkles className="h-3.5 w-3.5" />
       <span className="hidden sm:inline">AI Credits:</span>
-      <span className="font-semibold">{bal.toLocaleString()}</span>
+      <span className="font-semibold tabular-nums">{bal.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
     </Link>
   );
 }

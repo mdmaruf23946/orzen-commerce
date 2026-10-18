@@ -69,7 +69,7 @@ export default function AiCreditsPanel() {
         ].map(([label, v], i) => (
           <div key={i} className={`rounded-xl border p-3 ${i === 0 ? "border-primary/30 bg-primary/5" : "bg-muted/30"}`}>
             <div className="text-xs text-muted-foreground">{label as string}</div>
-            <div className={`mt-1 font-bold ${i === 0 ? "text-2xl text-primary" : "text-lg"}`}>{Number(v).toLocaleString()}</div>
+            <div className={`mt-1 font-bold tabular-nums ${i === 0 ? "text-2xl text-primary" : "text-lg"}`}>{Number(v).toLocaleString("en-US", { minimumFractionDigits: 3, maximumFractionDigits: 3 })}</div>
           </div>
         ))}
       </div>
