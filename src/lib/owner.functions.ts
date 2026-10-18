@@ -314,7 +314,7 @@ export const verifyPayment = createServerFn({ method: "POST" })
     const { data: pay } = await sb
       .from("payments")
       .select(
-        "id,store_id,package_id,amount,status,customer_email,method,txn_id,invoice_no,purpose,ai_credits_extra,ai_credits_price,ai_credits_granted",
+        "id,store_id,package_id,amount,status,customer_email,method,txn_id,invoice_no,notes,purpose,ai_credits_extra,ai_credits_price,ai_credits_granted",
       )
       .eq("id", data.id)
       .maybeSingle();
@@ -507,7 +507,11 @@ export const verifyPayment = createServerFn({ method: "POST" })
     const base =
       store?.expires_at && new Date(store.expires_at) > now ? new Date(store.expires_at) : now;
     const newExpiry = new Date(base);
-    newExpiry.setDate(newExpiry.getDate() + (pkg.duration_days || 30));
+    // Multi-month payments (3m/6m/yearly) extend by the months actually bought.
+    const cycleKey = /Cycle:\s*(monthly|3m|6m|yearly)\b/i.exec(String((pay as any).notes ?? ""))?.[1]?.toLowerCase();
+    const boughtMonths = ({ monthly: 1, "3m": 3, "6m": 6, yearly: 12 } as Record<string, number>)[cycleKey ?? ""] ?? 0;
+    if (boughtMonths > 1) newExpiry.setMonth(newExpiry.getMonth() + boughtMonths);
+    else newExpiry.setDate(newExpiry.getDate() + (pkg.duration_days || 30));
     const cycleStart = now.toISOString().slice(0, 10);
     const cycleEnd = newExpiry.toISOString().slice(0, 10);
     const invoiceNo = `INV-S-${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}-${pay.id.slice(0, 6).toUpperCase()}`;
