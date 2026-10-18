@@ -35,20 +35,17 @@ export async function tryFastPath(
   // normalised copy; the customer's text itself is never changed.
   const norm = normalizeIntentText(text);
 
-  if (GREETING.test(text)) {
-    const { data: store } = await sb.from("stores").select("name").eq("id", opts.storeId).maybeSingle();
-    const name = store?.name ? ` ${store.name}-এ` : "";
+  const talk = text.length <= 60 ? detectSmallTalk(text) : null;
+  if (talk) {
+    const needsName = talk === "greeting" || talk === "time_greeting";
+    const { data: store } = needsName
+      ? await sb.from("stores").select("name").eq("id", opts.storeId).maybeSingle()
+      : { data: null };
+    const banglaStyle = bn || /salam|alaikum|slm|kemon|kmn|allah|khoda|dhonnobad/i.test(text);
+    const seed = `${opts.conversationId}:${talk}:${Math.floor(Date.now() / 60000)}`;
     return {
-      kind: "greeting",
-      reply: bn || /salam|alaikum/i.test(text)
-        ? `ওয়ালাইকুম আসসালাম!${name} স্বাগতম। কোন পণ্যটি খুঁজছেন? নাম লিখুন বা ছবি পাঠান।`
-        : `Hello!${store?.name ? ` Welcome to ${store.name}.` : ""} What are you looking for? Type a product name or send a photo.`,
-    };
-  }
-  if (THANKS.test(text)) {
-    return {
-      kind: "thanks",
-      reply: bn ? "আপনাকেও ধন্যবাদ! আর কিছু লাগলে জানাবেন।" : "You're welcome! Let us know if you need anything else.",
+      kind: talk,
+      reply: smallTalkReply(talk, { bn: banglaStyle, storeName: store?.name, seed }),
     };
   }
 
