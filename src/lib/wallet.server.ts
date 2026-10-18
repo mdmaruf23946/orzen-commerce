@@ -1,3 +1,4 @@
+import { grantPlanAiCredits } from "./ai-credit-grant.server";
 // Server-only merchant wallet helpers. Never import from route/component
 // modules — go through `wallet.functions.ts`.
 import { CYCLE_MONTHS, type CycleKey } from "@/lib/billing.functions";
@@ -199,6 +200,7 @@ export async function payPlanFromWallet(
         trial_ends_at: null,
       })
       .eq("id", args.storeId);
+    await grantPlanAiCredits(sb, args.storeId, args.packageId, invoiceNo);
   }
 
   await sb

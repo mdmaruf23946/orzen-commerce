@@ -39,6 +39,25 @@ import { sectionForPath, DELEGATE_ROLES } from "@/lib/panel-sections";
 import { getAccountProfile } from "@/lib/account-profile.functions";
 import { AccountAvatar } from "@/components/admin/AccountAvatar";
 import { getMyWallet } from "@/lib/wallet.functions";
+import { getMyAiCredits } from "@/lib/ai-credit-purchase.functions";
+
+function AiCreditsChip() {
+  const fn = useServerFn(getMyAiCredits);
+  const { data } = useQuery({ queryKey: ["my-ai-credits"], queryFn: () => fn(), staleTime: 60_000 });
+  const bal = Math.floor(Number(data?.balance ?? 0));
+  return (
+    <Link
+      to="/admin/billing"
+      search={{ highlight: undefined, plan: undefined, from: undefined }}
+      className="flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/5 px-3 py-1.5 text-xs font-medium text-primary hover:bg-primary/10"
+      title="AI Credits balance"
+    >
+      <Sparkles className="h-3.5 w-3.5" />
+      <span className="hidden sm:inline">AI Credits:</span>
+      <span className="font-semibold">{bal.toLocaleString()}</span>
+    </Link>
+  );
+}
 
 function AdFundChip() {
   const walletFn = useServerFn(getMyWallet);
@@ -598,7 +617,7 @@ function AdminLayout() {
           </span>
         </button>
         <div className="flex items-center gap-2">
-        {!access.isEmployee && <AdFundChip />}
+        {!access.isEmployee && <><AiCreditsChip /><AdFundChip /></>}
         <button
           onClick={toggleDark}
           className="grid h-9 w-9 place-items-center rounded-full border"
@@ -854,7 +873,7 @@ function AdminLayout() {
               />
             </div>
             <div className="ml-auto flex items-center gap-2">
-              {!access.isEmployee && <AdFundChip />}
+              {!access.isEmployee && <><AiCreditsChip /><AdFundChip /></>}
               <Link
                 to="/admin/messenger-inbox"
                 className="relative grid h-9 w-9 place-items-center rounded-full border hover:bg-muted"

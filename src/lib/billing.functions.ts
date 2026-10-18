@@ -372,6 +372,12 @@ export const activateFreePlan = createServerFn({ method: "POST" })
       })
       .eq("id", (store as any).id);
     if (error) throw new Error(error.message);
+    {
+      // One free-plan credit grant per calendar month (prevents re-activation farming).
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const { grantPlanAiCredits } = await import("@/lib/ai-credit-grant.server");
+      await grantPlanAiCredits(supabaseAdmin, (store as any).id, (pkg as any).id, `free-${now.toISOString().slice(0, 7)}`);
+    }
 
     await (supabase.from("subscription_notifications") as any)
       .insert({
