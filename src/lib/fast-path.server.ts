@@ -9,7 +9,7 @@ const BENGALI = /[\u0980-\u09FF]/;
 
 const STATUS_WORDS = /(order|অর্ডার|অডার).{0,20}(status|kothay|koi|কই|কোথায়|কী অবস্থা|কি অবস্থা|track|ট্র্যাক|আপডেট|update)|(track|ট্র্যাক).{0,10}(order|অর্ডার)|parcel (koi|kothay)|পার্সেল (কই|কোথায়)/i;
 const ORDER_NO = /\b([A-Z]{1,6}[-_]?\d{3,}|\d{5,10})\b/i;
-const DELIVERY_Q = /^(?:delivery|ডেলিভারি|ডেলিভারী|deli?very)\s*(?:charge|চার্জ|cost|fee|খরচ)\s*(?:koto|kto|কত|কতো|how much)?\s*(?:taka|টাকা|tk)?\s*(?:hobe|হবে|lage|লাগে|lagbe|লাগবে|nen|নেন|nicchen|নিচ্ছেন)?[\s?!.।]*$|^(?:how much|what is)(?: the)? delivery (?:charge|cost|fee)[\s?]*$/i;
+const DELIVERY_Q = /^(?:(?:ঢাকার|ঢাকা|dhakar|dhaka)\s*(?:বাহিরে|বাইরে|ভিতরে|ভেতরে|বিতরে|মধ্যে|baire|bahire|vitore|bhitore|outside|inside)\s*)?(?:delivery|ডেলিভারি|ডেলিভারী|deli?very)\s*(?:charge|চার্জ|cost|fee|খরচ)\s*(?:koto|kto|কত|কতো|how much)?\s*(?:taka|টাকা|tk)?\s*(?:hobe|হবে|lage|লাগে|lagbe|লাগবে|nen|নেন|nicchen|নিচ্ছেন)?[\s?!.।]*$|^(?:how much|what is)(?: the)? delivery (?:charge|cost|fee)[\s?]*$/i;
 const DELIVERY_TIME_Q = /^(?:delivery|ডেলিভারি|ডেলিভারী)\s*(?:(?:koto|কত|কতো)\s*(?:din|দিন|দিনে)|(?:time|সময়|somoy)|(?:hote|হতে|পেতে|dite|দিতে)?\s*(?:koto|কত|কতো)\s*(?:din|দিন|দিনে|সময়))\s*(?:lage|লাগে|লাগবে|hobe|হবে)?[\s?!.।]*$|^(?:how long|how many days)(?: does| will)?(?: it take)?(?: for)? delivery[\s?]*$|^(?:koto|কত|কতো)\s*(?:din|দিনে|দিন)\s*(?:delivery|ডেলিভারি)\s*(?:pabo|পাবো|পাব|হবে|দিবেন)?[\s?!.।]*$/i;
 const RETURN_Q = /^(?:return|রিটার্ন|ফেরত|exchange|এক্সচেঞ্জ)\s*(?:policy|পলিসি|নীতি)?\s*(?:ki|কি|কী|ache|আছে|deya jay|দেওয়া যায়|দেয়া যায়|করা যায়|হবে)?\s*(?:ki|কি|কী)?[\s?!.।]*$|^(?:what is|what's)(?: your| the)? return policy[\s?]*$|^can i return[\s\w]{0,20}\??$/i;
 
