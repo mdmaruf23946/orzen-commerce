@@ -50,7 +50,7 @@ function StoreInformationPage() {
       <div className="space-y-5">
         <Section icon={StoreIcon} title="Store Identity" description="Logo, name, and brand color.">
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Store logo" hint="Square logo shown next to your store name.">
+            <Field label="Store logo" hint="Icon or full logo. Choose how it appears in Theme → Header → Logo display.">
               <ImageUploader storeId={form.id} value={form.logo_url} onChange={(v) => set("logo_url", v)} />
             </Field>
             <Field

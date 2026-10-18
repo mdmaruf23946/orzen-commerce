@@ -305,6 +305,72 @@ function TrackingScripts({ marketing, slug }: { marketing: any; slug: string }) 
 }
 
 
+const LOGO_PX = { small: [32, 36], medium: [40, 46], large: [48, 56] } as const;
+
+function BrandMark({
+  logoUrl,
+  nameLogoUrl,
+  name,
+  header,
+  mobile,
+}: {
+  logoUrl: string | null;
+  nameLogoUrl?: string | null;
+  name: string;
+  header: any;
+  mobile?: boolean;
+}) {
+  const size = (LOGO_PX as any)[header?.logo_size] ?? LOGO_PX.medium;
+  const h = mobile ? size[0] : size[1];
+  const round = header?.logo_shape === "round";
+  const showName = header?.show_name === true;
+  let mode = header?.logo_mode ?? "auto";
+  if (mode === "auto") mode = logoUrl && nameLogoUrl ? "icon_name" : logoUrl || nameLogoUrl ? "full" : "text";
+  const maxW = mobile ? "60vw" : "260px";
+  const icon = logoUrl ? (
+    <img
+      src={sizedImg(logoUrl, 240)}
+      alt={nameLogoUrl ? "" : name}
+      style={round ? { height: h, width: h } : { height: h, width: "auto", maxWidth: maxW }}
+      className={round ? "shrink-0 rounded-full object-cover" : "shrink-0 object-contain"}
+      loading="eager"
+    />
+  ) : null;
+  const wordmark = nameLogoUrl ? (
+    <img
+      src={nameLogoUrl}
+      alt={name}
+      style={{ height: Math.round(h * 0.8), width: "auto", maxWidth: maxW }}
+      className="min-w-0 shrink object-contain"
+      loading="eager"
+    />
+  ) : null;
+  const text = showName ? (
+    <span className={`truncate font-semibold ${mobile ? "text-sm text-sf-ink" : "text-base"}`}>{name}</span>
+  ) : null;
+  if (mode === "text") return text;
+  if (mode === "icon") return icon ?? wordmark ?? text;
+  if (mode === "full") {
+    const one = logoUrl || nameLogoUrl;
+    if (!one) return text;
+    return (
+      <img
+        src={logoUrl ? sizedImg(logoUrl, 480) : one}
+        alt={name}
+        style={{ height: h, width: "auto", maxWidth: maxW }}
+        className="min-w-0 shrink object-contain"
+        loading="eager"
+      />
+    );
+  }
+  return (
+    <>
+      {icon}
+      {wordmark ?? text}
+    </>
+  );
+}
+
 function StoreHeader({
   slug,
   storeId,
@@ -413,31 +479,7 @@ function StoreHeader({
               params={{ slug }}
               className="flex min-w-0 flex-1 items-center justify-center gap-1.5"
             >
-              {logoUrl ? (
-                <img
-                  src={sizedImg(logoUrl, 160)}
-                  alt=""
-                  className="h-7 w-7 shrink-0 rounded-full object-cover"
-                  loading="eager"
-                />
-              ) : (
-                <div
-                  className="grid h-7 w-7 shrink-0 place-items-center rounded-full text-[11px] font-bold text-white"
-                  style={{ backgroundColor: "var(--primary)" }}
-                >
-                  {name.charAt(0)}
-                </div>
-              )}
-              {nameLogoUrl ? (
-                <img
-                  src={nameLogoUrl}
-                  alt={name}
-                  className="h-7 max-h-7 w-auto max-w-[55vw] shrink object-contain"
-                  loading="eager"
-                />
-              ) : (
-                <span className="truncate text-sm font-semibold text-sf-ink">{name}</span>
-              )}
+              <BrandMark logoUrl={logoUrl} nameLogoUrl={nameLogoUrl} name={name} header={theme.header} mobile />
             </Link>
 
             {theme.header.cart && (
@@ -482,26 +524,7 @@ function StoreHeader({
               params={{ slug }}
               className={`flex min-w-0 items-center gap-2 ${theme.header.logo_align === "center" ? "mx-auto" : ""}`}
             >
-              {logoUrl ? (
-                <img src={sizedImg(logoUrl, 160)} alt="" className="h-9 w-9 shrink-0 rounded-full object-cover" loading="eager" />
-              ) : (
-                <div
-                  className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-xs font-bold text-white"
-                  style={{ backgroundColor: "var(--primary)" }}
-                >
-                  {name.charAt(0)}
-                </div>
-              )}
-              {nameLogoUrl ? (
-                <img
-                  src={nameLogoUrl}
-                  alt={name}
-                  className="h-8 max-h-8 w-auto min-w-0 max-w-[220px] object-contain"
-                  loading="eager"
-                />
-              ) : (
-                <span className="truncate text-base font-semibold">{name}</span>
-              )}
+              <BrandMark logoUrl={logoUrl} nameLogoUrl={nameLogoUrl} name={name} header={theme.header} />
             </Link>
 
             {theme.header.search && theme.header.search_position !== "hidden" && (

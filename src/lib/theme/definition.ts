@@ -139,6 +139,9 @@ export const MENU_STYLES = ["inline", "pill", "underline"] as const;
 export const HEADER_SEARCH_POS = ["center", "right", "hidden"] as const;
 export const HEADER_CART_POS = ["right", "left"] as const;
 export const LOGO_ALIGNS = ["left", "center"] as const;
+export const LOGO_MODES = ["auto", "full", "icon_name", "icon", "text"] as const;
+export const LOGO_SIZES = ["small", "medium", "large"] as const;
+export const LOGO_SHAPES = ["original", "round"] as const;
 export const TEXT_ALIGNS = ["left", "center", "right"] as const;
 export const FOOTER_LAYOUTS = ["columns", "compact", "centered"] as const;
 export const FONT_WEIGHTS = [400, 500, 600, 700, 800] as const;
@@ -182,6 +185,10 @@ export type ThemeDefinition = {
     search_position: (typeof HEADER_SEARCH_POS)[number];
     cart_position: (typeof HEADER_CART_POS)[number];
     logo_align: (typeof LOGO_ALIGNS)[number];
+    logo_mode: (typeof LOGO_MODES)[number];
+    logo_size: (typeof LOGO_SIZES)[number];
+    logo_shape: (typeof LOGO_SHAPES)[number];
+    show_name: boolean;
   };
   nav: {
     menu_style: (typeof MENU_STYLES)[number];
@@ -299,6 +306,10 @@ export const DEFAULT_THEME: ThemeDefinition = {
     search_position: "center",
     cart_position: "right",
     logo_align: "left",
+    logo_mode: "auto",
+    logo_size: "medium",
+    logo_shape: "original",
+    show_name: false,
   },
   nav: { menu_style: "inline", category_position: "top", mega_menu: false },
   hero: { height: 320, radius: 16, overlay: 0, text_align: "left", cta_style: "solid" },
@@ -517,6 +528,10 @@ export function sanitizeOverrides(input: unknown, locks: ThemeLocks | null | und
     search_position: oneOf(HEADER_SEARCH_POS),
     cart_position: oneOf(HEADER_CART_POS),
     logo_align: oneOf(LOGO_ALIGNS),
+    logo_mode: oneOf(LOGO_MODES),
+    logo_size: oneOf(LOGO_SIZES),
+    logo_shape: oneOf(LOGO_SHAPES),
+    show_name: isBool,
   }, { height: Math.round });
 
   // nav
