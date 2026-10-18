@@ -416,7 +416,7 @@ export const checkDomainVerification = createServerFn({ method: "POST" })
       } else if (!reason) {
         const proxied = cname.length === 0 && aRecords.length > 0 && aRecords.every(isCloudflareIp);
         if (!pointedOk && proxied) {
-          reason = `${row.hostname} এখনো অন্য জায়গায় যুক্ত আছে। আপনার ডোমেইন প্রোভাইডারের DNS-এ রেকর্ডটি CNAME → ${target} করুন।`;
+          reason = `${row.hostname}-এর রেকর্ডটি Proxy চালু অবস্থায় আছে। রেকর্ডটি CNAME → ${target} রাখুন এবং Cloudflare ব্যবহার করলে Proxy status "DNS only" (ধূসর মেঘ) করে সেভ করুন।`;
         } else if (!pointedOk) {
           reason = isApex(row.hostname) && apexIp
             ? `Not pointing to the platform yet — add an A record to ${apexIp} (or a CNAME to ${target} if your DNS supports flattening).`
