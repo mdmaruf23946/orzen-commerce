@@ -31,10 +31,10 @@ function SupportPage() {
           <div className="mt-2 text-sm font-semibold">WhatsApp হেল্পলাইন</div>
           <div className="text-sm text-muted-foreground">01624975734</div>
         </a>
-        <a href="mailto:support@orzen.top" className="rounded-2xl border bg-card p-4 hover:bg-muted/40">
+        <a href="mailto:inbox@orzen.top" className="rounded-2xl border bg-card p-4 hover:bg-muted/40">
           <Mail className="h-5 w-5 text-primary" />
           <div className="mt-2 text-sm font-semibold">ইমেইল</div>
-          <div className="text-sm text-muted-foreground">support@orzen.top</div>
+          <div className="text-sm text-muted-foreground">inbox@orzen.top</div>
         </a>
       </div>
     </div>
