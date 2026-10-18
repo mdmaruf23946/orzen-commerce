@@ -616,15 +616,8 @@ function AdminLayout() {
             <span className="text-[11px] font-normal text-muted-foreground">Merchant Panel</span>
           </span>
         </button>
-        <div className="flex items-center gap-2">
+        <div className="ml-3 flex shrink-0 items-center gap-1.5">
         {!access.isEmployee && <><AiCreditsChip /><AdFundChip /></>}
-        <button
-          onClick={toggleDark}
-          className="grid h-9 w-9 place-items-center rounded-full border"
-          aria-label="Toggle theme"
-        >
-          {dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-        </button>
         </div>
       </header>
 
@@ -653,8 +646,12 @@ function AdminLayout() {
             >
               {collapsed ? <ChevronsRight className="h-4 w-4" /> : <ChevronsLeft className="h-4 w-4" />}
             </button>
-            <button className="ml-auto md:hidden" onClick={() => setOpen(false)} aria-label="Close">
-              <X className="h-5 w-5" />
+            <button
+              onClick={toggleDark}
+              className="ml-auto grid h-9 w-9 shrink-0 place-items-center rounded-full border hover:bg-muted md:hidden"
+              aria-label="Toggle theme"
+            >
+              {dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </button>
           </div>
 
@@ -859,7 +856,15 @@ function AdminLayout() {
         </aside>
 
         {open && (
-          <div className="fixed inset-0 z-30 bg-black/50 md:hidden" onClick={() => setOpen(false)} />
+          <div className="fixed inset-0 z-30 bg-black/50 md:hidden" onClick={() => setOpen(false)}>
+            <button
+              onClick={(e) => { e.stopPropagation(); setOpen(false); }}
+              aria-label="Close menu"
+              className="absolute left-[calc(18rem+0.75rem)] top-6 grid h-10 w-10 place-items-center rounded-full bg-background text-foreground shadow-lg"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
         )}
 
         <div className="flex min-w-0 flex-1 flex-col">
