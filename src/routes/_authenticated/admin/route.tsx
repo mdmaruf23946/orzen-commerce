@@ -29,7 +29,7 @@ import { StoreSwitcher, DelegatedStoreBanner } from "@/components/admin/access/S
 import { CountBadge } from "@/components/admin/CountBadge";
 import { useBadgeCounts, useMarkSeen } from "@/lib/use-badge-counts";
 import { getMyStore } from "@/lib/admin.functions";
-import { resolveStoreIcon } from "@/lib/store-icon";
+import { resolveStoreIcon, resolveStoreBrandLogo } from "@/lib/store-icon";
 import { recoverFromChunkError } from "@/lib/chunk-recovery";
 import { StoreAccessProvider, useStoreAccess } from "@/lib/use-store-access";
 import { ReadOnlyGuard } from "@/components/admin/ReadOnlyGuard";
@@ -509,7 +509,7 @@ function AdminLayout() {
     queryFn: () => fetchAccountProfile(),
     staleTime: 60_000,
   });
-  const storeIcon = resolveStoreIcon(myStore as any);
+  const storeIcon = resolveStoreBrandLogo(myStore as any);
   const storeName = (myStore as any)?.name ?? "";
   const { counts, storeId } = useBadgeCounts();
   const markSeen = useMarkSeen();
