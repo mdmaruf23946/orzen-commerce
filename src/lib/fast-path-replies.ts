@@ -41,7 +41,7 @@ const POOLS: Record<SmallTalkKind, Pool> = {
       "ওয়ালাইকুম আসসালাম!{store} আপনাকে পেয়ে ভালো লাগলো। কোন পণ্যটি দেখতে চান?",
     ],
     en: [
-      "Hello!{store} welcome. What are you looking for? Type a product name or send a photo.",
+      "Hello! Welcome{store}. What are you looking for? Type a product name or send a photo.",
       "Hi there! How can I help you today? Share a product name or a photo.",
       "Hello and welcome{store}! Tell me what you're looking for and I'll help.",
     ],
@@ -83,7 +83,7 @@ const POOLS: Record<SmallTalkKind, Pool> = {
       "আপনাকেও শুভেচ্ছা!{store} স্বাগতম। কীভাবে সাহায্য করতে পারি?",
       "শুভেচ্ছা রইলো! কোন পণ্যটি খুঁজছেন বলুন।",
     ],
-    en: ["Same to you!{store} welcome. How can I help?", "Hello, same to you! What are you looking for?"],
+    en: ["Same to you! Welcome{store}. How can I help?", "Hello, same to you! What are you looking for?"],
   },
 };
 
