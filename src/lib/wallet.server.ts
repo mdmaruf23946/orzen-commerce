@@ -199,6 +199,7 @@ export async function payPlanFromWallet(
         trial_ends_at: null,
       })
       .eq("id", args.storeId);
+    await grantPlanAiCredits(sb, args.storeId, args.packageId, invoiceNo);
   }
 
   await sb

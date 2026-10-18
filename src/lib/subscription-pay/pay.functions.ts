@@ -540,6 +540,8 @@ export const verifyAndActivateSubscription = createServerFn({ method: "POST" })
           trial_ends_at: null,
         })
         .eq("id", (inv as any).store_id);
+      const { grantPlanAiCredits } = await import("@/lib/ai-credit-grant.server");
+      await grantPlanAiCredits(supabaseAdmin, (inv as any).store_id, (pkg as any)?.id ?? (inv as any).package_id, String((inv as any).invoice_no ?? (inv as any).id));
     }
 
     // Record coupon redemption
