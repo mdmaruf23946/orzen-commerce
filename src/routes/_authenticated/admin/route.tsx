@@ -40,7 +40,6 @@ import { getAccountProfile } from "@/lib/account-profile.functions";
 import { AccountAvatar } from "@/components/admin/AccountAvatar";
 import { getMyWallet } from "@/lib/wallet.functions";
 import { getMyAiCredits } from "@/lib/ai-credit-purchase.functions";
-import { Sparkles } from "lucide-react";
 
 function AiCreditsChip() {
   const fn = useServerFn(getMyAiCredits);
