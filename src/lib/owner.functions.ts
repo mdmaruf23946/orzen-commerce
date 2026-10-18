@@ -556,12 +556,23 @@ export const verifyPayment = createServerFn({ method: "POST" })
     try {
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
       const adm: any = supabaseAdmin;
-      let expected = Number(pkg.price ?? 0);
+      // Expected plan price must use the billing cycle the merchant chose
+      // (3m/6m/yearly), otherwise the multi-month amount looks like overpayment.
+      const cycleMatch = /Cycle:\s*(monthly|3m|6m|yearly)\b/i.exec(String((pay as any).notes ?? ""));
+      const { computeCycleTotal } = await import("./billing.functions");
+      const { data: disc } = await adm.rpc("get_billing_discounts");
+      let expected = computeCycleTotal(Number(pkg.price ?? 0), (cycleMatch?.[1]?.toLowerCase() ?? "monthly") as any, {
+        discount_3m: Number(disc?.discount_3m ?? 5),
+        discount_6m: Number(disc?.discount_6m ?? 10),
+        discount_yearly: Number(disc?.discount_yearly ?? 20),
+      }).total;
       if (pay.invoice_no) {
         const { data: inv } = await adm.from("subscription_invoices")
           .select("total").eq("invoice_no", pay.invoice_no).maybeSingle();
         if (inv?.total != null) expected = Number(inv.total);
       }
+      // Unknown cycle in notes: never risk crediting plan money to Ad Fund.
+      if (!cycleMatch && !pay.invoice_no) expected = Number(pay.amount) - Number((pay as any).ai_credits_price ?? 0);
       expected += Number((pay as any).ai_credits_price ?? 0);
       const excess = Math.round((Number(pay.amount) - expected) * 100) / 100;
       if (expected > 0 && excess > 0 && store?.owner_user_id) {
