@@ -358,6 +358,7 @@ export const checkDomainVerification = createServerFn({ method: "POST" })
     let reason = "";
     let method = row.verification_method ?? "dns";
 
+    let cfWaitReason = "";
     // 1. Cloudflare-managed hostnames: mirror CF's own state.
     if (row.cf_hostname_id && cloudflareConfigured()) {
       try {
@@ -376,8 +377,13 @@ export const checkDomainVerification = createServerFn({ method: "POST" })
         } else {
           patch.status = row.status === "active" ? "active" : "pending";
           patch.ssl_status = cf.ssl?.status === "pending_validation" ? "issuing" : row.ssl_status;
-          reason =
-            "DNS রেকর্ড যাচাই ও SSL চালু হওয়ার অপেক্ষা চলছে। নিচের রেকর্ডগুলো আপনার ডোমেইন প্রোভাইডারে বসানো থাকলে কিছুক্ষণ পর আবার Check now চাপুন।";
+          const errs = [
+            ...((cf as any).verification_errors ?? []),
+            ...((cf.ssl as any)?.validation_errors ?? []).map((v: any) => v?.message ?? String(v)),
+          ].filter(Boolean);
+          cfWaitReason =
+            "DNS রেকর্ড যাচাই ও SSL চালু হওয়ার অপেক্ষা চলছে। নিচের রেকর্ডগুলো আপনার ডোমেইন প্রোভাইডারে বসানো থাকলে কিছুক্ষণ পর আবার Check now চাপুন।" +
+            (errs.length ? ` (${errs.join("; ")})` : "");
         }
       } catch (e) {
         reason = (e as Error).message;
@@ -427,6 +433,7 @@ export const checkDomainVerification = createServerFn({ method: "POST" })
       }
     }
 
+    if (!ok && !reason && cfWaitReason) reason = cfWaitReason;
     patch.verification_method = method;
     patch.last_error = ok ? null : reason || "Verification failed";
     if (!ok && row.status !== "active") patch.status = patch.status ?? "pending";
