@@ -149,17 +149,23 @@ export function StoreFooter({
         <div className="grid grid-cols-1 gap-10 md:grid-cols-2 lg:grid-cols-4">
           {/* Brand */}
           <div className="space-y-4">
-            <div className="flex items-center gap-3">
-              {iconUrl ? (
-                <img src={iconUrl} alt="" className="h-11 w-11 shrink-0 rounded-full object-cover" loading="lazy" />
-              ) : (
-                <div className="grid h-11 w-11 place-items-center rounded-full bg-sf-footer-surface text-sm font-bold text-sf-text">
-                  {store.name.charAt(0)}
-                </div>
+            <div className="flex min-w-0 items-center gap-3">
+              {iconUrl && (
+                <img
+                  src={iconUrl}
+                  alt={nameLogoUrl ? "" : store.name}
+                  className={
+                    theme.header?.logo_shape === "round"
+                      ? "h-12 w-12 shrink-0 rounded-full object-cover"
+                      : "h-12 w-auto max-w-[220px] shrink-0 object-contain"
+                  }
+                  loading="lazy"
+                />
               )}
-              {nameLogoUrl ? (
-                <img src={nameLogoUrl} alt={store.name} className="h-7 w-auto max-w-[150px] object-contain" loading="lazy" />
-              ) : (
+              {nameLogoUrl && (
+                <img src={nameLogoUrl} alt={store.name} className="h-10 w-auto min-w-0 max-w-[220px] shrink object-contain" loading="lazy" />
+              )}
+              {!iconUrl && !nameLogoUrl && (
                 <span className="text-lg font-bold text-sf-footer-fg">{store.name}</span>
               )}
             </div>
