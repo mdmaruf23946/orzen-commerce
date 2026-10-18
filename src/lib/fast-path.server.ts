@@ -3,11 +3,10 @@
 // normal AI path handles it — never guesses.
 import { orderStatusBn, shortOrderNo } from "@/lib/chat-order-format";
 import { normalizeIntentText } from "@/lib/text-normalize";
+import { detectSmallTalk, smallTalkReply, type SmallTalkKind } from "@/lib/fast-path-replies";
 
 const BENGALI = /[\u0980-\u09FF]/;
 
-const GREETING = /^(hi+|hello+|hey+|hlw|helo|assalamu? ?alaikum|salam|আসসালামু ?আলাইকুম|সালাম|হাই|হ্যালো|হেলো|হেই)[\s!.।,]*$/i;
-const THANKS = /^((?:ok+|okay|ওকে)[\s,]+(?:thanks?|thank you|ধন্যবাদ)|thanks?|thank you|thx|tnx|ok+|okay|oky|accha|আচ্ছা|ঠিক আছে|ধন্যবাদ|ওকে|থ্যাংকস?|থ্যাঙ্ক ইউ)[\s!.।,]*$/i;
 const STATUS_WORDS = /(order|অর্ডার|অডার).{0,20}(status|kothay|koi|কই|কোথায়|কী অবস্থা|কি অবস্থা|track|ট্র্যাক|আপডেট|update)|(track|ট্র্যাক).{0,10}(order|অর্ডার)|parcel (koi|kothay)|পার্সেল (কই|কোথায়)/i;
 const ORDER_NO = /\b([A-Z]{1,6}[-_]?\d{3,}|\d{5,10})\b/i;
 const DELIVERY_Q = /^(?:delivery|ডেলিভারি|ডেলিভারী|deli?very)\s*(?:charge|চার্জ|cost|fee|খরচ)\s*(?:koto|kto|কত|কতো|how much)?\s*(?:taka|টাকা|tk)?\s*(?:hobe|হবে|lage|লাগে|lagbe|লাগবে|nen|নেন|nicchen|নিচ্ছেন)?[\s?!.।]*$|^(?:how much|what is)(?: the)? delivery (?:charge|cost|fee)[\s?]*$/i;
@@ -16,7 +15,7 @@ const RETURN_Q = /^(?:return|রিটার্ন|ফেরত|exchange|এক�
 
 export type FastPathResult = {
   reply: string;
-  kind: "greeting" | "thanks" | "order_status" | "delivery_charge" | "delivery_time" | "return_policy";
+  kind: SmallTalkKind | "order_status" | "delivery_charge" | "delivery_time" | "return_policy";
 } | null;
 
 function phoneTail(p: string | null | undefined) {
@@ -35,20 +34,17 @@ export async function tryFastPath(
   // normalised copy; the customer's text itself is never changed.
   const norm = normalizeIntentText(text);
 
-  if (GREETING.test(text)) {
-    const { data: store } = await sb.from("stores").select("name").eq("id", opts.storeId).maybeSingle();
-    const name = store?.name ? ` ${store.name}-এ` : "";
+  const talk = text.length <= 60 ? detectSmallTalk(text) : null;
+  if (talk) {
+    const needsName = talk === "greeting" || talk === "time_greeting";
+    const { data: store } = needsName
+      ? await sb.from("stores").select("name").eq("id", opts.storeId).maybeSingle()
+      : { data: null };
+    const banglaStyle = bn || /salam|alaikum|slm|kemon|kmn|allah|khoda|dhonnobad/i.test(text);
+    const seed = `${opts.conversationId}:${talk}:${Math.floor(Date.now() / 60000)}`;
     return {
-      kind: "greeting",
-      reply: bn || /salam|alaikum/i.test(text)
-        ? `ওয়ালাইকুম আসসালাম!${name} স্বাগতম। কোন পণ্যটি খুঁজছেন? নাম লিখুন বা ছবি পাঠান।`
-        : `Hello!${store?.name ? ` Welcome to ${store.name}.` : ""} What are you looking for? Type a product name or send a photo.`,
-    };
-  }
-  if (THANKS.test(text)) {
-    return {
-      kind: "thanks",
-      reply: bn ? "আপনাকেও ধন্যবাদ! আর কিছু লাগলে জানাবেন।" : "You're welcome! Let us know if you need anything else.",
+      kind: talk,
+      reply: smallTalkReply(talk, { bn: banglaStyle, storeName: store?.name, seed }),
     };
   }
 
