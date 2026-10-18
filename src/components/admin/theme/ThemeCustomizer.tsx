@@ -39,6 +39,9 @@ import {
   HOVER_EFFECTS,
   IMAGE_RATIOS,
   LOGO_ALIGNS,
+  LOGO_MODES,
+  LOGO_SIZES,
+  LOGO_SHAPES,
   MENU_STYLES,
   PRESET_LABELS,
   PRICE_STYLES,
@@ -384,6 +387,27 @@ export function ThemeCustomizer() {
                     label="Logo alignment" value={resolved.header.logo_align} options={LOGO_ALIGNS}
                     locked={lockedIn("header", "logo_align")}
                     onChange={(v) => upd("header", "logo_align", v)}
+                  />
+                  <SelectField
+                    label="Logo display (auto / full / icon_name / icon / text)" value={resolved.header.logo_mode} options={LOGO_MODES}
+                    locked={lockedIn("header", "logo_mode")}
+                    onChange={(v) => upd("header", "logo_mode", v)}
+                  />
+                  <SelectField
+                    label="Logo size" value={resolved.header.logo_size} options={LOGO_SIZES}
+                    locked={lockedIn("header", "logo_size")}
+                    onChange={(v) => upd("header", "logo_size", v)}
+                  />
+                  <SelectField
+                    label="Icon logo shape" value={resolved.header.logo_shape} options={LOGO_SHAPES}
+                    locked={lockedIn("header", "logo_shape")}
+                    onChange={(v) => upd("header", "logo_shape", v)}
+                  />
+                  <SwitchRow
+                    label="Show store name text when no name logo"
+                    checked={resolved.header.show_name}
+                    locked={lockedIn("header", "show_name")}
+                    onChange={(v) => upd("header", "show_name", v)}
                   />
                 </div>
               </Accordion>
