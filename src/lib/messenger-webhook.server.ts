@@ -1546,6 +1546,45 @@ async function visuallyMatchProduct(
   }
 }
 
+/** "টিসার্ট কছে?" → "টিসার্ট": drop a trailing availability ask so the name fast path can run. */
+export function availabilityStripped(text: string) {
+  return text
+    .trim()
+    .replace(/[?？!।.\s]+$/u, "")
+    .replace(/\s+(আছে|আসে|কছে|কাছে|এছে|আছ|ache|ase|ase ki|ache ki)(\s*(কি|কী|কিনা|ki|kina))?$/iu, "")
+    .trim();
+}
+
+/** True when this is a retry and an earlier attempt of the same job already replied. */
+async function alreadyAnsweredOnRetry(sb: ReturnType<typeof admin>, jobId: string, conversationId: string) {
+  const { data: job } = await sb
+    .from("messenger_jobs")
+    .select("attempts,created_at,store_id,sender_id")
+    .eq("id", jobId)
+    .maybeSingle();
+  const j = job as any;
+  if (!j || Number(j.attempts ?? 1) <= 1) return false;
+  // Replies to the previous message of this customer finish before this job may start.
+  const { data: prev } = await sb
+    .from("messenger_jobs")
+    .select("completed_at")
+    .eq("store_id", j.store_id)
+    .eq("sender_id", j.sender_id)
+    .lt("created_at", j.created_at)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const after = [j.created_at, (prev as any)?.completed_at].filter(Boolean).sort().pop();
+  const { data: out } = await sb
+    .from("ai_messages")
+    .select("id")
+    .eq("conversation_id", conversationId)
+    .eq("role", "assistant")
+    .gt("created_at", after)
+    .limit(1);
+  return (out ?? []).length > 0;
+}
+
 async function markQueuedReply(
   sb: ReturnType<typeof admin>,
   queuedJobId: string | null,
@@ -2648,6 +2687,12 @@ export async function handleMessengerWebhook(request: Request): Promise<Response
               if ((integ as any).human_takeover || (integ as any).ai_auto_reply === false) continue;
               if (!token) continue;
               if (await guardConversation(sb, conv!.id)) continue;
+              // A retried job whose earlier attempt already sent a card/text must
+              // never send it again (that caused 3–4 duplicate cards + bills).
+              if (queuedJobId && (await alreadyAnsweredOnRetry(sb, queuedJobId, conv!.id))) {
+                await markQueuedReply(sb, queuedJobId, "[already sent by earlier attempt]", null);
+                continue;
+              }
               // Audio was transcribed and images were described above; stickers and
               // files still have no text form, so they do not reach the LLM.
               if (
