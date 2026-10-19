@@ -424,6 +424,8 @@ digital/service/subscription are bought on the website only: never collect order
     !srcOn("warranty") && "warranty",
     !srcOn("business_hours") && "business hours",
   ].filter(Boolean);
+  // Frontline greeting turn: no order/product-type sections (old monolithic prompt removed).
+  const pureGreetingTurn = !po && !focus?.product && allowedToolsFor(latestUserText).size === 1;
 
   return `${globalBlock ? globalBlock + "\n\n" : ""}You are ${agent.agent_name}, a warm human-sounding sales assistant for "${store.name}" chatting on ${channel}.
 ${agentDescription ? `Role: ${agentDescription}\n` : ""}${lang} ${emoji} ${human} Style: ${agent.style}.
@@ -441,9 +443,7 @@ ${toggles}${offSources.length ? `\nDo not discuss: ${offSources.join(", ")}.` : 
 - Customers often misspell or half-write words (e.g. "সার্চ"/"চাজ" = চার্জ, "dlvry" = delivery). Work out the intended meaning from context and answer that. If it is genuinely unclear, ask one short question: "আপনি কি … বোঝাতে চেয়েছেন?"
 - A question, greeting or product talk is never the customer's name or address. Only save customer_name/full_address the customer clearly gave; if unsure, confirm first ("আপনার নাম কি …?").
 - Delivery charge asked without an area: list every zone charge from getDeliveryCharge. When the customer then gives an address, tell that area's charge before anything else.
-${typeSection}
-
-${orderSection}
+${pureGreetingTurn ? "" : `${typeSection}\n\n${orderSection}`}
 
 ${latestBlock ? latestBlock + "\n\n" : ""}${focusBlock ? focusBlock + "\n\n" : ""}${stateBlock ? stateBlock + "\n\n" : ""}${factLines.length ? `# Store facts\n${factLines.join("\n")}\n\n` : ""}${pickedFaqs ? `# Relevant FAQ\n${pickedFaqs}` : ""}`.trim();
 }
@@ -2225,7 +2225,7 @@ export function streamAgentResponse(opts: { ctx: AgentContext; messages: any[]; 
       model,
       system: opts.system,
       messages: opts.messages,
-      tools: buildTools(opts.ctx),
+      tools: await toolsForTurn(opts.ctx, opts.messages),
       stopWhen: stepCountIs(8),
       ...generationParams(settings, modelId),
       onFinish: ({ usage }) => {
@@ -2275,7 +2275,6 @@ function isTransientGatewayError(err: unknown) {
 
 /** Phase 2 tool diet: drop rarely-needed tools unless the latest message asks for them. */
 async function toolsForTurn(ctx: AgentContext, messages: any[]) {
-  const all = buildTools(ctx) as Record<string, any>;
   const last = [...messages].reverse().find((m) => m?.role === "user");
   const text =
     typeof last?.content === "string"
@@ -2283,6 +2282,12 @@ async function toolsForTurn(ctx: AgentContext, messages: any[]) {
       : Array.isArray(last?.content)
         ? last.content.map((p: any) => (p?.type === "text" ? p.text : "")).join(" ")
         : "";
+  return scopedToolsForText(ctx, text);
+}
+
+/** The ONLY way any channel (Messenger, WhatsApp, web chat) gets tools: routed agent(s) only. */
+export async function scopedToolsForText(ctx: AgentContext, text: string) {
+  const all = buildTools(ctx) as Record<string, any>;
   const drop: string[] = [];
   if (!/compare|তুলনা|vs|পার্থক্য|difference|কোনটা ভালো/i.test(text)) drop.push("compareProducts");
   if (!/brand|ব্র্যান্ড|ব্রান্ড/i.test(text)) drop.push("listBrands");
