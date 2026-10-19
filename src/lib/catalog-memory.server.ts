@@ -70,6 +70,14 @@ const STOPWORDS = new Set([
 ]);
 
 const SYNONYMS: Record<string, string[]> = {
+  "টিসার্ট": ["t-shirt", "tshirt", "টি-শার্ট", "shirt"],
+  "টিশার্ট": ["t-shirt", "tshirt", "টি-শার্ট", "shirt"],
+  "টি-শার্ট": ["t-shirt", "tshirt", "shirt"],
+  "টি-সার্ট": ["t-shirt", "tshirt", "টি-শার্ট", "shirt"],
+  "tshirt": ["t-shirt", "টি-শার্ট", "shirt"],
+  "t-shirt": ["tshirt", "টি-শার্ট", "shirt"],
+  "গেঞ্জি": ["t-shirt", "টি-শার্ট", "tshirt"],
+  "সার্ট": ["shirt", "শার্ট"],
   "মানিব্যাগ": ["wallet", "purse"],
   "ওয়ালেট": ["wallet"],
   "পার্স": ["purse", "wallet"],

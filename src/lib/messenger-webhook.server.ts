@@ -60,6 +60,14 @@ const PRODUCT_STOPWORDS = new Set([
   "এটা", "এইটা", "ওটা", "এই", "ওই", "এর", "টার", "একটা", "একটি", "ছবি", "দাও", "দেন", "দেখাও", "দেখান", "কি", "কী", "আছে", "দাম", "কত", "ডিটেইলস", "বিস্তারিত", "প্লিজ", "আমাদের", "আপনাদের", "তোমার", "কাছে", "হবে", "লাগবে",
 ]);
 const PRODUCT_SYNONYMS: Record<string, string[]> = {
+  "টিসার্ট": ["t-shirt", "tshirt", "টি-শার্ট", "shirt"],
+  "টিশার্ট": ["t-shirt", "tshirt", "টি-শার্ট", "shirt"],
+  "টি-শার্ট": ["t-shirt", "tshirt", "shirt"],
+  "টি-সার্ট": ["t-shirt", "tshirt", "টি-শার্ট", "shirt"],
+  "tshirt": ["t-shirt", "টি-শার্ট", "shirt"],
+  "t-shirt": ["tshirt", "টি-শার্ট", "shirt"],
+  "গেঞ্জি": ["t-shirt", "টি-শার্ট", "tshirt"],
+  "সার্ট": ["shirt", "শার্ট"],
   "মানিব্যাগ": ["wallet", "purse", "money bag"],
   "ওয়ালেট": ["wallet"],
   "পার্স": ["purse", "wallet"],
