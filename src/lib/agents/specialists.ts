@@ -29,10 +29,8 @@ const ORDER = /(order|অর্ডার|অরডার|অডার|কিন�
 const POLICY = /(delivery|deliveri|ডেলিভারি|ডেলিভেরি|দেলিভারি|দেলিব্যারি|ডেলিভারী|charge|চার্জ|ছার্য|চার্য|return|রিটার্ন|exchange|এক্সচেঞ্জ|ফেরত|bkash|বিকাস|nagad|নগদ|payment|পেমেন্ট|\bcod\b|ক্যাস অন|কবে পাব|kobe pabo|koto din|কত দিন|কতদিন)/;
 const TRACK = /(track|ট্র্যাক|ট্রাক|status|স্ট্যাটাস|কোথায় আছে|kothay ache|kothay ase|পাইনি|pai ?ni|courier|কুরিয়ার|কুরিযার|parcel|পার্সেল|পার্স্যাল|invoice|#\d+|complain|অভিযোগ|নস্ট|ভাঙা|ভাংগা)/;
 
-let registered = false;
 export function registerSpecialists(): void {
-  if (registered) return;
-  registered = true;
+  if (listAgents().some((a) => a.id === "frontline")) return;
 
   registerAgent({
     id: "tracking", priority: 50, matches: (i) => has(TRACK)(i.text),
