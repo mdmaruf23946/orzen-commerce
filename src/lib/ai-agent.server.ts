@@ -306,13 +306,7 @@ export function buildSystemPrompt(
     const p = focus.product as any;
     const kind = productKind(p);
     const feat = stringifyProductField(p.features).slice(0, 400);
-    const varList = Array.isArray(p.variants)
-      ? p.variants
-          .map((v: any) => v?.label || v?.name)
-          .filter(Boolean)
-          .slice(0, 10)
-          .join(", ")
-      : "";
+    const varList = formatFocusVariants(p.variants);
     focusBlock = [
       `# Focus product (ONLY product allowed in this reply)`,
       `id: ${p.id}`,
