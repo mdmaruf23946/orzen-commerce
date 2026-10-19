@@ -2758,7 +2758,12 @@ export async function handleMessengerWebhook(request: Request): Promise<Response
 
               // Name-only product message ("মানিব্যাগ") → store-scoped catalogue
               // lookup and photo cards, zero AI tokens. No match → AI handles it.
-              if (isNameOnlyProductQuery(effectiveText)) {
+              // Never during checkout: names, sizes, colours and "জি" belong to the order flow.
+              const orderSlot = isNameOnlyProductQuery(effectiveText)
+                ? await getConversationPendingOrder(sb, conv!.id).catch(() => ({ x: 1 }) as Record<string, any>)
+                : {};
+              const orderInProgress = Object.keys(orderSlot ?? {}).length > 0;
+              if (isNameOnlyProductQuery(effectiveText) && !orderInProgress && !isAffirmative(effectiveText)) {
                 try {
                   const hits = await searchDirectProducts(sb, integ.store_id, effectiveText, 6);
                   if (hits.length) {
