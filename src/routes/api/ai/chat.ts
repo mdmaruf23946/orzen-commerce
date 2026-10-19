@@ -4,7 +4,7 @@ import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 import {
   buildSystemPrompt,
-  buildTools,
+  scopedToolsForText,
   getModelForStore,
   loadAiContext,
   logUsage,
@@ -175,17 +175,25 @@ export const Route = createFileRoute("/api/ai/chat")({
               },
               focus,
               latestUserText: lastUserText,
+              customerHistory: body.messages
+                .filter((m) => m.role === "user")
+                .map((m) => (m.parts as any[]).map((p: any) => (p.type === "text" ? p.text : "")).join(""))
+                .filter(Boolean)
+                .slice(-10),
             }),
 
             messages: await convertToModelMessages(body.messages),
-            tools: buildTools({
-              storeId: store.id,
-              storeSlug: body.slug,
-              conversationId: ctxConvId,
-              siteOrigin,
-              channel: "web",
-              focusProductId: focus.product?.id ?? null,
-            }),
+            tools: await scopedToolsForText(
+              {
+                storeId: store.id,
+                storeSlug: body.slug,
+                conversationId: ctxConvId,
+                siteOrigin,
+                channel: "web",
+                focusProductId: focus.product?.id ?? null,
+              },
+              lastUserText,
+            ),
 
             stopWhen: stepCountIs(50),
             temperature,
