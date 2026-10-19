@@ -67,8 +67,8 @@ export async function tryFastPath(
     return {
       kind: "delivery_charge",
       reply: bn
-        ? `আমাদের ডেলিভারি চার্জ:\n${lines}\nআপনার এলাকা জানালে সঠিক চার্জ বলে দিতে পারব।`
-        : `Our delivery charges:\n${lines}\nTell us your area for the exact charge.`,
+        ? `${zones.length === 1 ? "ডেলিভারি চার্জ" : "আমাদের ডেলিভারি চার্জ"}:\n${lines}${zones.length === 1 ? "" : "\nআপনার এলাকা জানালে সঠিক চার্জ বলে দিতে পারব।"}`
+        : `Delivery charge:\n${lines}${zones.length === 1 ? "" : "\nTell us your area for the exact charge."}`,
     };
   }
 
