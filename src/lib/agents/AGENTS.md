@@ -1,0 +1,1 @@
+- One persona layer (customer-style.ts) derives reply style from the customer's history; agents/drawers plug in via registry.ts — one consistent voice, new agents drop-in.

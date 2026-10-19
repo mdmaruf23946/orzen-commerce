@@ -1,3 +1,4 @@
+import { customerTexts } from "@/lib/agents/customer-style";
 import { guardConversation } from "./conversation-guard.server";
 import { traceTime, setTraceMeta, currentTrace } from "./telemetry.server";
 
@@ -2869,6 +2870,7 @@ export async function handleMessengerWebhook(request: Request): Promise<Response
                       },
                   focus,
                   latestUserText: effectiveText,
+                  customerHistory: customerTexts(messages as any[]),
                 }),
                 fast: true,
               }));
