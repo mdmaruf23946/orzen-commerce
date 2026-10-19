@@ -2225,7 +2225,7 @@ export function streamAgentResponse(opts: { ctx: AgentContext; messages: any[]; 
       model,
       system: opts.system,
       messages: opts.messages,
-      tools: buildTools(opts.ctx),
+      tools: await toolsForTurn(opts.ctx, opts.messages),
       stopWhen: stepCountIs(8),
       ...generationParams(settings, modelId),
       onFinish: ({ usage }) => {
