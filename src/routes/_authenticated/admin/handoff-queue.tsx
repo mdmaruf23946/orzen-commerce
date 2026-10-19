@@ -73,7 +73,7 @@ function HandoffQueuePage() {
                 </div>
                 {c.handoff_reason && (
                   <p className="mt-1 text-sm text-foreground/80">
-                    <span className="font-medium">Reason:</span> {c.handoff_reason}
+                    <span className="font-medium">Reason:</span> {String(c.handoff_reason).startsWith("auto_spam") ? "AI paused automatically (repeated/spam messages)" : c.handoff_reason}
                   </p>
                 )}
                 {c.last_message_preview && (

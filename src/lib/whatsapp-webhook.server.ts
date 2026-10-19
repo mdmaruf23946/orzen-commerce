@@ -563,6 +563,7 @@ export async function processWhatsAppJob(job: WaJobRow): Promise<{ reply: string
   if (((conv as any).handoff_mode ?? "ai") !== "ai") return { reply: null, skipped: "human handoff" };
   if ((integ as any).human_takeover || (integ as any).ai_auto_reply === false)
     return { reply: null, skipped: "auto-reply off" };
+  if (await guardConversation(sb, conversationId)) return { reply: null, skipped: "spam guard" };
 
   if (buttonPayload && /^BUY_[0-9a-f-]{36}$/i.test(buttonPayload)) {
     await handleBuyButton({
