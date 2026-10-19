@@ -306,13 +306,7 @@ export function buildSystemPrompt(
     const p = focus.product as any;
     const kind = productKind(p);
     const feat = stringifyProductField(p.features).slice(0, 400);
-    const varList = Array.isArray(p.variants)
-      ? p.variants
-          .map((v: any) => v?.label || v?.name)
-          .filter(Boolean)
-          .slice(0, 10)
-          .join(", ")
-      : "";
+    const varList = formatFocusVariants(p.variants);
     focusBlock = [
       `# Focus product (ONLY product allowed in this reply)`,
       `id: ${p.id}`,
@@ -325,7 +319,7 @@ export function buildSystemPrompt(
       p.sku ? `sku: ${p.sku}` : "",
       p.short_description ? `short_description: ${p.short_description}` : "",
       feat ? `features: ${feat}` : "",
-      varList ? `variants: ${varList}` : "",
+      `variants: ${varList || "none — single standard option only; no other colours/sizes exist. Say so directly, do not search."}`,
       ``,
       `Rule: every product fact in your reply MUST come from this record. Do not name, describe, price, or image any other product in this reply. To show it, call ${channel === "web" ? "showProduct" : "sendProductCard"} with productId=${p.id}.`,
     ]
@@ -2334,7 +2328,7 @@ async function runGenerate(opts: {
     // Each step re-sends the whole prompt + tool schemas; 3 steps (search →
     // card → text) is enough and caps a turn's input tokens.
     // Focus product known → card + text = 2 steps; otherwise search → card → text.
-    stopWhen: stepCountIs(opts.ctx.focusProductId ? 2 : 3),
+    stopWhen: stepCountIs(3),
     ...generationParams(settings, modelId),
   });
   try {
@@ -2344,6 +2338,21 @@ async function runGenerate(opts: {
     setTraceMeta("output_tokens", u?.outputTokens ?? null);
   } catch {}
   return { result, modelId, settings };
+}
+
+/** Variants may be an array or {options, items}; empty → "". */
+export function formatFocusVariants(v: any): string {
+  const out = new Set<string>();
+  const add = (x: any) => { const s = typeof x === "string" ? x : x?.label || x?.name || x?.value; if (s) out.add(String(s)); };
+  if (Array.isArray(v)) v.forEach(add);
+  else if (v && typeof v === "object") {
+    for (const o of (Array.isArray(v.options) ? v.options : [])) {
+      const vals = Array.isArray(o?.values) ? o.values : [];
+      if (vals.length) out.add(`${o?.name ?? "option"}: ${vals.map((x: any) => (typeof x === "string" ? x : x?.label || x?.value)).filter(Boolean).join("/")}`);
+    }
+    if (!out.size && Array.isArray(v.items)) v.items.forEach(add);
+  }
+  return [...out].slice(0, 10).join(", ");
 }
 
 export type MessengerPayloadFacts = {
