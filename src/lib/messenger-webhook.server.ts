@@ -60,6 +60,9 @@ const PRODUCT_STOPWORDS = new Set([
   "এটা", "এইটা", "ওটা", "এই", "ওই", "এর", "টার", "একটা", "একটি", "ছবি", "দাও", "দেন", "দেখাও", "দেখান", "কি", "কী", "আছে", "দাম", "কত", "ডিটেইলস", "বিস্তারিত", "প্লিজ", "আমাদের", "আপনাদের", "তোমার", "কাছে", "হবে", "লাগবে",
 ]);
 const PRODUCT_SYNONYMS: Record<string, string[]> = {
+  "মানিব্যাগ": ["wallet", "purse", "money bag"],
+  "ওয়ালেট": ["wallet"],
+  "পার্স": ["purse", "wallet"],
   "ব্যাগ": ["bag", "school bag", "backpack"],
   "স্কুল": ["school"],
   "কলম": ["pen"],
@@ -381,12 +384,16 @@ function productSearchTerms(raw: string) {
     terms.add(token);
     for (const synonym of PRODUCT_SYNONYMS[token] ?? []) terms.add(synonym.toLowerCase());
   }
-  for (const [bn, synonyms] of Object.entries(PRODUCT_SYNONYMS)) {
-    if (compact.includes(bn)) {
+  // Longest names first, and consume them: "মানিব্যাগ" must not also match "ব্যাগ".
+  let rest = compact;
+  for (const [bn, synonyms] of Object.entries(PRODUCT_SYNONYMS).sort((a, b) => b[0].length - a[0].length)) {
+    if (rest.includes(bn)) {
       terms.add(bn);
       synonyms.forEach((s) => terms.add(s.toLowerCase()));
+      rest = rest.split(bn).join(" ");
     }
   }
+  if (compact.includes("মানিব্যাগ")) ["ব্যাগ", "bag", "school bag", "backpack"].forEach((t) => terms.delete(t));
   return Array.from(terms);
 }
 
@@ -479,7 +486,7 @@ export function isNameOnlyProductQuery(text: string) {
   if (t.split(/\s+/).length > 4) return false;
   if (/[?？]|\d{4,}/.test(t)) return false;
   if (isGreetingIntent(t) || isHowAreYouIntent(t) || /(^|\s)(অর্ডার|কিনতে|কিনব|নিতে|নিব|নেব|নিবো|buy|order|purchase|checkout)(\s|$)/i.test(t) || isOrderStatusIntent(t) || isPhotoIntent(t)) return false;
-  if (/দাম|কত|কেমন|কি |কী |কোন|কেন|ডেলিভারি|delivery|চার্জ|charge|সাইজ|size|কালার|color|colour|রং|ওয়ারেন্টি|warranty|অরিজিনাল|original|ভালো|price|how|what|which|why|ok|okay|ঠিক আছে|ধন্যবাদ|thanks?/i.test(t)) return false;
+  if (/দাম|কত|কেমন|কি |কী |কোন|কেন|ডেলিভারি|delivery|চার্জ|charge|সাইজ|size|কালার|color|colour|রং|ওয়ারেন্টি|warranty|অরিজিনাল|original|ভালো|ঠিক আছে|ধন্যবাদ/i.test(t) || /\b(price|how|what|which|why|ok|okay|thanks?)\b/i.test(t)) return false;
   return productSearchTerms(t).length > 0;
 }
 
