@@ -465,7 +465,21 @@ function sanitizeMessengerReply(reply: string, latestText: string) {
 // no per-message full-table read, no AI call — an in-memory index lookup.
 async function searchDirectProducts(sb: ReturnType<typeof admin>, storeId: string, text: string, limit = 6) {
   const memory = await getStoreMemory(sb as any, storeId);
-  return recallByText(memory, text, limit) as unknown as ProductRow[];
+  // Bangla names ("মানিব্যাগ") are expanded with their English synonyms so
+  // catalogue titles written in English still match. Store-scoped memory only.
+  const query = Array.from(new Set([text, ...productSearchTerms(text)])).join(" ");
+  return recallByText(memory, query, limit) as unknown as ProductRow[];
+}
+
+/** Short message that is only a product name — no question, order, detail or chit-chat. */
+export function isNameOnlyProductQuery(text: string) {
+  const t = text.trim();
+  if (!t || t.length > 40 || t.includes("\n")) return false;
+  if (t.split(/\s+/).length > 4) return false;
+  if (/[?？]|\d{4,}/.test(t)) return false;
+  if (isGreetingIntent(t) || isHowAreYouIntent(t) || isOrderIntent(t) || isOrderStatusIntent(t) || isPhotoIntent(t)) return false;
+  if (/দাম|কত|কেমন|কি |কী |কোন|কেন|ডেলিভারি|delivery|চার্জ|charge|সাইজ|size|কালার|color|colour|রং|ওয়ারেন্টি|warranty|অরিজিনাল|original|ভালো|price|how|what|which|why|ok|okay|ঠিক আছে|ধন্যবাদ|thanks?/i.test(t)) return false;
+  return productSearchTerms(t).length > 0;
 }
 
 async function getRecentRecommendedProducts(sb: ReturnType<typeof admin>, storeId: string, conversationId: string, limit = 5) {
@@ -2721,6 +2735,37 @@ export async function handleMessengerWebhook(request: Request): Promise<Response
                 }
               } catch {
                 /* fall through to AI */
+              }
+
+              // Name-only product message ("মানিব্যাগ") → store-scoped catalogue
+              // lookup and photo cards, zero AI tokens. No match → AI handles it.
+              if (isNameOnlyProductQuery(effectiveText)) {
+                try {
+                  const hits = await searchDirectProducts(sb, integ.store_id, effectiveText, 6);
+                  if (hits.length) {
+                    const done = await maybeSendDirectProductReply({
+                      sb,
+                      storeId: integ.store_id,
+                      storeSlug: (integ as any).store_slug ?? null,
+                      conversationId: conv!.id,
+                      psid: senderId,
+                      token,
+                      text: effectiveText,
+                    });
+                    if (done) {
+                      setTraceMeta("route", "fast");
+                      setTraceMeta("fast_kind", "product_name");
+                      await markQueuedReply(sb, queuedJobId, "[product cards]", null);
+                      await sb
+                        .from("ai_conversations")
+                        .update({ last_message_at: new Date().toISOString(), last_message_preview: "[product cards]" })
+                        .eq("id", conv!.id);
+                      continue;
+                    }
+                  }
+                } catch (e) {
+                  console.warn("[messenger] product fast path failed", (e as Error).message);
+                }
               }
 
               // Reply pacing is merchant-controlled. Timing starts the moment the
