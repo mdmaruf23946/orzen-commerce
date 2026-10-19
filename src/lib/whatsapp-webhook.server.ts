@@ -1,3 +1,4 @@
+import { customerTexts } from "@/lib/agents/customer-style";
 import { guardConversation } from "./conversation-guard.server";
 // WhatsApp Cloud API webhook — per-store, signature verified.
 // Mirrors the Messenger webhook flow: log event → upsert conversation →
@@ -645,6 +646,7 @@ export async function processWhatsAppJob(job: WaJobRow): Promise<{ reply: string
         },
         focus,
         latestUserText: text,
+        customerHistory: customerTexts(cc.messages as any[]),
       }),
       fast: true,
     })));
