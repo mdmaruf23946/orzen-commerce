@@ -477,7 +477,7 @@ export function isNameOnlyProductQuery(text: string) {
   if (!t || t.length > 40 || t.includes("\n")) return false;
   if (t.split(/\s+/).length > 4) return false;
   if (/[?？]|\d{4,}/.test(t)) return false;
-  if (isGreetingIntent(t) || isHowAreYouIntent(t) || isOrderIntent(t) || isOrderStatusIntent(t) || isPhotoIntent(t)) return false;
+  if (isGreetingIntent(t) || isHowAreYouIntent(t) || /(^|\s)(অর্ডার|কিনতে|কিনব|নিতে|নিব|নেব|নিবো|buy|order|purchase|checkout)(\s|$)/i.test(t) || isOrderStatusIntent(t) || isPhotoIntent(t)) return false;
   if (/দাম|কত|কেমন|কি |কী |কোন|কেন|ডেলিভারি|delivery|চার্জ|charge|সাইজ|size|কালার|color|colour|রং|ওয়ারেন্টি|warranty|অরিজিনাল|original|ভালো|price|how|what|which|why|ok|okay|ঠিক আছে|ধন্যবাদ|thanks?/i.test(t)) return false;
   return productSearchTerms(t).length > 0;
 }
