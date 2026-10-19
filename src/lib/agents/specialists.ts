@@ -16,7 +16,7 @@ export function normalizeForRouting(text: string): string {
     .replace(/[য়]/g, "য")
     .replace(/[ণ]/g, "ন")
     .replace(/[ষশ]/g, "স")
-    .replace(/[ঁ]/g, "")
+    .replace(/[ঁ\u09BC]/g, "")
     .replace(/[?？!।,.]+/g, " ")
     .replace(/\s+/g, " ")
     .trim();
