@@ -465,8 +465,10 @@ function productUrl(ctx: AgentContext, slug: string | null | undefined, productI
 function absoluteUrl(ctx: AgentContext, value: string | null | undefined) {
   if (!value) return undefined;
   if (/^https?:\/\//i.test(value)) return value;
-  const base = publicOrigin(ctx);
-  const path = value.startsWith("/") ? value : `/api/img/${value}`;
+  // Images always come from the main live site, which serves every store's
+  // photos; merchant/preview hosts may not, leaving Messenger cards blank.
+  const base = (process.env.PUBLIC_SITE_ORIGIN || "https://orzen.top").replace(/\/$/, "");
+  const path = value.startsWith("/") ? value : `/api/img/${value.replace(/^\/+/, "")}`;
   return `${base}${path}`;
 }
 

@@ -50,16 +50,25 @@ export async function tryFastPath(
 
   // Generic delivery-charge question (no product, no area) → list the store's
   // own active zones verbatim. Anything more specific goes to the AI tool.
-  if ((DELIVERY_Q.test(text) || DELIVERY_Q.test(norm)) && text.length <= 60) {
+  // Zone word may also come after the question ("ডেলিভারি চার্জ কত ঢাকার বাহিরে").
+  const zoneTail = /\s*(?:ঢাকার|ঢাকা|dhakar|dhaka)\s*(?:বাহিরে|বাইরে|ভিতরে|ভেতরে|বিতরে|মধ্যে|baire|bahire|vitore|bhitore|outside|inside)[\s?!.।]*$/i;
+  const stripTail = (s: string) => s.replace(zoneTail, "").trim();
+  const isDeliveryQ = [text, norm, stripTail(text), stripTail(norm)].some((s) => s && DELIVERY_Q.test(s));
+  if (isDeliveryQ && text.length <= 60) {
     const { fetchDeliveryZones } = await import("@/lib/chat-order-format");
-    const zones = (await fetchDeliveryZones(sb, opts.storeId)).filter((z) => z.name && Number.isFinite(z.charge));
-    if (zones.length < 1 || zones.length > 4) return null;
+    const all = (await fetchDeliveryZones(sb, opts.storeId)).filter((z) => z.name && Number.isFinite(z.charge));
+    if (all.length < 1 || all.length > 6) return null;
+    const wantsOut = /বাহিরে|বাইরে|baire|bahire|outside/i.test(text);
+    const wantsIn = !wantsOut && /ভিতরে|ভেতরে|বিতরে|মধ্যে|vitore|bhitore|inside/i.test(text);
+    const outName = /বাহির|বাইর|outside|out of|sub|উপশহর|সারাদেশ|all over|nationwide/i;
+    const picked = wantsOut ? all.filter((z) => outName.test(z.name)) : wantsIn ? all.filter((z) => !outName.test(z.name) && /ঢাকা|dhaka|inside|ভিতর|ভেতর/i.test(z.name)) : all;
+    const zones = picked.length ? picked : all;
     const lines = zones.map((z) => `• ${z.name}: ৳${z.charge}${z.eta ? ` (${z.eta})` : ""}`).join("\n");
     return {
       kind: "delivery_charge",
       reply: bn
-        ? `আমাদের ডেলিভারি চার্জ:\n${lines}\nআপনার এলাকা জানালে সঠিক চার্জ বলে দিতে পারব।`
-        : `Our delivery charges:\n${lines}\nTell us your area for the exact charge.`,
+        ? `${zones.length === 1 ? "ডেলিভারি চার্জ" : "আমাদের ডেলিভারি চার্জ"}:\n${lines}${zones.length === 1 ? "" : "\nআপনার এলাকা জানালে সঠিক চার্জ বলে দিতে পারব।"}`
+        : `Delivery charge:\n${lines}${zones.length === 1 ? "" : "\nTell us your area for the exact charge."}`,
     };
   }
 
