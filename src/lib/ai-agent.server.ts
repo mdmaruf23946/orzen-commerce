@@ -29,7 +29,7 @@ import {
 } from "./messenger-order-flow";
 import { replyStyleInstruction, SHORT_REPLY_RULE } from "./reply-language";
 import { deriveCustomerStyle, personaInstruction } from "./agents/customer-style";
-import { specialistFocus } from "./agents/specialists";
+import { specialistFocus, allowedToolsFor } from "./agents/specialists";
 
 function admin() {
   return createClient<Database>(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
@@ -696,6 +696,28 @@ function productSummary(ctx: AgentContext, product: any, categoryName?: string |
   };
 }
 
+/** Lean search result: cards/links re-fetch full data by id, so the model only
+ *  needs enough to pick and answer (keeps tool results ~10x smaller). */
+function compactSummary(ctx: AgentContext, product: any, categoryName?: string | null) {
+  const kind = productKind(product);
+  const variants = Array.isArray(product.variants)
+    ? product.variants.map((v: any) => v?.label || v?.name).filter(Boolean).slice(0, 10)
+    : [];
+  return {
+    id: product.id,
+    name: product.name,
+    product_type: kind,
+    purchase_channel: kind === "physical" ? "messenger" : "website",
+    category_name: categoryName ?? null,
+    price: product.price,
+    old_price: product.old_price,
+    stock: product.stock,
+    short_description: String(product.short_description ?? "").slice(0, 140) || undefined,
+    variants: variants.length ? variants : undefined,
+    image_url: firstImage(ctx, product),
+  };
+}
+
 /** Store-admin configured Buy Now / order collection flow. */
 export async function loadOrderFlow(storeId: string) {
   const sb = admin();
@@ -1201,7 +1223,7 @@ export function buildTools(ctx: AgentContext) {
           .map((row) => row.product);
         if (!noMatch) await logRecommendations("searchProducts", filtered, input.query);
         return {
-          products: filtered.map((p: any) => productSummary(ctx, p, cats.get(p.category_id))),
+          products: filtered.map((p: any) => compactSummary(ctx, p, cats.get(p.category_id))),
           query_terms: terms,
           fallback_used: noMatch,
           no_match: noMatch,
@@ -2252,7 +2274,7 @@ function isTransientGatewayError(err: unknown) {
 }
 
 /** Phase 2 tool diet: drop rarely-needed tools unless the latest message asks for them. */
-function toolsForTurn(ctx: AgentContext, messages: any[]) {
+async function toolsForTurn(ctx: AgentContext, messages: any[]) {
   const all = buildTools(ctx) as Record<string, any>;
   const last = [...messages].reverse().find((m) => m?.role === "user");
   const text =
@@ -2269,6 +2291,16 @@ function toolsForTurn(ctx: AgentContext, messages: any[]) {
   )
     drop.push("trackOrder");
   for (const k of drop) delete all[k];
+  // Phase 2 tool scoping: only the routed agent(s)' tools are sent.
+  try {
+    let orderInProgress = false;
+    if (ctx.conversationId) {
+      const slot = await getConversationSlot(ctx.conversationId).catch(() => ({}));
+      orderInProgress = Object.keys(slot ?? {}).length > 0;
+    }
+    const allowed = allowedToolsFor(text, { orderInProgress, hasFocus: !!ctx.focusProductId });
+    if (allowed) for (const k of Object.keys(all)) if (!allowed.has(k)) delete all[k];
+  } catch { /* scoping is an optimisation; never block a reply */ }
   return all;
 }
 
@@ -2283,7 +2315,7 @@ async function runGenerate(opts: {
     fast: opts.fast,
     modelOverride: opts.modelOverride,
   });
-  const tools = toolsForTurn(opts.ctx, opts.messages);
+  const tools = await toolsForTurn(opts.ctx, opts.messages);
   try {
     const { setTraceMeta } = await import("./telemetry.server");
     setTraceMeta("prompt_chars", opts.system.length);

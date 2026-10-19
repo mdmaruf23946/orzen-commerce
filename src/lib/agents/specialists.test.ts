@@ -1,4 +1,7 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, beforeAll } from "vitest";
+import { _resetAgents } from "./registry";
+import { allowedToolsFor } from "./specialists";
+beforeAll(() => _resetAgents());
 import { specialistFocus, _specialistCount } from "./specialists";
 
 const f = (t: string) => specialistFocus("s1", "messenger", t).agentId;
@@ -57,5 +60,32 @@ describe("specialist agents", () => {
   });
   it("routing is identical for any new store id", () => {
     expect(specialistFocus("brand-new-store", "whatsapp", "dam koto").agentId).toBe("product");
+  });
+});
+
+describe("tool scoping (token diet)", () => {
+  it("pure greeting gets no store tools", () => {
+    expect([...allowedToolsFor("আসসালামু আলাইকুম")!]).toEqual(["escalateToHuman"]);
+  });
+  it("delivery question gets only policy tools, no product schemas", () => {
+    const s = allowedToolsFor("ডেলিভারি চার্জ কত")!;
+    expect(s.has("getDeliveryCharge")).toBe(true);
+    expect(s.has("searchProducts")).toBe(false);
+    expect(s.has("trackOrder")).toBe(false);
+  });
+  it("tracking gets trackOrder but not finalizeOrder", () => {
+    const s = allowedToolsFor("আমার পার্সেল কোথায় আছে")!;
+    expect(s.has("trackOrder")).toBe(true);
+    expect(s.has("finalizeOrder")).toBe(false);
+  });
+  it("bare product name still can search", () => {
+    expect(allowedToolsFor("টিশার্ট")!.has("searchProducts")).toBe(true);
+  });
+  it("greeting during an order keeps order tools", () => {
+    expect(allowedToolsFor("ok", { orderInProgress: true })!.has("finalizeOrder")).toBe(true);
+  });
+  it("compound question unions both agents' tools", () => {
+    const s = allowedToolsFor("দাম কত আর ডেলিভারি চার্জ কত?")!;
+    expect(s.has("searchProducts") && s.has("getDeliveryCharge")).toBe(true);
   });
 });
