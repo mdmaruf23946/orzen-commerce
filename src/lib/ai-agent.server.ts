@@ -29,6 +29,7 @@ import {
 } from "./messenger-order-flow";
 import { replyStyleInstruction, SHORT_REPLY_RULE } from "./reply-language";
 import { deriveCustomerStyle, personaInstruction } from "./agents/customer-style";
+import { specialistFocus } from "./agents/specialists";
 
 function admin() {
   return createClient<Database>(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
@@ -262,6 +263,7 @@ export function buildSystemPrompt(
     brand ? `# Brand voice\n${brand}` : "",
     safety ? `# Safety & compliance (never violate)\n${safety}` : "",
     langHint ? `# Language policy\n${langHint}` : "",
+    specialistFocus(String(store?.id ?? ""), channel, latestUserText ?? "").prompt,
   ]
     .filter(Boolean)
     .join("\n\n");
