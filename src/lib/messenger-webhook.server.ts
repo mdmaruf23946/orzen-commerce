@@ -2743,10 +2743,11 @@ export async function handleMessengerWebhook(request: Request): Promise<Response
                 try {
                   const hits = await searchDirectProducts(sb, integ.store_id, effectiveText, 6);
                   if (hits.length) {
+                    const { data: slugRow } = await sb.from("stores").select("slug").eq("id", integ.store_id).maybeSingle();
                     const done = await maybeSendDirectProductReply({
                       sb,
                       storeId: integ.store_id,
-                      storeSlug: (integ as any).store_slug ?? null,
+                      storeSlug: (slugRow as any)?.slug ?? null,
                       conversationId: conv!.id,
                       psid: senderId,
                       token,
