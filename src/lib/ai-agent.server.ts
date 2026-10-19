@@ -28,6 +28,7 @@ import {
   type OrderFieldKey,
 } from "./messenger-order-flow";
 import { replyStyleInstruction, SHORT_REPLY_RULE } from "./reply-language";
+import { deriveCustomerStyle, personaInstruction } from "./agents/customer-style";
 
 function admin() {
   return createClient<Database>(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
@@ -147,6 +148,7 @@ export function buildSystemPrompt(
     state?: AgentState | null;
     focus?: FocusProduct | null;
     latestUserText?: string | null;
+    customerHistory?: string[];
   },
 ) {
   const channel = opts?.channel ?? "messenger";
@@ -166,8 +168,10 @@ export function buildSystemPrompt(
     supported.length > 0
       ? `Only respond in one of these languages: ${supported.join(", ")}. Match the customer's language when possible.`
       : "";
-  // Mirror the customer's own writing style (Bangla script / Banglish / English).
-  const lang = `${replyStyleInstruction(latestUserText)} ${SHORT_REPLY_RULE}`;
+  // Universal persona: one consistent voice from the customer's style memory.
+  const lang = opts?.customerHistory
+    ? `${personaInstruction(deriveCustomerStyle(opts.customerHistory, latestUserText), { allowEmoji: !!agent.use_emoji })} ${SHORT_REPLY_RULE}`
+    : `${replyStyleInstruction(latestUserText)} ${SHORT_REPLY_RULE}`;
 
   const emoji = agent.use_emoji ? "Use friendly emojis sparingly." : "Do not use emojis.";
   const human = agent.human_like ? "Sound natural and human, not robotic." : "";
