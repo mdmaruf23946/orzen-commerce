@@ -2948,6 +2948,17 @@ export async function handleMessengerWebhook(request: Request): Promise<Response
                 sanitizeMessengerReply(guardedText, effectiveText),
                 reply?.facts ?? {},
               );
+              if (!replyText && !reply?.facts?.hasCard) {
+                // Never leave the customer without a reply.
+                const fb = focus?.product
+                  ? `${(focus.product as any).name} — দাম ৳${(focus.product as any).price}। আর কিছু জানতে চাইলে বলুন 😊`
+                  : "দুঃখিত, বুঝতে পারিনি। একটু বিস্তারিত বলবেন? 😊";
+                try {
+                  const sent = await fbSend(token, senderId, fb);
+                  await markQueuedReply(sb, queuedJobId, fb, sent.message_id);
+                } catch (e) { console.error("fallback send failed", e); }
+                continue;
+              }
               if (!replyText) {
                 // AI answered by sending a product card/carousel via tool call;
                 // nothing more to say. Clear stale errors, don't POST empty text.
