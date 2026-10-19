@@ -1,3 +1,4 @@
+import { guardConversation } from "./conversation-guard.server";
 import { traceTime, setTraceMeta, currentTrace } from "./telemetry.server";
 
 /** Load-test jobs (mid "loadtest_…") never reach Meta. */
@@ -2645,6 +2646,7 @@ export async function handleMessengerWebhook(request: Request): Promise<Response
               if (handoff !== "ai") continue;
               if ((integ as any).human_takeover || (integ as any).ai_auto_reply === false) continue;
               if (!token) continue;
+              if (await guardConversation(sb, conv!.id)) continue;
               // Audio was transcribed and images were described above; stickers and
               // files still have no text form, so they do not reach the LLM.
               if (
