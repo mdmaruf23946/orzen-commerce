@@ -2331,7 +2331,9 @@ async function runGenerate(opts: {
     system: opts.system,
     messages: opts.messages,
     tools,
-    stopWhen: stepCountIs(opts.fast ? 5 : 6),
+    // Each step re-sends the whole prompt + tool schemas; 3 steps (search →
+    // card → text) is enough and caps a turn's input tokens.
+    stopWhen: stepCountIs(3),
     ...generationParams(settings, modelId),
   });
   try {
