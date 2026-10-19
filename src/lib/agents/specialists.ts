@@ -24,7 +24,7 @@ const has = (re: RegExp) => {
 
 // Patterns are written against normalised text (ী→ি, য়→য, ষ/শ→স, ড়→ড ...).
 const GREET = /(^|\s)(hi|hello|hey|helo|salam|slm|assalam|আসসালাম|আস্সালাম|সালাম|হাই|হ্যালো|হেলো|কেমন আছ|কেমন আছেন|kemon ach|kmn ach|kmon as|valo ach|bhalo ach|ভালো আছেন|ধন্যবাদ|thanks|thank you|thx|tnx)/;
-const PRODUCT = /(price|prize|dam|daam|দাম|কত টাকা|koto ?tk|koto taka|stock|স্টক|আছে কি|আছে কিনা|ache ?kina|ase ?kina|\bache\b|\base\b|আছে$|size|সাইজ|সাইজে|color|colou?r|কালার|রং|রঙ|variant|ছবি|photo|pic|product|প্রোডাক্ট|পন্য|details|ডিটেইলস)/;
+const PRODUCT = /(price|prize|dam|daam|দাম|কত টাকা|koto ?tk|koto taka|stock|স্টক|আছে কি|আছে কিনা|ache ?kina|ase ?kina|\bache\b|\base\b|আছে$|(^|\s)(আছে|আসে|কছে|আছ|এছে)($|\s)|size|সাইজ|সাইজে|color|colou?r|কালার|রং|রঙ|variant|ছবি|photo|pic|product|প্রোডাক্ট|পন্য|details|ডিটেইলস)/;
 const ORDER = /(order|অর্ডার|অরডার|অডার|কিনব|কিনতে|kinbo|kinte|নিব|নেব|নিতে চাই|nibo|nite chai|buy|confirm|কনফার্ম|কনফাম|ঠিকানা|address|নাম্বার|phone|মোবাইল)/;
 const POLICY = /(delivery|deliveri|ডেলিভারি|ডেলিভেরি|দেলিভারি|দেলিব্যারি|ডেলিভারী|charge|চার্জ|ছার্য|চার্য|return|রিটার্ন|exchange|এক্সচেঞ্জ|ফেরত|bkash|বিকাস|nagad|নগদ|payment|পেমেন্ট|\bcod\b|ক্যাস অন|কবে পাব|kobe pabo|koto din|কত দিন|কতদিন)/;
 const TRACK = /(track|ট্র্যাক|ট্রাক|status|স্ট্যাটাস|কোথায় আছে|kothay ache|kothay ase|পাইনি|pai ?ni|courier|কুরিয়ার|কুরিযার|parcel|পার্সেল|পার্স্যাল|invoice|#\d+|complain|অভিযোগ|নস্ট|ভাঙা|ভাংগা)/;

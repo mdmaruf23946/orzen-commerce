@@ -2756,16 +2756,17 @@ export async function handleMessengerWebhook(request: Request): Promise<Response
                 /* fall through to AI */
               }
 
-              // Name-only product message ("মানিব্যাগ") → store-scoped catalogue
-              // lookup and photo cards, zero AI tokens. No match → AI handles it.
+              // Name-only product message ("মানিব্যাগ", also "টিসার্ট কছে?") → store-scoped
+              // catalogue lookup and photo cards (cards show stock), zero AI tokens.
               // Never during checkout: names, sizes, colours and "জি" belong to the order flow.
-              const orderSlot = isNameOnlyProductQuery(effectiveText)
+              const productText = availabilityStripped(effectiveText);
+              const orderSlot = isNameOnlyProductQuery(productText)
                 ? await getConversationPendingOrder(sb, conv!.id).catch(() => ({ x: 1 }) as Record<string, any>)
                 : {};
               const orderInProgress = Object.keys(orderSlot ?? {}).length > 0;
-              if (isNameOnlyProductQuery(effectiveText) && !orderInProgress && !isAffirmative(effectiveText)) {
+              if (isNameOnlyProductQuery(productText) && !orderInProgress && !isAffirmative(productText)) {
                 try {
-                  const hits = await searchDirectProducts(sb, integ.store_id, effectiveText, 6);
+                  const hits = await searchDirectProducts(sb, integ.store_id, productText, 6);
                   if (hits.length) {
                     const { data: slugRow } = await sb.from("stores").select("slug").eq("id", integ.store_id).maybeSingle();
                     const done = await maybeSendDirectProductReply({
@@ -2775,7 +2776,7 @@ export async function handleMessengerWebhook(request: Request): Promise<Response
                       conversationId: conv!.id,
                       psid: senderId,
                       token,
-                      text: effectiveText,
+                      text: productText,
                     });
                     if (done) {
                       setTraceMeta("route", "fast");
