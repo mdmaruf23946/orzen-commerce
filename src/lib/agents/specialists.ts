@@ -100,3 +100,30 @@ export function specialistFocus(storeId: string, channel: AgentChannel, text: st
 }
 
 export const _specialistCount = () => (registerSpecialists(), listAgents().length);
+
+// ---- Tool scoping: each agent only gets the tools it needs (every tool
+// schema costs prompt tokens on every AI step). ----
+const T_PRODUCT = ["searchProducts", "getRecentRecommendations", "getProduct", "listCategories", "listBrands", "checkStock", "getRelatedProducts", "compareProducts", "sendProductCard", "sendProductCarousel", "sendProductLink", "showProduct", "showProducts"];
+const T_ORDER = ["collectOrderInfo", "finalizeOrder", "getDeliveryCharge", "getCustomerMemory"];
+const T_POLICY = ["getDeliveryCharge", "getStorePolicy"];
+const T_TRACK = ["trackOrder", "getCustomerMemory"];
+const AGENT_TOOLS: Record<string, string[]> = {
+  frontline: [...T_PRODUCT, ...T_ORDER, ...T_POLICY], // bare product names / name / address replies land here
+  product: [...T_PRODUCT, ...T_ORDER],
+  order: [...T_ORDER, ...T_POLICY, "searchProducts", "getProduct", "getRecentRecommendations", "sendProductLink", "sendProductCard"],
+  policy: [...T_POLICY, "collectOrderInfo"],
+  tracking: [...T_TRACK, ...T_POLICY],
+};
+
+/** Tool names allowed this turn. Pure greetings get no store tools. */
+export function allowedToolsFor(text: string, opts: { orderInProgress?: boolean; hasFocus?: boolean } = {}): Set<string> {
+  const r = specialistFocus("", "any", text);
+  const pureGreeting = r.agentId === "frontline" && r.drawerIds.length > 0 &&
+    r.drawerIds.every((d) => d === "greetings" || d === "unclear") && !opts.orderInProgress && !opts.hasFocus;
+  const set = new Set<string>(["escalateToHuman"]);
+  if (pureGreeting) return set;
+  for (const id of [r.agentId, ...r.secondaryAgents]) for (const t of AGENT_TOOLS[id] ?? []) set.add(t);
+  if (opts.orderInProgress) for (const t of T_ORDER) set.add(t);
+  if (opts.hasFocus) for (const t of ["getProduct", "sendProductCard", "sendProductLink", "showProduct", "checkStock"]) set.add(t);
+  return set;
+}
