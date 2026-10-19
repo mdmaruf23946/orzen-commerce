@@ -1,3 +1,4 @@
+import { guardConversation } from "./conversation-guard.server";
 // WhatsApp Cloud API webhook — per-store, signature verified.
 // Mirrors the Messenger webhook flow: log event → upsert conversation →
 // store inbound message → AI reply (unless a human took over).

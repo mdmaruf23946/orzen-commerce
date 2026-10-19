@@ -1,3 +1,4 @@
+import { guardConversation } from "./conversation-guard.server";
 import { traceTime, setTraceMeta, currentTrace } from "./telemetry.server";
 
 /** Load-test jobs (mid "loadtest_…") never reach Meta. */
