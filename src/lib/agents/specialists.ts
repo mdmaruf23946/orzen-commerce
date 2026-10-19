@@ -7,22 +7,20 @@ import { registerAgent, routeMessage, listAgents, type AgentChannel } from "./re
 
 /** Normalise Bengali spelling variants + spacing so typos route the same. */
 export function normalizeForRouting(text: string): string {
-  return (text ?? "")
-    .toLowerCase()
-    .normalize("NFC")
-    .replace(/[ী]/g, "ি")
-    .replace(/[ূ]/g, "ু")
-    .replace(/[ড়]/g, "ড")
-    .replace(/[য়]/g, "য")
-    .replace(/[ণ]/g, "ন")
-    .replace(/[ষশ]/g, "স")
-    .replace(/[ঁ\u09BC]/g, "")
+  return fold((text ?? "").toLowerCase())
     .replace(/[?？!।,.]+/g, " ")
     .replace(/\s+/g, " ")
     .trim();
 }
 
-const has = (re: RegExp) => (t: string) => re.test(normalizeForRouting(t));
+// Patterns get the same letter folding as the text, so either spelling works.
+const fold = (s: string) =>
+  s.normalize("NFC").replace(/ী/g, "ি").replace(/ূ/g, "ু").replace(/ড়/g, "ড").replace(/য়/g, "য")
+    .replace(/ণ/g, "ন").replace(/[ষশ]/g, "স").replace(/[ঁ\u09BC]/g, "");
+const has = (re: RegExp) => {
+  const folded = new RegExp(fold(re.source), re.flags);
+  return (t: string) => folded.test(normalizeForRouting(t));
+};
 
 // Patterns are written against normalised text (ী→ি, য়→য, ষ/শ→স, ড়→ড ...).
 const GREET = /(^|\s)(hi|hello|hey|helo|salam|slm|assalam|আসসালাম|আস্সালাম|সালাম|হাই|হ্যালো|হেলো|কেমন আছ|কেমন আছেন|kemon ach|kmn ach|kmon as|valo ach|bhalo ach|ভালো আছেন|ধন্যবাদ|thanks|thank you|thx|tnx)/;
