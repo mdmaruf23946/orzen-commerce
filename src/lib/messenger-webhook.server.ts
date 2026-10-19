@@ -405,7 +405,8 @@ function isOrderStatusIntent(text: string) {
 
 function isOrderIntent(text: string) {
   if (isOrderStatusIntent(text)) return false;
-  return /অর্ডার|কিনতে|নিতে চাই|নিব|নেব|buy now|buy|order|purchase|checkout/i.test(text);
+  // Bangla verbs need word edges: "মানিব্যাগ" contains "নিব" but is a product.
+  return /অর্ডার|কিনতে|নিতে চাই|(^|\s)(নিব|নেব|নিবো|নেবো)(\s|$|[।!?])|buy now|buy|order|purchase|checkout/i.test(text);
 }
 
 function isReferenceIntent(text: string) {
