@@ -122,7 +122,13 @@ export function allowedToolsFor(text: string, opts: { orderInProgress?: boolean;
     r.drawerIds.every((d) => d === "greetings" || d === "unclear") && !opts.orderInProgress && !opts.hasFocus;
   const set = new Set<string>(["escalateToHuman"]);
   if (pureGreeting) return set;
-  for (const id of [r.agentId, ...r.secondaryAgents]) for (const t of AGENT_TOOLS[id] ?? []) set.add(t);
+  for (const t of AGENT_TOOLS[r.agentId] ?? []) set.add(t);
+  // Secondary agents add only their core tools ("কোথায় আছে" must not pull ordering).
+  const CORE: Record<string, string[]> = { product: T_PRODUCT, policy: T_POLICY, tracking: T_TRACK, order: T_ORDER };
+  for (const id of r.secondaryAgents) {
+    if (r.agentId === "tracking" && id === "product") continue;
+    for (const t of CORE[id] ?? []) set.add(t);
+  }
   if (opts.orderInProgress) for (const t of T_ORDER) set.add(t);
   if (opts.hasFocus) for (const t of ["getProduct", "sendProductCard", "sendProductLink", "showProduct", "checkStock"]) set.add(t);
   return set;
