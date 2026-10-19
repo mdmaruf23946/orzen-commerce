@@ -70,6 +70,9 @@ const STOPWORDS = new Set([
 ]);
 
 const SYNONYMS: Record<string, string[]> = {
+  "মানিব্যাগ": ["wallet", "purse"],
+  "ওয়ালেট": ["wallet"],
+  "পার্স": ["purse", "wallet"],
   "ব্যাগ": ["bag", "backpack"],
   "স্কুল": ["school"],
   "কলম": ["pen"],
@@ -115,12 +118,15 @@ export function tokenize(raw: string): string[] {
     out.add(value);
     for (const synonym of SYNONYMS[value] ?? []) out.add(synonym.toLowerCase());
   }
-  for (const [bn, synonyms] of Object.entries(SYNONYMS)) {
-    if (compact.includes(bn)) {
+  let rest = compact;
+  for (const [bn, synonyms] of Object.entries(SYNONYMS).sort((a, b) => b[0].length - a[0].length)) {
+    if (rest.includes(bn)) {
       out.add(bn);
       synonyms.forEach((s) => out.add(s.toLowerCase()));
+      rest = rest.split(bn).join(" ");
     }
   }
+  if (compact.includes("মানিব্যাগ")) ["ব্যাগ", "bag", "backpack"].forEach((t) => out.delete(t));
   return Array.from(out);
 }
 
