@@ -2333,7 +2333,8 @@ async function runGenerate(opts: {
     tools,
     // Each step re-sends the whole prompt + tool schemas; 3 steps (search →
     // card → text) is enough and caps a turn's input tokens.
-    stopWhen: stepCountIs(3),
+    // Focus product known → card + text = 2 steps; otherwise search → card → text.
+    stopWhen: stepCountIs(opts.ctx.focusProductId ? 2 : 3),
     ...generationParams(settings, modelId),
   });
   try {

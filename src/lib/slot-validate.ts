@@ -14,7 +14,7 @@ const COMMERCE_WORDS = [
   "ছবি", "অফার", "ডিসকাউন্ট", "রিটার্ন", "ফেরত", "পেমেন্ট", "বাতিল", "ক্যান্সেল", "কুরিয়ার", "পার্সেল", "ইনভয়েস",
   "delivery", "charge", "price", "order", "product", "size", "color", "colour", "stock", "taka", "tk", "cod", "bkash",
   "nagad", "rocket", "buy", "photo", "pic", "picture", "offer", "discount", "return", "payment", "cancel", "courier",
-  "parcel", "invoice", "available", "ache", "ase", "lagbe", "chai", "din", "den", "pathan",
+  "parcel", "invoice", "available", "টিসার্ট", "টিশার্ট", "শার্ট", "সার্ট", "গেঞ্জি", "মানিব্যাগ", "ব্যাগ", "জুতা", "ঘড়ি", "tshirt", "shirt", "wallet", "bag", "ache", "ase", "lagbe", "chai", "din", "den", "pathan",
 ];
 const CHITCHAT_WORDS = [
   "হাই", "হেই", "হ্যালো", "হেলো", "সালাম", "আসসালামু", "আলাইকুম", "ধন্যবাদ", "ঠিক", "আছে", "আচ্ছা", "ওকে", "হ্যাঁ", "হা", "না", "জি", "জ্বি",
