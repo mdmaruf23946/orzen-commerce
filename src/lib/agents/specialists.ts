@@ -103,17 +103,22 @@ export const _specialistCount = () => (registerSpecialists(), listAgents().lengt
 
 // ---- Tool scoping: each agent only gets the tools it needs (every tool
 // schema costs prompt tokens on every AI step). ----
-const T_PRODUCT = ["searchProducts", "getRecentRecommendations", "getProduct", "listCategories", "listBrands", "checkStock", "getRelatedProducts", "compareProducts", "sendProductCard", "sendProductCarousel", "sendProductLink", "showProduct", "showProducts"];
-const T_ORDER = ["collectOrderInfo", "finalizeOrder", "getDeliveryCharge", "getCustomerMemory"];
+// Token budget (target 500–800/turn): only the minimum tools per agent.
+// Search results already carry price/stock/variants, so getProduct/checkStock
+// and the rarely-used browse tools are not sent; card tools show the product.
+const T_SHOW = ["sendProductCard", "sendProductCarousel", "showProduct", "showProducts"];
+const T_PRODUCT = ["searchProducts", ...T_SHOW];
+const T_ORDER = ["collectOrderInfo", "finalizeOrder"];
 const T_POLICY = ["getDeliveryCharge", "getStorePolicy"];
-const T_TRACK = ["trackOrder", "getCustomerMemory"];
+const T_TRACK = ["trackOrder"];
 const AGENT_TOOLS: Record<string, string[]> = {
-  frontline: [...T_PRODUCT, ...T_ORDER, ...T_POLICY], // bare product names / name / address replies land here
-  product: [...T_PRODUCT, ...T_ORDER],
-  order: [...T_ORDER, ...T_POLICY, "searchProducts", "getProduct", "getRecentRecommendations", "sendProductLink", "sendProductCard"],
-  policy: [...T_POLICY, "collectOrderInfo"],
-  tracking: [...T_TRACK, ...T_POLICY],
+  frontline: [...T_PRODUCT, "collectOrderInfo", "getDeliveryCharge"], // bare product names / name / address replies land here
+  product: [...T_PRODUCT],
+  order: [...T_ORDER, "getDeliveryCharge", "searchProducts", "sendProductLink"],
+  policy: [...T_POLICY],
+  tracking: [...T_TRACK],
 };
+export const _agentToolsForTest = AGENT_TOOLS;
 
 /** Tool names allowed this turn. Pure greetings get no store tools. */
 export function allowedToolsFor(text: string, opts: { orderInProgress?: boolean; hasFocus?: boolean } = {}): Set<string> {
@@ -130,6 +135,7 @@ export function allowedToolsFor(text: string, opts: { orderInProgress?: boolean;
     for (const t of CORE[id] ?? []) set.add(t);
   }
   if (opts.orderInProgress) for (const t of T_ORDER) set.add(t);
-  if (opts.hasFocus) for (const t of ["getProduct", "sendProductCard", "sendProductLink", "showProduct", "checkStock"]) set.add(t);
+  // The Focus block already holds the product's price/stock/variants.
+  if (opts.hasFocus) for (const t of ["sendProductCard", "showProduct"]) set.add(t);
   return set;
 }

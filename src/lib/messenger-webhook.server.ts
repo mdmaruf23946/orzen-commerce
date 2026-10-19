@@ -551,7 +551,7 @@ async function patchConversationPendingOrder(
     .eq("id", conversationId)
     .maybeSingle();
   const profile = { ...(((data as any)?.psid_profile ?? {}) as Record<string, any>) };
-  profile.pending_order = { ...(profile.pending_order ?? {}), ...patch };
+  profile.pending_order = { ...(profile.pending_order ?? {}), ...patch, _at: new Date().toISOString() };
   await sb.from("ai_conversations").update({ psid_profile: profile } as any).eq("id", conversationId);
   return profile.pending_order as Record<string, any>;
 }
@@ -2808,7 +2808,11 @@ export async function handleMessengerWebhook(request: Request): Promise<Response
               const orderSlot = isNameOnlyProductQuery(productText)
                 ? await getConversationPendingOrder(sb, conv!.id).catch(() => ({ x: 1 }) as Record<string, any>)
                 : {};
-              const orderInProgress = Object.keys(orderSlot ?? {}).length > 0;
+              // An order left unfinished for 30+ min (or from before timestamps) no
+              // longer blocks the zero-token product fast path.
+              const slotAt = Date.parse(String((orderSlot as any)?._at ?? ""));
+              const orderFresh = Number.isFinite(slotAt) && Date.now() - slotAt < 30 * 60_000;
+              const orderInProgress = orderFresh && Object.keys(orderSlot ?? {}).filter((k) => k !== "_at").length > 0;
               if (isNameOnlyProductQuery(productText) && !orderInProgress && !isAffirmative(productText)) {
                 try {
                   const hits = await searchDirectProducts(sb, integ.store_id, productText, 6);
