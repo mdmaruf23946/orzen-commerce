@@ -31,4 +31,4 @@
 - Prod minute jobs run as one pg_cron `dispatch_minute_jobs()`; tenant-host RPCs use the edge cache.
 - `deploy-production.sh` guards `_runtime.mjs`'s `createRequire(import.meta.url)` (undefined → SSR 500s); never remove the patch.
 - Delegated access = `store_staff` rows (access_type=delegated); active store comes from the `x-orzen-store` header, re-verified server-side; invites/revokes use only the caller's owned store — no re-sharing or cross-store leaks.
-- AI chat voice: one persona layer (src/lib/agents/customer-style.ts) derives style from the customer's history; agents/drawers plug in via src/lib/agents/registry.ts — keeps one consistent voice and makes new agents drop-in.
+- Subdirectories have their own AGENTS.md; read it before changing files there.
