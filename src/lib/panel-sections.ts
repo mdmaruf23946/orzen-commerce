@@ -43,6 +43,7 @@ export const PANEL_SECTIONS: PanelSection[] = [
   { key: "messenger_inbox", label: "Messenger Inbox", group: "Channels & AI", paths: ["/admin/messenger-inbox"], feature: "messenger_inbox" },
   { key: "whatsapp", label: "WhatsApp AI Integration", group: "Channels & AI", paths: ["/admin/whatsapp"], feature: "whatsapp" },
   { key: "whatsapp_inbox", label: "WhatsApp Inbox", group: "Channels & AI", paths: ["/admin/whatsapp-inbox"], feature: "whatsapp" },
+  { key: "webchat", label: "Web Chat AI", group: "Channels & AI", paths: ["/admin/webchat", "/admin/webchat-inbox"], feature: "ai_agent" },
   { key: "facebook", label: "Facebook Page", group: "Marketing & Sales", paths: ["/admin/facebook"], feature: "facebook_page" },
 
   { key: "marketing", label: "Marketing & Targeting Apps", group: "Marketing & Sales", paths: ["/admin/marketing"], feature: "pixel" },

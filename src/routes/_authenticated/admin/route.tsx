@@ -380,7 +380,7 @@ function aiMessagingItems(connected: AiMessagingConnectionMap): LinkDef[] {
   return AI_MESSAGING_APPS.filter((a) => connected[a.id]).map((a) => ({
     to: a.inboxPath,
     label: a.name,
-    icon: a.id === "messenger" ? MessageSquare : MessageCircle,
+    icon: a.id === "messenger" ? MessageSquare : a.id === "webchat" ? Globe : MessageCircle,
     ...(a.id === "messenger" ? { badgeKey: "messenger" as const } : {}),
     children: [
       { to: a.inboxPath, label: "Inbox", icon: InboxIcon, ...(a.id === "messenger" ? { badgeKey: "messenger" as const } : {}) },

@@ -87,6 +87,8 @@ import { Route as AuthenticatedAdminStaffRouteImport } from './routes/_authentic
 import { Route as AuthenticatedAdminSubscriptionRouteImport } from './routes/_authenticated/admin/subscription'
 import { Route as AuthenticatedAdminSupportRouteImport } from './routes/_authenticated/admin/support'
 import { Route as AuthenticatedAdminThemeRouteImport } from './routes/_authenticated/admin/theme'
+import { Route as AuthenticatedAdminWebchatRouteImport } from './routes/_authenticated/admin/webchat'
+import { Route as AuthenticatedAdminWebchatInboxRouteImport } from './routes/_authenticated/admin/webchat-inbox'
 import { Route as AuthenticatedAdminWhatsappRouteImport } from './routes/_authenticated/admin/whatsapp'
 import { Route as AuthenticatedAdminWhatsappInboxRouteImport } from './routes/_authenticated/admin/whatsapp-inbox'
 import { Route as AuthenticatedOwnerIndexRouteImport } from './routes/_authenticated/owner/index'
@@ -716,6 +718,18 @@ const AuthenticatedAdminThemeRoute = AuthenticatedAdminThemeRouteImport.update({
   path: '/theme',
   getParentRoute: () => AuthenticatedAdminRouteRoute,
 } as any)
+const AuthenticatedAdminWebchatRoute =
+  AuthenticatedAdminWebchatRouteImport.update({
+    id: '/webchat',
+    path: '/webchat',
+    getParentRoute: () => AuthenticatedAdminRouteRoute,
+  } as any)
+const AuthenticatedAdminWebchatInboxRoute =
+  AuthenticatedAdminWebchatInboxRouteImport.update({
+    id: '/webchat-inbox',
+    path: '/webchat-inbox',
+    getParentRoute: () => AuthenticatedAdminRouteRoute,
+  } as any)
 const AuthenticatedAdminWhatsappRoute =
   AuthenticatedAdminWhatsappRouteImport.update({
     id: '/whatsapp',
@@ -1908,6 +1922,8 @@ export interface FileRoutesByFullPath {
   '/admin/subscription': typeof AuthenticatedAdminSubscriptionRoute
   '/admin/support': typeof AuthenticatedAdminSupportRoute
   '/admin/theme': typeof AuthenticatedAdminThemeRoute
+  '/admin/webchat': typeof AuthenticatedAdminWebchatRoute
+  '/admin/webchat-inbox': typeof AuthenticatedAdminWebchatInboxRoute
   '/admin/whatsapp': typeof AuthenticatedAdminWhatsappRoute
   '/admin/whatsapp-inbox': typeof AuthenticatedAdminWhatsappInboxRoute
   '/owner/ads': typeof AuthenticatedOwnerAdsRoute
@@ -2168,6 +2184,8 @@ export interface FileRoutesByTo {
   '/admin/subscription': typeof AuthenticatedAdminSubscriptionRoute
   '/admin/support': typeof AuthenticatedAdminSupportRoute
   '/admin/theme': typeof AuthenticatedAdminThemeRoute
+  '/admin/webchat': typeof AuthenticatedAdminWebchatRoute
+  '/admin/webchat-inbox': typeof AuthenticatedAdminWebchatInboxRoute
   '/admin/whatsapp': typeof AuthenticatedAdminWhatsappRoute
   '/admin/whatsapp-inbox': typeof AuthenticatedAdminWhatsappInboxRoute
   '/owner/ads': typeof AuthenticatedOwnerAdsRoute
@@ -2443,6 +2461,8 @@ export interface FileRoutesById {
   '/_authenticated/admin/subscription': typeof AuthenticatedAdminSubscriptionRoute
   '/_authenticated/admin/support': typeof AuthenticatedAdminSupportRoute
   '/_authenticated/admin/theme': typeof AuthenticatedAdminThemeRoute
+  '/_authenticated/admin/webchat': typeof AuthenticatedAdminWebchatRoute
+  '/_authenticated/admin/webchat-inbox': typeof AuthenticatedAdminWebchatInboxRoute
   '/_authenticated/admin/whatsapp': typeof AuthenticatedAdminWhatsappRoute
   '/_authenticated/admin/whatsapp-inbox': typeof AuthenticatedAdminWhatsappInboxRoute
   '/_authenticated/owner/ads': typeof AuthenticatedOwnerAdsRoute
@@ -2718,6 +2738,8 @@ export interface FileRouteTypes {
     | '/admin/subscription'
     | '/admin/support'
     | '/admin/theme'
+    | '/admin/webchat'
+    | '/admin/webchat-inbox'
     | '/admin/whatsapp'
     | '/admin/whatsapp-inbox'
     | '/owner/ads'
@@ -2978,6 +3000,8 @@ export interface FileRouteTypes {
     | '/admin/subscription'
     | '/admin/support'
     | '/admin/theme'
+    | '/admin/webchat'
+    | '/admin/webchat-inbox'
     | '/admin/whatsapp'
     | '/admin/whatsapp-inbox'
     | '/owner/ads'
@@ -3252,6 +3276,8 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/subscription'
     | '/_authenticated/admin/support'
     | '/_authenticated/admin/theme'
+    | '/_authenticated/admin/webchat'
+    | '/_authenticated/admin/webchat-inbox'
     | '/_authenticated/admin/whatsapp'
     | '/_authenticated/admin/whatsapp-inbox'
     | '/_authenticated/owner/ads'
@@ -4067,6 +4093,20 @@ declare module '@tanstack/react-router' {
       path: '/theme'
       fullPath: '/admin/theme'
       preLoaderRoute: typeof AuthenticatedAdminThemeRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
+    '/_authenticated/admin/webchat': {
+      id: '/_authenticated/admin/webchat'
+      path: '/webchat'
+      fullPath: '/admin/webchat'
+      preLoaderRoute: typeof AuthenticatedAdminWebchatRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
+    '/_authenticated/admin/webchat-inbox': {
+      id: '/_authenticated/admin/webchat-inbox'
+      path: '/webchat-inbox'
+      fullPath: '/admin/webchat-inbox'
+      preLoaderRoute: typeof AuthenticatedAdminWebchatInboxRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
     '/_authenticated/admin/whatsapp': {
@@ -5626,6 +5666,8 @@ interface AuthenticatedAdminRouteRouteChildren {
   AuthenticatedAdminSubscriptionRoute: typeof AuthenticatedAdminSubscriptionRoute
   AuthenticatedAdminSupportRoute: typeof AuthenticatedAdminSupportRoute
   AuthenticatedAdminThemeRoute: typeof AuthenticatedAdminThemeRoute
+  AuthenticatedAdminWebchatRoute: typeof AuthenticatedAdminWebchatRoute
+  AuthenticatedAdminWebchatInboxRoute: typeof AuthenticatedAdminWebchatInboxRoute
   AuthenticatedAdminWhatsappRoute: typeof AuthenticatedAdminWhatsappRoute
   AuthenticatedAdminWhatsappInboxRoute: typeof AuthenticatedAdminWhatsappInboxRoute
   AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
@@ -5709,6 +5751,8 @@ const AuthenticatedAdminRouteRouteChildren: AuthenticatedAdminRouteRouteChildren
     AuthenticatedAdminSubscriptionRoute: AuthenticatedAdminSubscriptionRoute,
     AuthenticatedAdminSupportRoute: AuthenticatedAdminSupportRoute,
     AuthenticatedAdminThemeRoute: AuthenticatedAdminThemeRoute,
+    AuthenticatedAdminWebchatRoute: AuthenticatedAdminWebchatRoute,
+    AuthenticatedAdminWebchatInboxRoute: AuthenticatedAdminWebchatInboxRoute,
     AuthenticatedAdminWhatsappRoute: AuthenticatedAdminWhatsappRoute,
     AuthenticatedAdminWhatsappInboxRoute: AuthenticatedAdminWhatsappInboxRoute,
     AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,

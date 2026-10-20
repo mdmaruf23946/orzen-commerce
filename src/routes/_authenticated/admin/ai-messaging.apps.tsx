@@ -4,6 +4,15 @@ import { StatusBadge } from "@/components/admin/marketing/ui";
 import { MessengerMark } from "@/components/admin/brand/MessengerMark";
 import { WhatsAppMark } from "@/components/admin/brand/WhatsAppMark";
 import { Button } from "@/components/ui/button";
+import { Globe } from "lucide-react";
+
+function WebChatMark({ size = 40 }: { size?: number }) {
+  return (
+    <span className="grid place-items-center rounded-full bg-primary text-primary-foreground" style={{ width: size, height: size }}>
+      <Globe style={{ width: size * 0.5, height: size * 0.5 }} />
+    </span>
+  );
+}
 
 export const Route = createFileRoute("/_authenticated/admin/ai-messaging/apps")({
   head: () => ({
@@ -20,7 +29,7 @@ export const Route = createFileRoute("/_authenticated/admin/ai-messaging/apps")(
   component: HubPage,
 });
 
-const LOGOS = { messenger: MessengerMark, whatsapp: WhatsAppMark } as const;
+const LOGOS = { messenger: MessengerMark, whatsapp: WhatsAppMark, webchat: WebChatMark } as const;
 
 function HubPage() {
   const { connected, isLoading } = useAiMessagingConnections();
@@ -42,7 +51,7 @@ function HubPage() {
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="font-medium">{p.name}</span>
-                  <StatusBadge kind={on ? "connected" : "not_configured"} label={isLoading ? "…" : on ? "Connected" : "Not connected"} />
+                  <StatusBadge kind={on ? "connected" : "not_configured"} label={isLoading ? "…" : on ? (p.id === "webchat" ? "On" : "Connected") : (p.id === "webchat" ? "Off" : "Not connected")} />
                 </div>
                 <p className="mt-0.5 text-xs text-muted-foreground">{p.description}</p>
               </div>
