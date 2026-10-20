@@ -29,7 +29,7 @@ import {
 } from "./messenger-order-flow";
 import { replyStyleInstruction, SHORT_REPLY_RULE } from "./reply-language";
 import { deriveCustomerStyle, personaInstruction } from "./agents/customer-style";
-import { specialistFocus, allowedToolsFor } from "./agents/specialists";
+import { specialistFocus, allowedToolsFor, stepBudget } from "./agents/specialists";
 import { asksForHuman } from "./conversation-guard.server";
 
 function admin() {
