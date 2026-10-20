@@ -3,7 +3,9 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { AlertTriangle, ArrowLeft, Bot, Crown, Globe, Inbox, Loader2, Search, Send, User } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Bot, Crown, Globe, Inbox, Info, Loader2, Search, Send, User } from "lucide-react";
+import { OmniCustomerPanel } from "@/components/admin/OmniCustomerPanel";
+import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { FeatureGate } from "@/components/admin/FeatureGate";
 import { listOmniConversations, listOmniMessages, setOmniHandoff } from "@/lib/omni-inbox.functions";
 import { OMNI_CHANNELS, OMNI_FOLDERS, type OmniFolder } from "@/lib/omni-channels";
@@ -86,6 +88,7 @@ function OmniInbox() {
   const [activeConv, setActiveConv] = useState<any>(null);
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
+  const [infoOpen, setInfoOpen] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   const { data, isLoading } = useQuery({
@@ -278,6 +281,9 @@ function OmniInbox() {
                   {active.total_orders ? ` · ${active.total_orders} অর্ডার` : ""}
                 </div>
               </div>
+              <Button size="icon" variant="ghost" className="shrink-0 xl:hidden" onClick={() => setInfoOpen(true)} aria-label="কাস্টমার তথ্য">
+                <Info className="h-4 w-4" />
+              </Button>
               <Button size="sm" variant={active.handoff_mode === "human" ? "default" : "outline"} onClick={toggleMode} className="shrink-0">
                 {active.handoff_mode === "human" ? (
                   <><Bot className="h-4 w-4 sm:mr-1" /><span className="hidden sm:inline">AI-কে দিন</span></>
@@ -343,6 +349,18 @@ function OmniInbox() {
           </>
         )}
       </section>
+
+      {active && (
+        <aside className="hidden w-[320px] shrink-0 border-l xl:block">
+          <OmniCustomerPanel conversationId={active.id} />
+        </aside>
+      )}
+      <Sheet open={infoOpen && !!active} onOpenChange={setInfoOpen}>
+        <SheetContent side="right" className="w-[92vw] p-0 sm:max-w-sm [&>button]:hidden">
+          <SheetTitle className="sr-only">কাস্টমার তথ্য</SheetTitle>
+          {active && <OmniCustomerPanel conversationId={active.id} onClose={() => setInfoOpen(false)} />}
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
