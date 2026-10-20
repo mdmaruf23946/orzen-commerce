@@ -29,7 +29,7 @@ import {
 } from "./messenger-order-flow";
 import { replyStyleInstruction, SHORT_REPLY_RULE } from "./reply-language";
 import { deriveCustomerStyle, personaInstruction } from "./agents/customer-style";
-import { specialistFocus, allowedToolsFor } from "./agents/specialists";
+import { specialistFocus, allowedToolsFor, stepBudget } from "./agents/specialists";
 import { asksForHuman } from "./conversation-guard.server";
 
 function admin() {
@@ -229,7 +229,7 @@ export function buildSystemPrompt(
   const askForInfo = on(agent.ask_for_info);
   const allowEscalate = on(agent.escalate_to_human);
   const fallbackMessage = String(agent.fallback_message ?? "").trim();
-  const agentDescription = String(agent.description ?? "").trim();
+  const agentDescription = String(agent.description ?? "").trim().slice(0, 200);
 
   // ---- Admin-configured Buy Now / order collection flow (physical only) ----
   const orderFlow = normalizeOrderFlow(agent.order_flow);
@@ -293,9 +293,10 @@ export function buildSystemPrompt(
     srcOn("business_hours") ? "- Business hours: as listed below." : "- Business hours are OFF.",
   ].join("\n");
 
-  const globalPrompt = (settings?.global_system_prompt ?? "").trim();
-  const brand = (settings?.brand_voice ?? "").trim();
-  const safety = (settings?.safety_rules ?? "").trim();
+  const clip = (v: string, n: number) => (v.length > n ? v.slice(0, n).trimEnd() + "…" : v);
+  const globalPrompt = clip((settings?.global_system_prompt ?? "").trim(), 350);
+  const brand = clip((settings?.brand_voice ?? "").trim(), 200);
+  const safety = clip((settings?.safety_rules ?? "").trim(), 350);
   const globalBlock = [
     globalPrompt ? `# Platform guidance\n${globalPrompt}` : "",
     brand ? `# Brand voice\n${brand}` : "",
@@ -329,12 +330,12 @@ export function buildSystemPrompt(
       `Last confirmed order: #${lo.invoice_no || lo.order_id} — ${lo.product_name ?? "product"} × ${lo.qty ?? 1}`,
     );
   }
-  if (state?.memory_card) stateLines.push(state.memory_card);
+  if (state?.memory_card) stateLines.push(clip(String(state.memory_card), 300));
   else if (state?.recent_product_ids?.length)
     stateLines.push(`Products discussed recently (ids): ${state.recent_product_ids.join(", ")}`);
   const stateBlock = stateLines.length ? `# Conversation state\n${stateLines.join("\n")}` : "";
   const latestBlock = latestUserText
-    ? `# Latest customer message — answer this first\n${latestUserText}\n\nRule: Your next reply must answer this exact latest message. Use older conversation only as background, never as a replacement for the latest message.`
+    ? `Answer the customer's latest message exactly; older turns are background only.`
     : "";
 
   // Focus product block — server-resolved for THIS turn only. If set, it is the
@@ -343,7 +344,7 @@ export function buildSystemPrompt(
   if (focus?.product) {
     const p = focus.product as any;
     const kind = productKind(p);
-    const feat = stringifyProductField(p.features).slice(0, 400);
+    const feat = stringifyProductField(p.features).slice(0, 200);
     const varList = formatFocusVariants(p.variants);
     focusBlock = [
       `# Focus product (ONLY product allowed in this reply)`,
@@ -355,7 +356,7 @@ export function buildSystemPrompt(
       `price: ৳${p.price}${p.old_price ? ` (was ৳${p.old_price})` : ""}`,
       kind === "physical" ? `stock: ${p.stock}` : "",
       p.sku ? `sku: ${p.sku}` : "",
-      p.short_description ? `short_description: ${p.short_description}` : "",
+      p.short_description ? `short_description: ${clip(String(p.short_description), 200)}` : "",
       feat ? `features: ${feat}` : "",
       `variants: ${varList || "none — single standard option only; no other colours/sizes exist. Say so directly, do not search."}`,
       ``,
@@ -396,8 +397,8 @@ export function buildSystemPrompt(
         })
         .filter((x) => x.score > 0)
         .sort((a, b) => b.score - a.score)
-        .slice(0, 3)
-        .map((x) => `Q: ${x.f.q}\nA: ${x.f.a}`)
+        .slice(0, 2)
+        .map((x) => `Q: ${x.f.q}\nA: ${clip(String(x.f.a ?? ""), 220)}`)
         .join("\n")
     : "";
   void faqs;
@@ -2254,12 +2255,13 @@ function generationParams(settings: GlobalAiSettings | null | undefined, modelId
 export function streamAgentResponse(opts: { ctx: AgentContext; messages: any[]; system: string }) {
   return async () => {
     const { model, modelId, settings } = await getModelForStore();
+    const streamTools = await toolsForTurn(opts.ctx, opts.messages);
     const result = streamText({
       model,
       system: opts.system,
       messages: opts.messages,
-      tools: await toolsForTurn(opts.ctx, opts.messages),
-      stopWhen: stepCountIs(3),
+      tools: streamTools,
+      stopWhen: stepCountIs(stepBudget(Object.keys(streamTools), { orderInProgress: await orderInProgressFor(opts.ctx) })),
       ...generationParams(settings, modelId),
       onFinish: ({ usage }) => {
         void logUsage(opts.ctx.storeId, modelId, usage, "chat");
@@ -2304,6 +2306,12 @@ function isTransientGatewayError(err: unknown) {
   const status = (err as any)?.statusCode ?? (err as any)?.status;
   if (status === 429 || (typeof status === "number" && status >= 500 && status < 600)) return true;
   return /\b(429|rate.?limit|timeout|overload|5\d\d)\b/i.test(String(msg));
+}
+
+async function orderInProgressFor(ctx: AgentContext): Promise<boolean> {
+  if (!ctx.conversationId) return false;
+  const slot = await getConversationSlot(ctx.conversationId).catch(() => ({}));
+  return Object.keys(slot ?? {}).length > 0;
 }
 
 /** Phase 2 tool diet: drop rarely-needed tools unless the latest message asks for them. */
@@ -2373,9 +2381,7 @@ async function runGenerate(opts: {
     tools,
     // Each step re-sends the whole prompt + tool schemas. No tools → 1 step;
     // focus product → card + text = 2; otherwise search → card → text = 3.
-    stopWhen: stepCountIs(
-      Object.keys(tools).filter((k) => k !== "escalateToHuman").length === 0 ? 1 : opts.ctx.focusProductId ? 2 : 3,
-    ),
+    stopWhen: stepCountIs(stepBudget(Object.keys(tools), { orderInProgress: await orderInProgressFor(opts.ctx) })),
     ...generationParams(settings, modelId),
   });
   try {

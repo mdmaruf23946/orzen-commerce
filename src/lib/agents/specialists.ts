@@ -150,3 +150,14 @@ export function allowedToolsFor(text: string, opts: { orderInProgress?: boolean;
   }
   return set;
 }
+
+/**
+ * Strict step budget (each step re-sends prompt + tool schemas):
+ * no card/search tools → 1 (answer from Focus/prompt); catalog/card → 2; live order → 3.
+ */
+export function stepBudget(toolNames: string[], opts: { orderInProgress?: boolean } = {}): 1 | 2 | 3 {
+  const t = new Set(toolNames.filter((k) => k !== "escalateToHuman"));
+  if (t.size === 0) return 1; // Focus colour/size/price questions: answered from the prompt.
+  if (opts.orderInProgress && t.has("finalizeOrder")) return 3; // collect → finalize → confirm
+  return 2; // one tool call (search/card/delivery) + the text reply
+}
