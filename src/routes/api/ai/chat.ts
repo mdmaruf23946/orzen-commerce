@@ -106,6 +106,12 @@ export const Route = createFileRoute("/api/ai/chat")({
                 last_message_preview: text.slice(0, 200),
               } as any)
               .eq("id", convId);
+            // Unread badge for the merchant's Web Chat inbox.
+            const { data: u } = await sb.from("ai_conversations").select("unread_count").eq("id", convId).maybeSingle();
+            await sb
+              .from("ai_conversations")
+              .update({ unread_count: Number((u as any)?.unread_count ?? 0) + 1 } as any)
+              .eq("id", convId);
           }
         }
 

@@ -288,12 +288,12 @@ export default function AIChatPanel({
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder={handedOff ? t("chat.waitingForAgent") : t("chat.typeAMessage")}
-          disabled={busy || handedOff}
+          disabled={busy}
           className="flex-1 rounded-md border bg-background px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-ring"
         />
         <button
           type="submit"
-          disabled={busy || handedOff || !input.trim()}
+          disabled={busy || !input.trim()}
           className="grid h-9 w-9 place-items-center rounded-md text-white disabled:opacity-50"
           style={{ backgroundColor: "var(--store-btn-bg, var(--primary))" }}
         >
