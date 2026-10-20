@@ -2329,10 +2329,11 @@ async function runGenerate(opts: {
     system: opts.system,
     messages: opts.messages,
     tools,
-    // Each step re-sends the whole prompt + tool schemas; 3 steps (search →
-    // card → text) is enough and caps a turn's input tokens.
-    // Focus product known → card + text = 2 steps; otherwise search → card → text.
-    stopWhen: stepCountIs(3),
+    // Each step re-sends the whole prompt + tool schemas. No tools → 1 step;
+    // focus product → card + text = 2; otherwise search → card → text = 3.
+    stopWhen: stepCountIs(
+      Object.keys(tools).filter((k) => k !== "escalateToHuman").length === 0 ? 1 : opts.ctx.focusProductId ? 2 : 3,
+    ),
     ...generationParams(settings, modelId),
   });
   try {
@@ -2390,6 +2391,19 @@ export async function generateAgentReply(opts: {
   system: string;
   fast?: boolean;
 }) {
+  // No-data chit-chat agent: social messages need no store facts → 0 tokens.
+  try {
+    const last = [...opts.messages].reverse().find((m) => m?.role === "user");
+    const lt = typeof last?.content === "string" ? last.content : "";
+    const { noDataChatReply } = await import("./fast-path-replies");
+    const chat = noDataChatReply(lt);
+    if (chat && !opts.ctx.focusProductId) {
+      const slot = opts.ctx.conversationId ? await getConversationSlot(opts.ctx.conversationId).catch(() => ({})) : {};
+      if (!Object.keys(slot ?? {}).length) {
+        return { text: chat, facts: {} as MessengerPayloadFacts, verified: collectVerifiedFacts({ steps: [] } as any), raw: true };
+      }
+    }
+  } catch { /* fall through to AI */ }
   let attempt: Awaited<ReturnType<typeof runGenerate>>;
   try {
     attempt = await runGenerate(opts);

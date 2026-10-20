@@ -137,11 +137,15 @@ export function allowedToolsFor(text: string, opts: { orderInProgress?: boolean;
   if (opts.orderInProgress) for (const t of T_ORDER) set.add(t);
   // The Focus block already holds the product's price/stock/variants.
   if (opts.hasFocus) {
-    for (const t of ["sendProductCard", "showProduct"]) set.add(t);
     // Questions about THIS product ("এটার কালার?") need no catalog search;
     // keep search only when the customer asks for another/other products.
     const wantsOther = /অন্য|আর কি পণ্য|আর কোন পণ্য|other product|another|similar|আরো পণ্য|আরও পণ্য/i.test(text);
     if (!wantsOther) for (const t of ["searchProducts", "showProducts", "sendProductCarousel"]) set.delete(t);
+    // Card only when the customer wants to see it; a colour/price/stock
+    // question about the focus product is answered from the Focus block in 1 step.
+    const wantsSee = /ছবি|photo|pic|দেখা|dekha|show|card|লিংক|link/i.test(text) || wantsOther;
+    if (wantsSee) for (const t of ["sendProductCard", "showProduct"]) set.add(t);
+    else for (const t of ["sendProductCard", "showProduct"]) set.delete(t);
   }
   return set;
 }
