@@ -151,8 +151,8 @@ export const sendOmniProduct = createServerFn({ method: "POST" })
       attachments: [{ type: "product_card", product_id: p.id, url, image_url: image, variant: sel }],
       sent_by_user_id: context.userId,
       delivery_status: err ? "failed" : "sent",
-      ...(mid ? { external_message_id: mid } : {}),
-      ...(err ? { error: err } : {}),
+      mid,
+      error: err,
     } as any);
     await admin
       .from("ai_conversations")
