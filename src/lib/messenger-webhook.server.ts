@@ -2242,19 +2242,24 @@ export async function handleBuyPostback(opts: {
   const displayName = label ? `${product.name} (${label})` : product.name;
   const cfg = await loadStoreOrderFlow(sb, storeId);
   const missing = orderMissingFields(slot, cfg);
+  if (!missing.length) {
+    // Known name/phone/address → show them with হ্যাঁ / পরিবর্তন / না buttons.
+    await sendOrderSummaryForConfirm({ sb, storeId, conversationId, psid, token, slot });
+    await markQueuedReply(sb, queuedJobId, "[order summary]", null);
+    return true;
+  }
   const zones = await fetchDeliveryZones(sb, storeId);
-  const reply = missing.length
-    ? buildBuyNowMessage({
-        productName: displayName,
-        price,
-        qty: Number(slot.qty ?? 1) || 1,
-        zones,
-        productDeliveryCharge: (product as any).delivery_charge,
-        intro: cfg.buy_now_message,
-        missing,
-        known: slot,
-      })
-    : `ঠিক আছে, ${displayName} অর্ডারের তথ্য পেয়েছি। কনফার্ম করতে "হ্যাঁ" লিখুন।`;
+  const reply = buildBuyNowMessage({
+    productName: displayName,
+    price,
+    qty: Number(slot.qty ?? 1) || 1,
+    zones,
+    productDeliveryCharge: (product as any).delivery_charge,
+    intro: cfg.buy_now_message,
+    missing,
+    known: slot,
+  });
+  await patchConversationPendingOrder(sb, conversationId, { awaiting_confirm: false });
   await sendAndLogText(sb, token, psid, conversationId, reply);
   await markQueuedReply(sb, queuedJobId, reply, null);
   return true;
