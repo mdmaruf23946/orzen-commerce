@@ -293,9 +293,10 @@ export function buildSystemPrompt(
     srcOn("business_hours") ? "- Business hours: as listed below." : "- Business hours are OFF.",
   ].join("\n");
 
-  const globalPrompt = (settings?.global_system_prompt ?? "").trim();
-  const brand = (settings?.brand_voice ?? "").trim();
-  const safety = (settings?.safety_rules ?? "").trim();
+  const clip = (v: string, n: number) => (v.length > n ? v.slice(0, n).trimEnd() + "…" : v);
+  const globalPrompt = clip((settings?.global_system_prompt ?? "").trim(), 350);
+  const brand = clip((settings?.brand_voice ?? "").trim(), 200);
+  const safety = clip((settings?.safety_rules ?? "").trim(), 350);
   const globalBlock = [
     globalPrompt ? `# Platform guidance\n${globalPrompt}` : "",
     brand ? `# Brand voice\n${brand}` : "",
@@ -329,12 +330,12 @@ export function buildSystemPrompt(
       `Last confirmed order: #${lo.invoice_no || lo.order_id} — ${lo.product_name ?? "product"} × ${lo.qty ?? 1}`,
     );
   }
-  if (state?.memory_card) stateLines.push(state.memory_card);
+  if (state?.memory_card) stateLines.push(clip(String(state.memory_card), 300));
   else if (state?.recent_product_ids?.length)
     stateLines.push(`Products discussed recently (ids): ${state.recent_product_ids.join(", ")}`);
   const stateBlock = stateLines.length ? `# Conversation state\n${stateLines.join("\n")}` : "";
   const latestBlock = latestUserText
-    ? `# Latest customer message — answer this first\n${latestUserText}\n\nRule: Your next reply must answer this exact latest message. Use older conversation only as background, never as a replacement for the latest message.`
+    ? `Answer the customer's latest message exactly; older turns are background only.`
     : "";
 
   // Focus product block — server-resolved for THIS turn only. If set, it is the
@@ -343,7 +344,7 @@ export function buildSystemPrompt(
   if (focus?.product) {
     const p = focus.product as any;
     const kind = productKind(p);
-    const feat = stringifyProductField(p.features).slice(0, 400);
+    const feat = stringifyProductField(p.features).slice(0, 200);
     const varList = formatFocusVariants(p.variants);
     focusBlock = [
       `# Focus product (ONLY product allowed in this reply)`,
@@ -355,7 +356,7 @@ export function buildSystemPrompt(
       `price: ৳${p.price}${p.old_price ? ` (was ৳${p.old_price})` : ""}`,
       kind === "physical" ? `stock: ${p.stock}` : "",
       p.sku ? `sku: ${p.sku}` : "",
-      p.short_description ? `short_description: ${p.short_description}` : "",
+      p.short_description ? `short_description: ${clip(String(p.short_description), 200)}` : "",
       feat ? `features: ${feat}` : "",
       `variants: ${varList || "none — single standard option only; no other colours/sizes exist. Say so directly, do not search."}`,
       ``,
@@ -396,8 +397,8 @@ export function buildSystemPrompt(
         })
         .filter((x) => x.score > 0)
         .sort((a, b) => b.score - a.score)
-        .slice(0, 3)
-        .map((x) => `Q: ${x.f.q}\nA: ${x.f.a}`)
+        .slice(0, 2)
+        .map((x) => `Q: ${x.f.q}\nA: ${clip(String(x.f.a ?? ""), 220)}`)
         .join("\n")
     : "";
   void faqs;
