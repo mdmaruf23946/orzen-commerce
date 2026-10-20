@@ -3,8 +3,8 @@
 // Private per-conversation data only — never cached across requests.
 import { generateText } from "ai";
 
-export const WINDOW = 6;
-const MAX_CHARS = 600;
+export const WINDOW = 4;
+const MAX_CHARS = 300;
 const LEGACY_LIMIT = 30;
 
 export type ConversationMemory = {

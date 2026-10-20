@@ -2246,7 +2246,7 @@ function generationParams(settings: GlobalAiSettings | null | undefined, modelId
   // `max_tokens` and require `max_completion_tokens`, which the AI SDK doesn't emit here.
   const isOpenAI = typeof modelId === "string" && modelId.startsWith("openai/");
   // Chat replies are short; a default cap stops runaway answers from burning credit.
-  const cap = typeof m === "number" && Number.isFinite(m) && m > 0 ? Math.floor(m) : 1024;
+  const cap = typeof m === "number" && Number.isFinite(m) && m > 0 ? Math.floor(m) : 350;
   if (!isOpenAI) params.maxOutputTokens = cap;
   return params;
 }
@@ -2259,7 +2259,7 @@ export function streamAgentResponse(opts: { ctx: AgentContext; messages: any[]; 
       system: opts.system,
       messages: opts.messages,
       tools: await toolsForTurn(opts.ctx, opts.messages),
-      stopWhen: stepCountIs(8),
+      stopWhen: stepCountIs(3),
       ...generationParams(settings, modelId),
       onFinish: ({ usage }) => {
         void logUsage(opts.ctx.storeId, modelId, usage, "chat");
@@ -2329,6 +2329,10 @@ export async function scopedToolsForText(ctx: AgentContext, text: string) {
   )
     drop.push("trackOrder");
   for (const k of drop) delete all[k];
+  // Channel drawer: only the card tools this channel can render.
+  const ch = ctx.channel ?? "messenger";
+  const notForChannel = ch === "web" ? ["sendProductCard", "sendProductCarousel"] : ch === "whatsapp" ? ["showProduct", "showProducts", "sendProductCarousel"] : ["showProduct", "showProducts"];
+  for (const k of notForChannel) delete all[k];
   // Phase 2 tool scoping: only the routed agent(s)' tools are sent.
   try {
     let orderInProgress = false;
