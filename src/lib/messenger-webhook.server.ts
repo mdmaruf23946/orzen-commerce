@@ -865,10 +865,35 @@ async function handleOrderDecision(opts: {
     await sendAndLogText(sb, token, psid, conversationId, "ঠিক আছে। অনুগ্রহ করে লিখে পাঠান:\n১) আপনার নাম\n২) মোবাইল নম্বর\n৩) সম্পূর্ণ ঠিকানা");
     return true;
   }
-  await patchConversationPendingOrder(sb, conversationId, { awaiting_confirm: false, hold: new Date().toISOString() });
-  await sb.from("ai_conversations").update({ lead_status: "hold" } as any).eq("id", conversationId);
-  await sendAndLogText(sb, token, psid, conversationId, "ঠিক আছে, অর্ডারটি আপাতত হোল্ডে রাখা হলো। পরে নিতে চাইলে \"হ্যাঁ\" লিখুন বা আবার Buy Now চাপুন।");
-  return true;
+  return finalizePendingMessengerOrder({ sb, storeId, conversationId, psid, token, confirmed: true, hold: true });
+}
+
+/**
+ * Chat lead with a product + phone but no full order yet → shows in
+ * All Orders › Incomplete (checkout_drafts, keyed by conversation id).
+ */
+async function saveChatIncompleteLead(sb: ReturnType<typeof admin>, storeId: string, conversationId: string, slot: any) {
+  try {
+    if (!slot?.product_id || !slot?.phone) return;
+    const { data: p } = await sb.from("products").select("id,name,price,primary_image_url").eq("store_id", storeId).eq("id", slot.product_id).maybeSingle();
+    if (!p) return;
+    const vmod = await import("./messenger-variants");
+    const vsel = (slot.variant_sel && typeof slot.variant_sel === "object" ? slot.variant_sel : {}) as Record<string, string>;
+    const qty = Math.max(1, Math.min(Number(slot.qty ?? 1) || 1, 99));
+    const price = Number((p as any).price) || 0;
+    const { data: existing } = await sb.from("checkout_drafts").select("store_id,converted_order_id").eq("id", conversationId).maybeSingle();
+    if (existing && ((existing as any).store_id !== storeId || (existing as any).converted_order_id)) return;
+    await sb.from("checkout_drafts").upsert({
+      id: conversationId, store_id: storeId,
+      customer_name: slot.customer_name ? String(slot.customer_name).slice(0, 120) : null,
+      phone: String(slot.phone).slice(0, 40),
+      address: slot.full_address ? String(slot.full_address).slice(0, 500) : null,
+      items: [{ productId: p.id, name: p.name, qty, price, image: (p as any).primary_image_url ?? undefined, variant: vmod.variantLabel(vsel) || undefined, source: "messenger" }],
+      total: price * qty, updated_at: new Date().toISOString(), dismissed: false,
+    } as any);
+  } catch (e) {
+    console.warn("[messenger] incomplete lead save failed", (e as Error).message);
+  }
 }
 
 async function finalizePendingMessengerOrder(opts: {
@@ -879,6 +904,8 @@ async function finalizePendingMessengerOrder(opts: {
   token: string;
   /** Only an explicit হ্যাঁ to the summary creates the (pending) order. */
   confirmed?: boolean;
+  /** Customer declined the full summary → order saved as On Hold. */
+  hold?: boolean;
 }) {
   const { sb, storeId, conversationId, psid, token } = opts;
   const slot = await getConversationPendingOrder(sb, conversationId);
@@ -886,6 +913,11 @@ async function finalizePendingMessengerOrder(opts: {
   const missing = orderMissingFields(slot, flowCfg);
   if (!slot.product_id) missing.unshift("প্রোডাক্ট");
   if (missing.length) {
+    if (opts.hold) {
+      await sendAndLogText(sb, token, psid, conversationId, "ঠিক আছে। পরে নিতে চাইলে আবার Buy Now চাপুন বা জানান।");
+      return true;
+    }
+    await saveChatIncompleteLead(sb, storeId, conversationId, slot);
     await sendAndLogText(sb, token, psid, conversationId, buildMissingFieldsMessage(missing));
     return true;
   }
@@ -999,7 +1031,28 @@ async function finalizePendingMessengerOrder(opts: {
     throw new Error(errorText);
   }
   const order = { id: created.id, invoice_no: created.invoice_no };
+  // The chat lead is now a real order — drop it from the Incomplete list.
+  await sb.from("checkout_drafts").update({ converted_order_id: order.id } as any)
+    .eq("id", conversationId).eq("store_id", storeId);
+  if (opts.hold) {
+    // Customer said "না" after giving every detail → All Orders › On Hold.
+    await sb.from("orders").update({ followup_status: "on_hold", status_source: "chat" } as any)
+      .eq("id", order.id).eq("store_id", storeId).eq("status", "pending");
+    await patchConversationPendingOrder(sb, conversationId, { awaiting_confirm: false, hold: new Date().toISOString() });
+    await sb.from("ai_conversations").update({ lead_status: "hold" } as any).eq("id", conversationId);
+    await sendAndLogText(sb, token, psid, conversationId, "ঠিক আছে, অর্ডারটি আপাতত হোল্ডে রাখা হলো। পরে নিতে চাইলে \"হ্যাঁ\" লিখুন।");
+    return true;
+  }
   if (created.existing) {
+    // Same order put on hold earlier and now confirmed → back to Pending.
+    const { data: moved } = await sb.from("orders").update({ followup_status: null, status_source: "chat" } as any)
+      .eq("id", order.id).eq("store_id", storeId).eq("status", "pending").eq("followup_status", "on_hold").select("id");
+    if (moved?.length) {
+      await sb.from("ai_conversations").update({ lead_status: "ordered" } as any).eq("id", conversationId);
+      await replaceConversationProfile(sb, conversationId, (profile) => { delete profile.pending_order; return profile; });
+      await sendAndLogText(sb, token, psid, conversationId, `ধন্যবাদ! আপনার অর্ডার #${shortOrderNo(order.invoice_no, order.id)} কনফার্ম করা হলো। শীঘ্রই আমাদের টিম যোগাযোগ করবে।`);
+      return true;
+    }
     await sendAndLogText(sb, token, psid, conversationId, `আপনার অর্ডার #${shortOrderNo(order.invoice_no, order.id)} আগেই নেওয়া হয়েছে। নতুন করে কিছু করতে হবে না।`);
     return true;
   }
