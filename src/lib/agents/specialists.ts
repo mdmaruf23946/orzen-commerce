@@ -143,7 +143,8 @@ export function allowedToolsFor(text: string, opts: { orderInProgress?: boolean;
     if (!wantsOther) for (const t of ["searchProducts", "showProducts", "sendProductCarousel"]) set.delete(t);
     // Card only when the customer wants to see it; a colour/price/stock
     // question about the focus product is answered from the Focus block in 1 step.
-    const wantsSee = /ছবি|photo|pic|দেখা|dekha|show|card|লিংক|link/i.test(text) || wantsOther;
+    const wantsSee = /ছবি|photo|pic|দেখা|dekha|show|card|লিংক|link/i.test(text) || wantsOther ||
+      !/কালার|color|colou?r|রং|রঙ|সাইজ|size|দাম|price|dam|stock|স্টক|কত|koto|ওয়ারেন্টি|warranty/i.test(text);
     if (wantsSee) for (const t of ["sendProductCard", "showProduct"]) set.add(t);
     else for (const t of ["sendProductCard", "showProduct"]) set.delete(t);
   }
