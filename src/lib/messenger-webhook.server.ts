@@ -788,12 +788,97 @@ async function replaceConversationProfile(
   return next;
 }
 
+/** Order summary + হ্যাঁ / পরিবর্তন / না tap buttons. Zero AI tokens. */
+async function sendOrderSummaryForConfirm(opts: {
+  sb: ReturnType<typeof admin>;
+  storeId: string;
+  conversationId: string;
+  psid: string;
+  token: string;
+  slot: Record<string, any>;
+}) {
+  const { sb, storeId, conversationId, psid, token, slot } = opts;
+  const { data: product } = await sb
+    .from("products")
+    .select("id,name,price,delivery_charge,variants")
+    .eq("store_id", storeId)
+    .eq("id", slot.product_id)
+    .maybeSingle();
+  if (!product) return false;
+  const vmod = await import("./messenger-variants");
+  const vsel = (slot.variant_sel && typeof slot.variant_sel === "object" ? slot.variant_sel : {}) as Record<string, string>;
+  const vchosen = vmod.selectedVariant((product as any).variants, vsel);
+  const vlabel = vmod.variantLabel(vsel);
+  const qty = Math.max(1, Math.min(Number(slot.qty ?? 1) || 1, 99));
+  const unit = vchosen?.price != null && vchosen.price > 0 ? vchosen.price : Number(product.price);
+  const sub = unit * qty;
+  const addressText = [slot.full_address, slot.area, slot.village, slot.union, slot.upazila, slot.district].filter(Boolean).join(", ");
+  const zones = await fetchDeliveryZones(sb, storeId);
+  const { charge, zone } = resolveDeliveryCharge(addressText, zones, (product as any).delivery_charge);
+  await patchConversationPendingOrder(sb, conversationId, { awaiting_confirm: true, hold: null });
+  const text = [
+    "আপনার অর্ডারের তথ্য:",
+    `👤 নাম: ${slot.customer_name}`,
+    `📱 মোবাইল: ${slot.phone}`,
+    `📍 ঠিকানা: ${slot.full_address}`,
+    `📦 পণ্য: ${product.name}${vlabel ? ` (${vlabel})` : ""} × ${toBnDigits(qty)}`,
+    `💰 পণ্যের মূল্য: ${money(sub)}`,
+    `🚚 ডেলিভারি চার্জ${zone ? ` (${zone.name})` : ""}: ${money(charge)}`,
+    `💵 সর্বমোট: ${money(sub + charge)} (ক্যাশ অন ডেলিভারি)`,
+    "",
+    "তথ্য ঠিক থাকলে অর্ডার কনফার্ম করতে নিচের বাটনে চাপুন 👇",
+  ].join("\n");
+  try {
+    const sent = await sendQuickReplies(token, psid, text, [
+      { title: "✅ হ্যাঁ, কনফার্ম", payload: "ORDER_YES" },
+      { title: "✏️ তথ্য পরিবর্তন", payload: "ORDER_EDIT" },
+      { title: "❌ না, নেব না", payload: "ORDER_NO" },
+    ]);
+    await logOutgoingText(sb, conversationId, text, (sent as any)?.message_id ?? null);
+  } catch (e) {
+    await logOutgoingText(sb, conversationId, text, null, (e as Error).message);
+    throw e;
+  }
+  return true;
+}
+
+/** Customer answered the summary: yes → pending order, edit → re-ask details, no → hold. */
+async function handleOrderDecision(opts: {
+  sb: ReturnType<typeof admin>;
+  storeId: string;
+  conversationId: string;
+  psid: string;
+  token: string;
+  decision: "yes" | "edit" | "no";
+}) {
+  const { sb, storeId, conversationId, psid, token, decision } = opts;
+  if (decision === "yes") {
+    return finalizePendingMessengerOrder({ sb, storeId, conversationId, psid, token, confirmed: true });
+  }
+  if (decision === "edit") {
+    await patchConversationPendingOrder(sb, conversationId, {
+      awaiting_confirm: false,
+      customer_name: null,
+      phone: null,
+      full_address: null,
+    });
+    await sendAndLogText(sb, token, psid, conversationId, "ঠিক আছে। অনুগ্রহ করে লিখে পাঠান:\n১) আপনার নাম\n২) মোবাইল নম্বর\n৩) সম্পূর্ণ ঠিকানা");
+    return true;
+  }
+  await patchConversationPendingOrder(sb, conversationId, { awaiting_confirm: false, hold: new Date().toISOString() });
+  await sb.from("ai_conversations").update({ lead_status: "hold" } as any).eq("id", conversationId);
+  await sendAndLogText(sb, token, psid, conversationId, "ঠিক আছে, অর্ডারটি আপাতত হোল্ডে রাখা হলো। পরে নিতে চাইলে \"হ্যাঁ\" লিখুন বা আবার Buy Now চাপুন।");
+  return true;
+}
+
 async function finalizePendingMessengerOrder(opts: {
   sb: ReturnType<typeof admin>;
   storeId: string;
   conversationId: string;
   psid: string;
   token: string;
+  /** Only an explicit হ্যাঁ to the summary creates the (pending) order. */
+  confirmed?: boolean;
 }) {
   const { sb, storeId, conversationId, psid, token } = opts;
   const slot = await getConversationPendingOrder(sb, conversationId);
@@ -803,6 +888,16 @@ async function finalizePendingMessengerOrder(opts: {
   if (missing.length) {
     await sendAndLogText(sb, token, psid, conversationId, buildMissingFieldsMessage(missing));
     return true;
+  }
+  if (!opts.confirmed) {
+    const vmod0 = await import("./messenger-variants");
+    const { data: vp } = await sb.from("products").select("id,name,variants").eq("store_id", storeId).eq("id", slot.product_id).maybeSingle();
+    const vsel0 = (slot.variant_sel && typeof slot.variant_sel === "object" ? slot.variant_sel : {}) as Record<string, string>;
+    if (vp && vmod0.nextVariantStep((vp as any).variants, vsel0)) {
+      await sendNextVariantStep(sb, token, psid, conversationId, vp as any, vsel0);
+      return true;
+    }
+    if (await sendOrderSummaryForConfirm({ sb, storeId, conversationId, psid, token, slot })) return true;
   }
 
   const qty = Math.max(1, Math.min(Number(slot.qty ?? 1) || 1, 99));
@@ -2147,19 +2242,24 @@ export async function handleBuyPostback(opts: {
   const displayName = label ? `${product.name} (${label})` : product.name;
   const cfg = await loadStoreOrderFlow(sb, storeId);
   const missing = orderMissingFields(slot, cfg);
+  if (!missing.length) {
+    // Known name/phone/address → show them with হ্যাঁ / পরিবর্তন / না buttons.
+    await sendOrderSummaryForConfirm({ sb, storeId, conversationId, psid, token, slot });
+    await markQueuedReply(sb, queuedJobId, "[order summary]", null);
+    return true;
+  }
   const zones = await fetchDeliveryZones(sb, storeId);
-  const reply = missing.length
-    ? buildBuyNowMessage({
-        productName: displayName,
-        price,
-        qty: Number(slot.qty ?? 1) || 1,
-        zones,
-        productDeliveryCharge: (product as any).delivery_charge,
-        intro: cfg.buy_now_message,
-        missing,
-        known: slot,
-      })
-    : `ঠিক আছে, ${displayName} অর্ডারের তথ্য পেয়েছি। কনফার্ম করতে "হ্যাঁ" লিখুন।`;
+  const reply = buildBuyNowMessage({
+    productName: displayName,
+    price,
+    qty: Number(slot.qty ?? 1) || 1,
+    zones,
+    productDeliveryCharge: (product as any).delivery_charge,
+    intro: cfg.buy_now_message,
+    missing,
+    known: slot,
+  });
+  await patchConversationPendingOrder(sb, conversationId, { awaiting_confirm: false });
   await sendAndLogText(sb, token, psid, conversationId, reply);
   await markQueuedReply(sb, queuedJobId, reply, null);
   return true;
@@ -2845,6 +2945,30 @@ export async function handleMessengerWebhook(request: Request): Promise<Response
 
               // Greetings need no model or store lookup. Answer immediately so
               // the common first interaction stays near Facebook network speed.
+              // Order summary answer (button tap or typed হ্যাঁ/হে/না) — zero AI tokens.
+              // Runs before the greeting check so "হে" is never mistaken for "hey".
+              {
+                const decisionPayload = /^ORDER_(YES|EDIT|NO)$/.exec(qrPayload)?.[1];
+                let decision: "yes" | "edit" | "no" | null = decisionPayload
+                  ? (decisionPayload.toLowerCase() as "yes" | "edit" | "no")
+                  : null;
+                if (!decision && (isAffirmative(effectiveText) || isNegative(effectiveText))) {
+                  const s = await getConversationPendingOrder(sb, conv!.id);
+                  const at = Date.parse(String(s._at ?? ""));
+                  const fresh = Number.isFinite(at) && Date.now() - at < 2 * 60 * 60_000;
+                  if (fresh && s.product_id && (s.awaiting_confirm || s.hold)) {
+                    decision = isAffirmative(effectiveText) ? "yes" : "no";
+                  }
+                }
+                if (decision) {
+                  setTraceMeta("route", "fast");
+                  setTraceMeta("fast_kind", `order_${decision}`);
+                  await handleOrderDecision({ sb, storeId: integ.store_id, conversationId: conv!.id, psid: senderId, token, decision });
+                  await markQueuedReply(sb, queuedJobId, `[order ${decision}]`, null);
+                  continue;
+                }
+              }
+
               if (isGreetingIntent(effectiveText)) {
                 const instantReply = /[\u0980-\u09ff]/.test(effectiveText)
                   ? smallTalkReply(effectiveText)
