@@ -2299,6 +2299,9 @@ export async function scopedToolsForText(ctx: AgentContext, text: string) {
     }
     const allowed = allowedToolsFor(text, { orderInProgress, hasFocus: !!ctx.focusProductId });
     if (allowed) for (const k of Object.keys(all)) if (!allowed.has(k)) delete all[k];
+    // Handoff silences the AI for this customer, so it is only offered when the
+    // customer explicitly asks for a person — never for missing colours/specs.
+    if (!asksForHuman(text)) delete all.escalateToHuman;
   } catch { /* scoping is an optimisation; never block a reply */ }
   return all;
 }
