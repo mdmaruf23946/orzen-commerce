@@ -72,6 +72,7 @@ import { Route as AuthenticatedAdminMarketingRouteImport } from './routes/_authe
 import { Route as AuthenticatedAdminMessengerRouteImport } from './routes/_authenticated/admin/messenger'
 import { Route as AuthenticatedAdminMessengerInboxRouteImport } from './routes/_authenticated/admin/messenger-inbox'
 import { Route as AuthenticatedAdminNotificationsRouteImport } from './routes/_authenticated/admin/notifications'
+import { Route as AuthenticatedAdminOmniInboxRouteImport } from './routes/_authenticated/admin/omni-inbox'
 import { Route as AuthenticatedAdminOrdersRouteImport } from './routes/_authenticated/admin/orders'
 import { Route as AuthenticatedAdminPagesRouteImport } from './routes/_authenticated/admin/pages'
 import { Route as AuthenticatedAdminParcelsRouteImport } from './routes/_authenticated/admin/parcels'
@@ -630,6 +631,12 @@ const AuthenticatedAdminNotificationsRoute =
   AuthenticatedAdminNotificationsRouteImport.update({
     id: '/notifications',
     path: '/notifications',
+    getParentRoute: () => AuthenticatedAdminRouteRoute,
+  } as any)
+const AuthenticatedAdminOmniInboxRoute =
+  AuthenticatedAdminOmniInboxRouteImport.update({
+    id: '/omni-inbox',
+    path: '/omni-inbox',
     getParentRoute: () => AuthenticatedAdminRouteRoute,
   } as any)
 const AuthenticatedAdminOrdersRoute =
@@ -1907,6 +1914,7 @@ export interface FileRoutesByFullPath {
   '/admin/messenger': typeof AuthenticatedAdminMessengerRoute
   '/admin/messenger-inbox': typeof AuthenticatedAdminMessengerInboxRoute
   '/admin/notifications': typeof AuthenticatedAdminNotificationsRoute
+  '/admin/omni-inbox': typeof AuthenticatedAdminOmniInboxRoute
   '/admin/orders': typeof AuthenticatedAdminOrdersRoute
   '/admin/pages': typeof AuthenticatedAdminPagesRoute
   '/admin/parcels': typeof AuthenticatedAdminParcelsRoute
@@ -2171,6 +2179,7 @@ export interface FileRoutesByTo {
   '/admin/messenger': typeof AuthenticatedAdminMessengerRoute
   '/admin/messenger-inbox': typeof AuthenticatedAdminMessengerInboxRoute
   '/admin/notifications': typeof AuthenticatedAdminNotificationsRoute
+  '/admin/omni-inbox': typeof AuthenticatedAdminOmniInboxRoute
   '/admin/orders': typeof AuthenticatedAdminOrdersRoute
   '/admin/pages': typeof AuthenticatedAdminPagesRoute
   '/admin/parcels': typeof AuthenticatedAdminParcelsRoute
@@ -2446,6 +2455,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/messenger': typeof AuthenticatedAdminMessengerRoute
   '/_authenticated/admin/messenger-inbox': typeof AuthenticatedAdminMessengerInboxRoute
   '/_authenticated/admin/notifications': typeof AuthenticatedAdminNotificationsRoute
+  '/_authenticated/admin/omni-inbox': typeof AuthenticatedAdminOmniInboxRoute
   '/_authenticated/admin/orders': typeof AuthenticatedAdminOrdersRoute
   '/_authenticated/admin/pages': typeof AuthenticatedAdminPagesRoute
   '/_authenticated/admin/parcels': typeof AuthenticatedAdminParcelsRoute
@@ -2723,6 +2733,7 @@ export interface FileRouteTypes {
     | '/admin/messenger'
     | '/admin/messenger-inbox'
     | '/admin/notifications'
+    | '/admin/omni-inbox'
     | '/admin/orders'
     | '/admin/pages'
     | '/admin/parcels'
@@ -2987,6 +2998,7 @@ export interface FileRouteTypes {
     | '/admin/messenger'
     | '/admin/messenger-inbox'
     | '/admin/notifications'
+    | '/admin/omni-inbox'
     | '/admin/orders'
     | '/admin/pages'
     | '/admin/parcels'
@@ -3261,6 +3273,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/messenger'
     | '/_authenticated/admin/messenger-inbox'
     | '/_authenticated/admin/notifications'
+    | '/_authenticated/admin/omni-inbox'
     | '/_authenticated/admin/orders'
     | '/_authenticated/admin/pages'
     | '/_authenticated/admin/parcels'
@@ -3988,6 +4001,13 @@ declare module '@tanstack/react-router' {
       path: '/notifications'
       fullPath: '/admin/notifications'
       preLoaderRoute: typeof AuthenticatedAdminNotificationsRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
+    '/_authenticated/admin/omni-inbox': {
+      id: '/_authenticated/admin/omni-inbox'
+      path: '/omni-inbox'
+      fullPath: '/admin/omni-inbox'
+      preLoaderRoute: typeof AuthenticatedAdminOmniInboxRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
     '/_authenticated/admin/orders': {
@@ -5651,6 +5671,7 @@ interface AuthenticatedAdminRouteRouteChildren {
   AuthenticatedAdminMessengerRoute: typeof AuthenticatedAdminMessengerRoute
   AuthenticatedAdminMessengerInboxRoute: typeof AuthenticatedAdminMessengerInboxRoute
   AuthenticatedAdminNotificationsRoute: typeof AuthenticatedAdminNotificationsRoute
+  AuthenticatedAdminOmniInboxRoute: typeof AuthenticatedAdminOmniInboxRoute
   AuthenticatedAdminOrdersRoute: typeof AuthenticatedAdminOrdersRoute
   AuthenticatedAdminPagesRoute: typeof AuthenticatedAdminPagesRoute
   AuthenticatedAdminParcelsRoute: typeof AuthenticatedAdminParcelsRoute
@@ -5732,6 +5753,7 @@ const AuthenticatedAdminRouteRouteChildren: AuthenticatedAdminRouteRouteChildren
     AuthenticatedAdminMessengerInboxRoute:
       AuthenticatedAdminMessengerInboxRoute,
     AuthenticatedAdminNotificationsRoute: AuthenticatedAdminNotificationsRoute,
+    AuthenticatedAdminOmniInboxRoute: AuthenticatedAdminOmniInboxRoute,
     AuthenticatedAdminOrdersRoute: AuthenticatedAdminOrdersRoute,
     AuthenticatedAdminPagesRoute: AuthenticatedAdminPagesRoute,
     AuthenticatedAdminParcelsRoute: AuthenticatedAdminParcelsRoute,

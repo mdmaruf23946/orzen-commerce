@@ -204,6 +204,7 @@ const menuGroups: NavGroupDef[] = [
     icon: Bot,
     items: [
       { to: "/admin/ai-messaging/apps", label: "AI Messaging Apps", icon: LayoutGrid },
+      { to: "/admin/omni-inbox", label: "Omni Inbox", icon: InboxIcon },
       {
         to: "/admin/ai",
         label: "AI Command Center",
@@ -408,7 +409,7 @@ function buildGroups(query: string, canSee: (path: string) => boolean, connected
         : group.label === "Marketing & Sales"
           ? [group.items[0], ...marketingItems(mkt), ...group.items.slice(1)]
           : group.label === "Channels & AI"
-            ? [group.items[0], ...aiMessagingItems(aim), ...group.items.slice(1)]
+            ? [group.items[0], group.items[1], ...aiMessagingItems(aim), ...group.items.slice(2)]
             : group.label === "Orders & Delivery"
               ? (() => {
                   const i = group.items.findIndex((it) => it.to === "/admin/couriers/apps");
