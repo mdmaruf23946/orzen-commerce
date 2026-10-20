@@ -357,9 +357,12 @@ export function buildSystemPrompt(
       kind === "physical" ? `stock: ${p.stock}` : "",
       p.sku ? `sku: ${p.sku}` : "",
       p.short_description ? `short_description: ${clip(String(p.short_description), 200)}` : "",
+      p.description ? `description: ${clip(String(p.description).replace(/<[^>]+>/g, " ").replace(/\s+/g, " "), 350)}` : "",
+      stringifyProductField(p.specifications) ? `specifications: ${stringifyProductField(p.specifications).slice(0, 200)}` : "",
       feat ? `features: ${feat}` : "",
       `variants: ${varList || "none — single standard option only; no other colours/sizes exist. Say so directly, do not search."}`,
       ``,
+      `Context: the customer's latest message is a follow-up about THIS product even if it does not name it (e.g. "কি ফুলের?", "খাঁটি তো?", "মেয়াদ কত?"). Answer it directly — never ask which product. Use the record first; for general, universally true facts about this kind of product (e.g. honey comes from flower nectar) answer naturally, but never invent store-specific claims (origin, brand, expiry, certification) not in the record — say the store will confirm those.`,
       `Rule: every product fact in your reply MUST come from this record. Do not name, describe, price, or image any other product in this reply. To show it, call ${channel === "web" ? "showProduct" : "sendProductCard"} with productId=${p.id}.`,
     ]
       .filter(Boolean)
@@ -912,7 +915,19 @@ const DEICTIC_TOKENS = [
 ];
 
 const PRODUCT_SELECT_MIN =
-  "product_id,name,slug,brand,product_code,sku,category_id,short_description,price,old_price,stock,status,product_type,meta,primary_image_url,gallery,features,variants,total_sold,rating,is_featured";
+  "product_id,name,slug,brand,product_code,sku,category_id,short_description,description,specifications,price,old_price,stock,status,product_type,meta,primary_image_url,gallery,features,variants,total_sold,rating,is_featured";
+
+/** Short message that continues the conversation about the last product
+ *  (no other product named). Pure — exposed for tests. */
+export function isShortFollowUp(text: string): boolean {
+  const t = String(text ?? "").trim();
+  if (!t || t.length > 80) return false;
+  const words = t.split(/\s+/).filter(Boolean);
+  if (words.length > 8) return false;
+  // pure greetings / thanks are not product follow-ups
+  if (/^(hi|hello|hey|salam|slm|আসসালাম|সালাম|হাই|হ্যালো|ধন্যবাদ|thanks|thank you|ok|okay|ওকে|হুম|জি|hmm)[\s!.?।]*$/i.test(t)) return false;
+  return true;
+}
 
 function normalizeCatalogProduct<T extends { product_id: string; source_created_at?: string }>(product: T) {
   const { product_id, source_created_at, ...rest } = product;
@@ -995,10 +1010,45 @@ export async function resolveFocusProduct(opts: {
   if (!raw) return { product: null, ambiguous: false, candidates: [] };
   const compact = raw.toLowerCase();
   const hasDeictic = DEICTIC_TOKENS.some((t) => compact.includes(t.toLowerCase()));
-  if (!hasDeictic && !isBroadBrowseQuery(raw) && searchTerms(raw).length === 0) {
+  const followUp = !hasDeictic && !!opts.conversationId && isShortFollowUp(raw) && !isBroadBrowseQuery(raw);
+  if (!hasDeictic && !followUp && !isBroadBrowseQuery(raw) && searchTerms(raw).length === 0) {
     return { product: null, ambiguous: false, candidates: [] };
   }
   const sb = admin();
+
+  // Elliptical follow-up ("কি ফুলের?", "খাঁটি তো?") → the product card sent in
+  // the last 2 hours of this conversation, unless the message clearly names
+  // a different product (checked after scoring below).
+  let recentFocus: any = null;
+  if (followUp) {
+    const since = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
+    const { data: recs } = await sb
+      .from("ai_product_recommendations")
+      .select("product_id,created_at")
+      .eq("store_id", opts.storeId)
+      .eq("conversation_id", opts.conversationId!)
+      .gte("created_at", since)
+      .order("created_at", { ascending: false })
+      .limit(1);
+    const id = (recs ?? [])[0]?.product_id;
+    if (id) {
+      const { data: p } = await sb
+        .from("ai_product_catalog")
+        .select(PRODUCT_SELECT_MIN)
+        .eq("store_id", opts.storeId)
+        .eq("product_id", id)
+        .eq("status", "active")
+        .maybeSingle();
+      if (p) recentFocus = normalizeCatalogProduct(p as any);
+    }
+  }
+  const pinRecent = (): FocusProduct => ({
+    product: recentFocus,
+    ambiguous: false,
+    candidates: [],
+    canonical_caption: canonicalCaption(recentFocus as any),
+  });
+  if (followUp && recentFocus && searchTerms(raw).length === 0) return pinRecent();
 
   // 1) Deictic reference ("this / এটা / ওইটা / it") → use the last recommended
   //    product in this conversation. Pin the most recent product card the agent sent.
@@ -1052,6 +1102,16 @@ export async function resolveFocusProduct(opts: {
     .map((r: any) => ({ product: r, score: scoreProductAgainstQuery(r, terms, raw) }))
     .filter((row) => row.score >= 25)
     .sort((a, b) => b.score - a.score);
+
+  // Follow-up: keep the recent product unless the message clearly names
+  // another product (a term appears in that product's name).
+  if (recentFocus) {
+    const top0 = scored[0]?.product;
+    const namesOther =
+      top0 && top0.id !== recentFocus.id &&
+      terms.some((t) => t.length >= 3 && String(top0.name ?? "").toLowerCase().includes(t));
+    if (!namesOther) return pinRecent();
+  }
 
   if (!scored.length) {
     // Deictic with multiple recent products → mark ambiguous with those.
