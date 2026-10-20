@@ -1010,10 +1010,45 @@ export async function resolveFocusProduct(opts: {
   if (!raw) return { product: null, ambiguous: false, candidates: [] };
   const compact = raw.toLowerCase();
   const hasDeictic = DEICTIC_TOKENS.some((t) => compact.includes(t.toLowerCase()));
-  if (!hasDeictic && !isBroadBrowseQuery(raw) && searchTerms(raw).length === 0) {
+  const followUp = !hasDeictic && !!opts.conversationId && isShortFollowUp(raw) && !isBroadBrowseQuery(raw);
+  if (!hasDeictic && !followUp && !isBroadBrowseQuery(raw) && searchTerms(raw).length === 0) {
     return { product: null, ambiguous: false, candidates: [] };
   }
   const sb = admin();
+
+  // Elliptical follow-up ("কি ফুলের?", "খাঁটি তো?") → the product card sent in
+  // the last 2 hours of this conversation, unless the message clearly names
+  // a different product (checked after scoring below).
+  let recentFocus: any = null;
+  if (followUp) {
+    const since = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
+    const { data: recs } = await sb
+      .from("ai_product_recommendations")
+      .select("product_id,created_at")
+      .eq("store_id", opts.storeId)
+      .eq("conversation_id", opts.conversationId!)
+      .gte("created_at", since)
+      .order("created_at", { ascending: false })
+      .limit(1);
+    const id = (recs ?? [])[0]?.product_id;
+    if (id) {
+      const { data: p } = await sb
+        .from("ai_product_catalog")
+        .select(PRODUCT_SELECT_MIN)
+        .eq("store_id", opts.storeId)
+        .eq("product_id", id)
+        .eq("status", "active")
+        .maybeSingle();
+      if (p) recentFocus = normalizeCatalogProduct(p as any);
+    }
+  }
+  const pinRecent = (): FocusProduct => ({
+    product: recentFocus,
+    ambiguous: false,
+    candidates: [],
+    canonical_caption: canonicalCaption(recentFocus as any),
+  });
+  if (followUp && recentFocus && searchTerms(raw).length === 0) return pinRecent();
 
   // 1) Deictic reference ("this / এটা / ওইটা / it") → use the last recommended
   //    product in this conversation. Pin the most recent product card the agent sent.
