@@ -16,6 +16,17 @@ type WebProduct = {
   product_url?: string | null;
 };
 
+function toUi(m: { id: string; role: string; content: string; products?: WebProduct[] }) {
+  const products = m.products ?? [];
+  return {
+    id: m.id,
+    role: m.role,
+    parts: products.length
+      ? [{ type: "tool-showProducts", state: "output-available", output: { products } }]
+      : [{ type: "text", text: m.content }],
+  };
+}
+
 const CID_KEY_PREFIX = "orzen_ai_cid:";
 
 const GENERIC_CHAT_ERROR =
@@ -102,11 +113,7 @@ export default function AIChatPanel({
         if (res.handedOff) setHandedOff(true);
         if (res.messages.length) {
           setMessages(
-            res.messages.map((m) => ({
-              id: m.id,
-              role: m.role,
-              parts: [{ type: "text", text: m.content }],
-            })) as UIMessage[],
+            res.messages.map(toUi) as UIMessage[],
           );
         }
       } catch {
@@ -139,7 +146,7 @@ export default function AIChatPanel({
           setMessages(
             res.messages
               .filter((m) => m.role === "user" || m.role === "assistant")
-              .map((m) => ({ id: m.id, role: m.role, parts: [{ type: "text", text: m.content }] })) as UIMessage[],
+              .map(toUi) as UIMessage[],
           );
         }
       } catch { /* ignore */ }
