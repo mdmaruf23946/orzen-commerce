@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "vitest";
 import { nextVariantStep, parseVariantPayload, selectedVariant, variantPayload } from "./messenger-variants";
 
 const v = {
