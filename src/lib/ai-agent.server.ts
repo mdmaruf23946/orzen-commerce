@@ -141,6 +141,43 @@ export type FocusProduct = {
   canonical_caption?: string;
 };
 
+/** Rules for the routed agent's drawers only — other agents' rules never enter the prompt. */
+export function drawerBoundRules(o: {
+  text: string;
+  orderActive?: boolean;
+  hasFocus?: boolean;
+  displayTools?: string;
+  allowRecommend?: boolean;
+}): string[] {
+  const r = specialistFocus("", "any", o.text ?? "");
+  const agents = new Set([r.agentId, ...r.secondaryAgents]);
+  const out = [
+    "- Facts (price, stock, delivery charge, policy, product details) come ONLY from this turn's tool results, the Focus block or Store facts. Unverified numbers are auto-removed.",
+    "- Short, natural spoken language; never repeat earlier sentences; no technical words. Never type raw URLs. Never promise to send later.",
+    "- Misspelled/half-written words: infer the meaning; if genuinely unclear ask one short question.",
+  ];
+  const productish = agents.has("product") || (r.agentId === "frontline" && !r.drawerIds.every((d) => d === "greetings" || d === "unclear"));
+  if (productish || o.hasFocus) {
+    out.push(
+      o.hasFocus
+        ? "- Answer about the Focus product from its block; do not search the catalogue unless asked for other items."
+        : "- Product/price/browse intent: call searchProducts immediately; if 0 results retry once with a broader/English term.",
+      `- Show products with ${o.displayTools ?? "the card tool"}, plus one short value line. Only say "see below"/👇 when sending a card this turn.`,
+      `- Out of stock: say so${o.allowRecommend ? " and offer an in-stock alternative" : ""}.`,
+    );
+  }
+  if (agents.has("policy")) {
+    out.push("- Delivery charge: always call getDeliveryCharge. Without an area, list every zone; with an area, give that area's charge first.");
+  }
+  if (agents.has("order") || o.orderActive) {
+    out.push(
+      "- A question, greeting or product talk is never a name/address. Save only clearly given details; if unsure, confirm first. Never re-ask known info.",
+      "- Customer changes topic: answer the new topic first, resume the order after.",
+    );
+  }
+  return out;
+}
+
 export function buildSystemPrompt(
   store: any,
   agent: any,
@@ -368,11 +405,12 @@ export function buildSystemPrompt(
   const policyAsked = /return|ফেরত|রিটার্ন|exchange|এক্সচেঞ্জ|warranty|ওয়ারেন্টি|গ্যারান্টি|payment|পেমেন্ট|বিকাশ|bkash|nagad|নগদ|cod|ক্যাশ|time|সময়|খোলা|hour|ঠিকানা|address|location|কোথায়|phone|নম্বর|delivery|ডেলিভারি|policy|পলিসি/i.test(
     latestUserText,
   );
+  // Store facts drawer opens only when the latest message is about store/policy.
   const factLines = [
-    srcOn("store_info") && (store.phone || store.address)
+    policyAsked && srcOn("store_info") && (store.phone || store.address)
       ? `Phone: ${store.phone || "n/a"} | Address: ${store.address || "n/a"}`
       : "",
-    srcOn("payments") && k.payment_methods ? `Payment: ${k.payment_methods}` : "",
+    (policyAsked || !!po) && srcOn("payments") && k.payment_methods ? `Payment: ${k.payment_methods}` : "",
     ...(policyAsked
       ? [
           srcOn("delivery") && k.delivery_policy ? `Delivery: ${k.delivery_policy}` : "",
