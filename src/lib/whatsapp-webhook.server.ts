@@ -1,5 +1,5 @@
 import { customerTexts } from "@/lib/agents/customer-style";
-import { guardConversation } from "./conversation-guard.server";
+import { guardConversation, resolveHandoff } from "./conversation-guard.server";
 // WhatsApp Cloud API webhook — per-store, signature verified.
 // Mirrors the Messenger webhook flow: log event → upsert conversation →
 // store inbound message → AI reply (unless a human took over).
@@ -560,9 +560,18 @@ export async function processWhatsAppJob(job: WaJobRow): Promise<{ reply: string
   }
 
   // Read fresh so a human takeover made after queueing is honoured.
-  const { data: conv } = await sb.from("ai_conversations").select("id,handoff_mode").eq("id", conversationId).maybeSingle();
+  const { data: conv } = await sb.from("ai_conversations").select("id,handoff_mode,handoff_reason,handoff_at").eq("id", conversationId).maybeSingle();
   if (!conv) return { reply: null, skipped: "conversation removed" };
-  if (((conv as any).handoff_mode ?? "ai") !== "ai") return { reply: null, skipped: "human handoff" };
+  if (((conv as any).handoff_mode ?? "ai") !== "ai") {
+    const h = await resolveHandoff(sb, conv as any);
+    if (!h.resume) {
+      if (h.ack) {
+        try { await sendAndLog(sb, phoneNumberId, token, waId, conversationId, h.ack); } catch { /* best effort */ }
+        return { reply: h.ack };
+      }
+      return { reply: null, skipped: "human handoff" };
+    }
+  }
   if ((integ as any).human_takeover || (integ as any).ai_auto_reply === false)
     return { reply: null, skipped: "auto-reply off" };
   if (await guardConversation(sb, conversationId)) return { reply: null, skipped: "spam guard" };
