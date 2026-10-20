@@ -2,6 +2,7 @@ import { runWithTrace, traceToJSON } from "@/lib/telemetry.server";
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
 import { handleMessengerWebhook } from "@/lib/messenger-webhook.server";
+import { claimInflight, releaseInflight } from "@/lib/mid-dedupe";
 
 const inputSchema = z.object({
   job_id: z.string().uuid(),
@@ -137,7 +138,7 @@ export const Route = createFileRoute("/api/public/messenger/process")({
                 payload as { raw: string; signature: string; message_id: string },
                 jobRef,
               ));
-              const response = await traced.result;
+              const response = await traced.result.finally(() => releaseInflight(jobRef.id));
               timings = traceToJSON(traced.trace, (job as any).received_at ?? (job as any).created_at);
               if (!response.ok) {
                 const detail = (await response.text().catch(() => "")).slice(0, 200);
