@@ -2945,6 +2945,30 @@ export async function handleMessengerWebhook(request: Request): Promise<Response
 
               // Greetings need no model or store lookup. Answer immediately so
               // the common first interaction stays near Facebook network speed.
+              // Order summary answer (button tap or typed হ্যাঁ/হে/না) — zero AI tokens.
+              // Runs before the greeting check so "হে" is never mistaken for "hey".
+              {
+                const decisionPayload = /^ORDER_(YES|EDIT|NO)$/.exec(qrPayload)?.[1];
+                let decision: "yes" | "edit" | "no" | null = decisionPayload
+                  ? (decisionPayload.toLowerCase() as "yes" | "edit" | "no")
+                  : null;
+                if (!decision && (isAffirmative(effectiveText) || isNegative(effectiveText))) {
+                  const s = await getConversationPendingOrder(sb, conv!.id);
+                  const at = Date.parse(String(s._at ?? ""));
+                  const fresh = Number.isFinite(at) && Date.now() - at < 2 * 60 * 60_000;
+                  if (fresh && s.product_id && (s.awaiting_confirm || s.hold)) {
+                    decision = isAffirmative(effectiveText) ? "yes" : "no";
+                  }
+                }
+                if (decision) {
+                  setTraceMeta("route", "fast");
+                  setTraceMeta("fast_kind", `order_${decision}`);
+                  await handleOrderDecision({ sb, storeId: integ.store_id, conversationId: conv!.id, psid: senderId, token, decision });
+                  await markQueuedReply(sb, queuedJobId, `[order ${decision}]`, null);
+                  continue;
+                }
+              }
+
               if (isGreetingIntent(effectiveText)) {
                 const instantReply = /[\u0980-\u09ff]/.test(effectiveText)
                   ? smallTalkReply(effectiveText)
