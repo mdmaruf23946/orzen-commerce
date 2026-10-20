@@ -273,17 +273,17 @@ function OmniInbox() {
                 <ArrowLeft className="h-4 w-4" />
               </Button>
               <ChannelIcon channel={active.channel} className="h-8 w-8 shrink-0" />
-              <div className="min-w-0 flex-1">
+              <button type="button" onClick={() => setInfoOpen(true)} className="min-w-0 flex-1 text-left xl:pointer-events-none" aria-label="কাস্টমার তথ্য দেখুন">
                 <div className="flex items-center gap-1.5 truncate font-medium">
-                  {nameOf(active)}
-                  {active.vip && <Crown className="h-3.5 w-3.5 text-primary" />}
+                  <span className="truncate">{nameOf(active)}</span>
+                  {active.vip && <Crown className="h-3.5 w-3.5 shrink-0 text-primary" />}
                 </div>
                 <div className="truncate text-xs text-muted-foreground">
                   {OMNI_CHANNELS.find((x) => x.key === active.channel)?.label}
                   {active.phone ? ` · ${active.phone}` : ""}
                   {active.total_orders ? ` · ${active.total_orders} অর্ডার` : ""}
                 </div>
-              </div>
+              </button>
               <Button size="icon" variant="ghost" className="shrink-0 xl:hidden" onClick={() => setInfoOpen(true)} aria-label="কাস্টমার তথ্য">
                 <Info className="h-4 w-4" />
               </Button>
@@ -382,7 +382,7 @@ function OmniInbox() {
         />
       )}
       <Sheet open={infoOpen && !!active} onOpenChange={setInfoOpen}>
-        <SheetContent side="right" className="w-[92vw] p-0 sm:max-w-sm [&>button]:hidden">
+        <SheetContent side="right" className="h-[100dvh] w-full max-w-full p-0 pb-[env(safe-area-inset-bottom)] sm:max-w-sm [&>button]:hidden">
           <SheetTitle className="sr-only">কাস্টমার তথ্য</SheetTitle>
           {active && <OmniCustomerPanel conversationId={active.id} onClose={() => setInfoOpen(false)} />}
         </SheetContent>
