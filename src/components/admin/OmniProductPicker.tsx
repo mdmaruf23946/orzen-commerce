@@ -77,12 +77,12 @@ export function OmniProductPicker({ open, onOpenChange, conversationId, onSent }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-h-[85vh] flex-col gap-3 p-4 sm:max-w-lg">
-        <DialogHeader>
+      <DialogContent className="flex h-[100dvh] max-h-[100dvh] w-full max-w-full flex-col gap-3 rounded-none p-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:h-auto sm:max-h-[85vh] sm:max-w-lg sm:rounded-lg">
+        <DialogHeader className="pr-8 text-left">
           <DialogTitle className="flex items-center gap-2 text-base">
             {picked && (
-              <button onClick={() => setPicked(null)} aria-label="ফিরে যান" className="rounded p-1 hover:bg-muted">
-                <ArrowLeft className="h-4 w-4" />
+              <button onClick={() => setPicked(null)} aria-label="ফিরে যান" className="rounded p-2 hover:bg-muted">
+                <ArrowLeft className="h-5 w-5" />
               </button>
             )}
             {picked ? "সাইজ / রং বাছাই করুন" : "প্রোডাক্ট পাঠান"}
@@ -93,7 +93,7 @@ export function OmniProductPicker({ open, onOpenChange, conversationId, onSent }
           <>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input autoFocus value={q} onChange={(e) => setQ(e.target.value)} placeholder="নাম বা কোড দিয়ে খুঁজুন…" className="pl-9" />
+              <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="নাম বা কোড দিয়ে খুঁজুন…" className="h-11 pl-9 text-base sm:h-10 sm:text-sm" />
               {isFetching && <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-muted-foreground" />}
             </div>
             <div className="-mx-1 flex-1 space-y-1 overflow-y-auto px-1">
@@ -147,7 +147,7 @@ export function OmniProductPicker({ open, onOpenChange, conversationId, onSent }
                         disabled={!ok}
                         onClick={() => setSel((s) => (on ? Object.fromEntries(Object.entries(s).filter(([k]) => k !== o.name)) : { ...s, [o.name]: v }))}
                         className={cn(
-                          "flex items-center gap-1 rounded-full border px-3 py-1.5 text-sm transition-colors",
+                          "flex min-h-10 items-center gap-1 rounded-full border px-4 py-2 text-sm transition-colors sm:min-h-0 sm:px-3 sm:py-1.5",
                           on ? "border-primary bg-primary text-primary-foreground" : "hover:bg-muted",
                           !ok && "cursor-not-allowed line-through opacity-40",
                         )}
@@ -160,12 +160,13 @@ export function OmniProductPicker({ open, onOpenChange, conversationId, onSent }
                 </div>
               </div>
             ))}
-            <div className="flex flex-col gap-2 pt-2 sm:flex-row">
-              <Button className="flex-1" disabled={sending || !allChosen} onClick={() => doSend(picked, sel)}>
+            <div className="sticky bottom-0 flex flex-col gap-2 bg-background pt-2 sm:flex-row">
+              <Button className="h-11 flex-1 sm:h-10" disabled={sending || !allChosen} onClick={() => doSend(picked, sel)}>
                 {sending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
                 নির্বাচিতটি পাঠান
               </Button>
-              <Button variant="outline" disabled={sending} onClick={() => doSend(picked)}>শুধু প্রোডাক্ট পাঠান</Button>
+              <Button variant="outline" className="h-11 sm:h-10" disabled={sending} onClick={() => doSend(picked)}>শুধু প্রোডাক্ট পাঠান</Button>
+              <Button variant="ghost" className="h-11 sm:hidden" disabled={sending} onClick={() => onOpenChange(false)}>বাতিল</Button>
             </div>
           </div>
         )}
