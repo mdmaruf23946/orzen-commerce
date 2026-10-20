@@ -39,7 +39,8 @@ export async function resolveHandoff(
     const isSpam = reason.startsWith("auto_spam");
     const aiMade = !isSpam && !merchantReplied && reason !== "" && reason !== "manual";
     const ageMs = Date.now() - Date.parse(at);
-    if (aiMade && (ageMs > 5 * 60_000 || !/human|মানুষ|admin|এডমিন|প্রতিনিধি/i.test(reason) || true)) {
+    const customerAskedHuman = /request|asked for a human|wants a human|মানুষ|প্রতিনিধি/i.test(reason);
+    if (aiMade && (!customerAskedHuman || ageMs > 5 * 60_000)) {
       // AI handed off on its own: give the customer back to the AI.
       await sb
         .from("ai_conversations")

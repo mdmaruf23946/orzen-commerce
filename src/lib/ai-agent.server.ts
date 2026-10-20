@@ -30,6 +30,7 @@ import {
 import { replyStyleInstruction, SHORT_REPLY_RULE } from "./reply-language";
 import { deriveCustomerStyle, personaInstruction } from "./agents/customer-style";
 import { specialistFocus, allowedToolsFor } from "./agents/specialists";
+import { asksForHuman } from "./conversation-guard.server";
 
 function admin() {
   return createClient<Database>(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
