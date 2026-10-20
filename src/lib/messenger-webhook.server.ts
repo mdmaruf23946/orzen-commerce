@@ -2313,6 +2313,7 @@ export async function handleBuyPostback(opts: {
     known: slot,
   });
   await patchConversationPendingOrder(sb, conversationId, { awaiting_confirm: false });
+  await saveChatIncompleteLead(sb, storeId, conversationId, slot);
   await sendAndLogText(sb, token, psid, conversationId, reply);
   await markQueuedReply(sb, queuedJobId, reply, null);
   return true;
