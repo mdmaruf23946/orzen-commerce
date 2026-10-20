@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "vitest";
 import { isShortFollowUp } from "./ai-agent.server";
 
 describe("short product follow-ups", () => {
