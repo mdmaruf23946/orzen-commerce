@@ -3,8 +3,10 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { AlertTriangle, ArrowLeft, Bot, Crown, Globe, Inbox, Info, Loader2, Search, Send, User } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Bot, Crown, Globe, Inbox, Info, Loader2, Package, Plus, Search, Send, User } from "lucide-react";
 import { OmniCustomerPanel } from "@/components/admin/OmniCustomerPanel";
+import { OmniProductPicker } from "@/components/admin/OmniProductPicker";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { FeatureGate } from "@/components/admin/FeatureGate";
 import { listOmniConversations, listOmniMessages, setOmniHandoff } from "@/lib/omni-inbox.functions";
@@ -89,6 +91,7 @@ function OmniInbox() {
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
   const [infoOpen, setInfoOpen] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   const { data, isLoading } = useQuery({
@@ -329,6 +332,18 @@ function OmniInbox() {
             </div>
 
             <div className="flex items-end gap-2 border-t bg-card p-2 sm:p-3">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="icon" className="h-10 w-10 shrink-0" aria-label="আরও অ্যাকশন">
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" side="top">
+                  <DropdownMenuItem onClick={() => setPickerOpen(true)}>
+                    <Package className="mr-2 h-4 w-4" /> প্রোডাক্ট / সাইজ-রং পাঠান
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
               <Textarea
                 rows={1}
                 value={draft}
@@ -354,6 +369,17 @@ function OmniInbox() {
         <aside className="hidden w-[320px] shrink-0 border-l xl:block">
           <OmniCustomerPanel conversationId={active.id} />
         </aside>
+      )}
+      {active && (
+        <OmniProductPicker
+          open={pickerOpen}
+          onOpenChange={setPickerOpen}
+          conversationId={active.id}
+          onSent={() => {
+            qc.invalidateQueries({ queryKey: ["omni-msgs", active.id] });
+            qc.invalidateQueries({ queryKey: ["omni-inbox"] });
+          }}
+        />
       )}
       <Sheet open={infoOpen && !!active} onOpenChange={setInfoOpen}>
         <SheetContent side="right" className="w-[92vw] p-0 sm:max-w-sm [&>button]:hidden">
