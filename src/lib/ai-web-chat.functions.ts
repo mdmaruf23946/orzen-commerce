@@ -49,7 +49,7 @@ export const getWebChatHistory = createServerFn({ method: "GET" })
     if (!conv || conv.store_id !== storeId) return { messages: [], handedOff: false };
     const { data: rows } = await sb
       .from("ai_messages")
-      .select("id,role,content,message_type,created_at")
+      .select("id,role,content,message_type,attachments,created_at")
       .eq("conversation_id", conv.id)
       .order("created_at", { ascending: true })
       .limit(50);
@@ -58,6 +58,20 @@ export const getWebChatHistory = createServerFn({ method: "GET" })
         id: r.id,
         role: r.role as "user" | "assistant" | "system",
         content: r.content,
+        products:
+          r.message_type === "product_card" && Array.isArray(r.attachments)
+            ? r.attachments
+                .filter((a: any) => a?.type === "product_card" && a.product_id)
+                .map((a: any) => ({
+                  id: String(a.product_id),
+                  name: String(a.name ?? ""),
+                  price: Number(a.price ?? 0),
+                  old_price: a.old_price ?? null,
+                  stock: Number(a.stock ?? 0),
+                  image_url: a.image_url ?? null,
+                  product_url: a.url ?? null,
+                }))
+            : [],
       })),
       handedOff: conv.handoff_mode === "human",
     };

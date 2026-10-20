@@ -108,6 +108,13 @@ export const sendOmniProduct = createServerFn({ method: "POST" })
           orderable,
         });
         mid = res?.message_id ?? null;
+        if (orderable && inStock) {
+          try {
+            await fb.sendQuickReplies(token, conv.external_id, vText ? `${vText} — অর্ডার করতে নিচে চাপুন` : "অর্ডার করতে নিচে চাপুন", [
+              { title: "🛒 অর্ডার করব", payload: `BUY_${p.id}` },
+            ]);
+          } catch { /* card already delivered */ }
+        }
       } else if (conv.channel === "whatsapp") {
         if (!conv.external_id) throw new Error("Conversation has no WhatsApp number");
         const { data: integ } = await admin
@@ -139,16 +146,19 @@ export const sendOmniProduct = createServerFn({ method: "POST" })
 
     const content =
       conv.channel === "web"
-        ? [`🛍️ ${title}`, vText, `${priceLine} · ${stockLine}`, url].filter(Boolean).join("\n")
+        ? [`🛍️ ${title}`, vText, `${priceLine} · ${stockLine}`].filter(Boolean).join("\n")
         : preview;
     const now = new Date().toISOString();
     await admin.from("ai_messages").insert({
       conversation_id: conv.id,
       role: "assistant",
       direction: "out",
-      message_type: conv.channel === "web" ? "text" : "product_card",
+      message_type: "product_card",
       content,
-      attachments: [{ type: "product_card", product_id: p.id, url, image_url: image, variant: sel }],
+      attachments: [{
+        type: "product_card", product_id: p.id, url, image_url: image, variant: sel,
+        name: vText ? `${title} (${vText})` : title, price: Number(price), old_price: v ? null : p.old_price, stock: stock == null ? 99 : Number(stock),
+      }],
       sent_by_user_id: context.userId,
       delivery_status: err ? "failed" : "sent",
       mid,
