@@ -2254,12 +2254,13 @@ function generationParams(settings: GlobalAiSettings | null | undefined, modelId
 export function streamAgentResponse(opts: { ctx: AgentContext; messages: any[]; system: string }) {
   return async () => {
     const { model, modelId, settings } = await getModelForStore();
+    const streamTools = await toolsForTurn(opts.ctx, opts.messages);
     const result = streamText({
       model,
       system: opts.system,
       messages: opts.messages,
-      tools: await toolsForTurn(opts.ctx, opts.messages),
-      stopWhen: stepCountIs(3),
+      tools: streamTools,
+      stopWhen: stepCountIs(stepBudget(Object.keys(streamTools), { orderInProgress: await orderInProgressFor(opts.ctx) })),
       ...generationParams(settings, modelId),
       onFinish: ({ usage }) => {
         void logUsage(opts.ctx.storeId, modelId, usage, "chat");
@@ -2304,6 +2305,12 @@ function isTransientGatewayError(err: unknown) {
   const status = (err as any)?.statusCode ?? (err as any)?.status;
   if (status === 429 || (typeof status === "number" && status >= 500 && status < 600)) return true;
   return /\b(429|rate.?limit|timeout|overload|5\d\d)\b/i.test(String(msg));
+}
+
+async function orderInProgressFor(ctx: AgentContext): Promise<boolean> {
+  if (!ctx.conversationId) return false;
+  const slot = await getConversationSlot(ctx.conversationId).catch(() => ({}));
+  return Object.keys(slot ?? {}).length > 0;
 }
 
 /** Phase 2 tool diet: drop rarely-needed tools unless the latest message asks for them. */
@@ -2373,9 +2380,7 @@ async function runGenerate(opts: {
     tools,
     // Each step re-sends the whole prompt + tool schemas. No tools → 1 step;
     // focus product → card + text = 2; otherwise search → card → text = 3.
-    stopWhen: stepCountIs(
-      Object.keys(tools).filter((k) => k !== "escalateToHuman").length === 0 ? 1 : opts.ctx.focusProductId ? 2 : 3,
-    ),
+    stopWhen: stepCountIs(stepBudget(Object.keys(tools), { orderInProgress: await orderInProgressFor(opts.ctx) })),
     ...generationParams(settings, modelId),
   });
   try {

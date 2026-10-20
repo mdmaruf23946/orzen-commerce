@@ -157,9 +157,7 @@ export function allowedToolsFor(text: string, opts: { orderInProgress?: boolean;
  */
 export function stepBudget(toolNames: string[], opts: { orderInProgress?: boolean } = {}): 1 | 2 | 3 {
   const t = new Set(toolNames.filter((k) => k !== "escalateToHuman"));
-  if (opts.orderInProgress && ["finalizeOrder", "createOrder", "placeOrder"].some((k) => t.has(k))) return 3;
-  if (t.size === 0) return 1;
-  const catalog = ["searchProducts", "showProducts", "sendProductCarousel", "sendProductCard", "showProduct"];
-  if (!catalog.some((k) => t.has(k))) return 1;
-  return 2;
+  if (t.size === 0) return 1; // Focus colour/size/price questions: answered from the prompt.
+  if (opts.orderInProgress && t.has("finalizeOrder")) return 3; // collect → finalize → confirm
+  return 2; // one tool call (search/card/delivery) + the text reply
 }
