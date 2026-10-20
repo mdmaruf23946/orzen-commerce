@@ -2075,11 +2075,13 @@ export async function handleBuyPostback(opts: {
 }) {
   const { sb, storeId, conversationId, psid, token, payload } = opts;
   const queuedJobId = opts.queuedJobId ?? null;
-  const productId = payload.replace(/^BUY_/, "");
+  const { parseVariantPayload, selectedVariant, variantLabel, nextVariantStep } = await import("./messenger-variants");
+  const varPick = parseVariantPayload(payload);
+  const productId = varPick ? varPick.productId : payload.replace(/^BUY_/, "");
   if (!/^[0-9a-f-]{36}$/i.test(productId)) return false;
   const { data: product } = await sb
     .from("products")
-    .select("id,name,slug,price,stock,status,product_type,delivery_charge")
+    .select("id,name,slug,price,stock,status,product_type,delivery_charge,variants")
     .eq("store_id", storeId)
     .eq("id", productId)
     .maybeSingle();
@@ -2107,18 +2109,35 @@ export async function handleBuyPostback(opts: {
   }
 
   const current = await getConversationPendingOrder(sb, conversationId);
+  // A fresh Buy Now always restarts the picker; a variant tap adds to the
+  // picks for the same product only (stale buttons of another product reset).
+  const prevSel =
+    varPick && current.product_id === product.id && current.variant_sel && typeof current.variant_sel === "object"
+      ? (current.variant_sel as Record<string, string>)
+      : {};
+  const sel: Record<string, string> = varPick ? { ...prevSel, [varPick.name]: varPick.value } : {};
   const slot = await patchConversationPendingOrder(sb, conversationId, {
     ...current,
     product_id: product.id,
+    variant_sel: sel,
     qty: current.qty ?? 1,
   });
+  if (await sendNextVariantStep(sb, token, psid, conversationId, product as any, sel)) {
+    await markQueuedReply(sb, queuedJobId, `[variant step] ${variantLabel(sel)}`, null);
+    return true;
+  }
+  const hasVariants = nextVariantStep((product as any).variants, {}) !== null;
+  const chosen = hasVariants ? selectedVariant((product as any).variants, sel) : null;
+  const price = chosen?.price != null && chosen.price > 0 ? chosen.price : Number((product as any).price ?? 0);
+  const label = variantLabel(sel);
+  const displayName = label ? `${product.name} (${label})` : product.name;
   const cfg = await loadStoreOrderFlow(sb, storeId);
   const missing = orderMissingFields(slot, cfg);
   const zones = await fetchDeliveryZones(sb, storeId);
   const reply = missing.length
     ? buildBuyNowMessage({
-        productName: product.name,
-        price: Number((product as any).price ?? 0),
+        productName: displayName,
+        price,
         qty: Number(slot.qty ?? 1) || 1,
         zones,
         productDeliveryCharge: (product as any).delivery_charge,
@@ -2126,14 +2145,8 @@ export async function handleBuyPostback(opts: {
         missing,
         known: slot,
       })
-    : `ঠিক আছে, ${product.name} অর্ডারের তথ্য পেয়েছি। কনফার্ম করতে "হ্যাঁ" লিখুন।`;
-  await sendAndLogText(
-    sb,
-    token,
-    psid,
-    conversationId,
-    reply,
-  );
+    : `ঠিক আছে, ${displayName} অর্ডারের তথ্য পেয়েছি। কনফার্ম করতে "হ্যাঁ" লিখুন।`;
+  await sendAndLogText(sb, token, psid, conversationId, reply);
   await markQueuedReply(sb, queuedJobId, reply, null);
   return true;
 }
