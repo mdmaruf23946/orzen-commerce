@@ -229,7 +229,7 @@ export function buildSystemPrompt(
   const askForInfo = on(agent.ask_for_info);
   const allowEscalate = on(agent.escalate_to_human);
   const fallbackMessage = String(agent.fallback_message ?? "").trim();
-  const agentDescription = String(agent.description ?? "").trim();
+  const agentDescription = String(agent.description ?? "").trim().slice(0, 200);
 
   // ---- Admin-configured Buy Now / order collection flow (physical only) ----
   const orderFlow = normalizeOrderFlow(agent.order_flow);
