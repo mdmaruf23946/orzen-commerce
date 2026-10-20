@@ -808,7 +808,7 @@ async function finalizePendingMessengerOrder(opts: {
   const qty = Math.max(1, Math.min(Number(slot.qty ?? 1) || 1, 99));
   const { data: product } = await sb
     .from("products")
-    .select("id,name,price,stock,status,delivery_charge")
+    .select("id,name,price,stock,status,delivery_charge,variants")
     .eq("store_id", storeId)
     .eq("id", slot.product_id)
     .maybeSingle();
@@ -833,7 +833,21 @@ async function finalizePendingMessengerOrder(opts: {
   });
   if (blocked) return true;
 
-  const subtotal = Number(product.price) * qty;
+  const vmod = await import("./messenger-variants");
+  const vsel = (slot.variant_sel && typeof slot.variant_sel === "object" ? slot.variant_sel : {}) as Record<string, string>;
+  if (vmod.nextVariantStep((product as any).variants, vsel)) {
+    await sendNextVariantStep(sb, token, psid, conversationId, product as any, vsel);
+    return true;
+  }
+  const vchosen = vmod.selectedVariant((product as any).variants, vsel);
+  const vlabel = vmod.variantLabel(vsel);
+  if (vchosen?.stock != null && vchosen.stock < qty) {
+    await sendAndLogText(sb, token, psid, conversationId, `দুঃখিত, ${product.name} (${vlabel}) এর স্টক এখন ${vchosen.stock}টি। অন্য অপশন নিতে আবার Buy Now চাপুন।`);
+    return true;
+  }
+  const unitPrice = vchosen?.price != null && vchosen.price > 0 ? vchosen.price : Number(product.price);
+  const itemName = vlabel ? `${product.name} (${vlabel})` : product.name;
+  const subtotal = unitPrice * qty;
   const addressText = [slot.full_address, slot.area, slot.village, slot.union, slot.upazila, slot.district]
     .filter(Boolean)
     .join(", ");
@@ -849,7 +863,7 @@ async function finalizePendingMessengerOrder(opts: {
   const created = await createChatOrder(
     sb,
     storeId,
-    buildIdempotencyKey({ channel: "messenger", conversationId, productId: product.id, qty, phone: phoneClean }),
+    buildIdempotencyKey({ channel: "messenger", conversationId, productId: product.id, variant: vlabel || null, qty, phone: phoneClean }),
     {
       customer_name: String(slot.customer_name).trim(),
       phone: phoneClean,
@@ -868,7 +882,7 @@ async function finalizePendingMessengerOrder(opts: {
         ? `Placed via Messenger AI Sales Agent — ${String(slot.note).slice(0, 300)}`
         : "Placed via Messenger AI Sales Agent",
     },
-    [{ product_id: product.id, name: product.name, price: Number(product.price), qty }],
+    [{ product_id: product.id, name: itemName, price: unitPrice, qty }],
   );
 
   if (!created.ok && created.error === "out_of_stock") {
@@ -2548,7 +2562,7 @@ export async function handleMessengerWebhook(request: Request): Promise<Response
               // arrive as ordinary messages. Both mean the same intent and must
               // start the order flow instead of going to the LLM as raw text.
               const qrPayload = String((parsed.attachments?.[0] as any)?.payload ?? "");
-              if (parsed.message_type === "quick_reply" && /^BUY_[0-9a-f-]{36}$/i.test(qrPayload)) {
+              if (parsed.message_type === "quick_reply" && (/^BUY_[0-9a-f-]{36}$/i.test(qrPayload) || /^VAR\|[0-9a-f-]{36}\|/i.test(qrPayload))) {
                 await sb.from("ai_messages").insert({
                   conversation_id: conv!.id,
                   role: "user",
