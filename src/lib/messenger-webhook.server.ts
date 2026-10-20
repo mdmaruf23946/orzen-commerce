@@ -473,7 +473,15 @@ function smallTalkReply(text: string) {
 function sanitizeMessengerReply(reply: string, latestText: string) {
   const text = reply.trim();
   if (!text) return text;
-  if (/productId|product_id|must_use_focus_product|tool|database|undefined|null/i.test(text)) {
+  // Only replace replies that leak internal identifiers — word-bounded so
+  // normal Bangla/English text is never swallowed.
+  if (/\b(productId|product_id|must_use_focus_product|focusProductId|undefined|null)\b/.test(text)) {
+    const cleaned = text
+      .split(/\n+/)
+      .filter((l) => !/\b(productId|product_id|must_use_focus_product|focusProductId|undefined|null)\b/.test(l))
+      .join("\n")
+      .trim();
+    if (cleaned.length >= 8) return cleaned;
     if (isSmallTalkIntent(latestText)) return smallTalkReply(latestText);
     return "দুঃখিত, আপনার কথাটা বুঝেছি—কোন প্রোডাক্টটি চান সেটার নাম আরেকবার লিখলে আমি ঠিকভাবে ছবিসহ দেখাচ্ছি।";
   }

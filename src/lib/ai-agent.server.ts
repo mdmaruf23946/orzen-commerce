@@ -1103,6 +1103,16 @@ export async function resolveFocusProduct(opts: {
     .filter((row) => row.score >= 25)
     .sort((a, b) => b.score - a.score);
 
+  // Follow-up: keep the recent product unless the message clearly names
+  // another product (a term appears in that product's name).
+  if (recentFocus) {
+    const top0 = scored[0]?.product;
+    const namesOther =
+      top0 && top0.id !== recentFocus.id &&
+      terms.some((t) => t.length >= 3 && String(top0.name ?? "").toLowerCase().includes(t));
+    if (!namesOther) return pinRecent();
+  }
+
   if (!scored.length) {
     // Deictic with multiple recent products → mark ambiguous with those.
     if (hasDeictic && opts.conversationId) {
