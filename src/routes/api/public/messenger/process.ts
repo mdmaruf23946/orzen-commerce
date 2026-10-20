@@ -121,7 +121,16 @@ export const Route = createFileRoute("/api/public/messenger/process")({
             // A previous attempt can send successfully and then fail while doing
             // bookkeeping. Once recorded, never send that customer reply again.
             let timings: unknown = null;
-            if (!job.reply_text && !job.outbound_message_id) {
+            // Re-read the reply marker right before sending: a parallel wake may
+            // have delivered it after our claim snapshot was taken.
+            const { data: fresh } = await supabaseAdmin
+              .from("messenger_jobs")
+              .select("reply_text,outbound_message_id")
+              .eq("id", job.id)
+              .maybeSingle();
+            const alreadySent = !!((fresh as any)?.reply_text || (fresh as any)?.outbound_message_id);
+            if (!job.reply_text && !job.outbound_message_id && !alreadySent) {
+              if (!claimInflight(job.id)) return new Response("Already running", { status: 202 });
               const jobRef = job;
               const traced = runWithTrace(() => runQueuedDelivery(
                 request.url,
