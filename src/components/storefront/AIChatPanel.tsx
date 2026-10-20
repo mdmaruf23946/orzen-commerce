@@ -126,13 +126,44 @@ export default function AIChatPanel({
 
   const busy = status === "submitted" || status === "streaming";
 
+  // Pull merchant replies from the panel inbox (and notice a takeover).
+  useEffect(() => {
+    if (!conversationId || !historyLoaded) return;
+    const id = setInterval(async () => {
+      if (status === "submitted" || status === "streaming") return;
+      try {
+        const res = await loadHistory({ data: { slug, conversationId } });
+        setHandedOff(!!res.handedOff);
+        if (res.handedOff) {
+          setChatError(null);
+          setMessages(
+            res.messages
+              .filter((m) => m.role === "user" || m.role === "assistant")
+              .map((m) => ({ id: m.id, role: m.role, parts: [{ type: "text", text: m.content }] })) as UIMessage[],
+          );
+        }
+      } catch { /* ignore */ }
+    }, handedOff ? 5000 : 15000);
+    return () => clearInterval(id);
+  }, [conversationId, historyLoaded, handedOff, status, slug, loadHistory, setMessages]);
+
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (!input.trim() || busy || handedOff) return;
+    if (!input.trim() || busy) return;
     const text = input.trim();
     setInput("");
     setChatError(null);
     setLastText(text);
+    if (handedOff) {
+      // A person is answering: store the message for the merchant inbox only.
+      setMessages([...messages, { id: `local-${Date.now()}`, role: "user", parts: [{ type: "text", text }] } as UIMessage]);
+      await fetch("/api/ai/chat", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ slug, conversationId, messages: [{ id: "u", role: "user", parts: [{ type: "text", text }] }] }),
+      }).catch(() => setChatError(GENERIC_CHAT_ERROR));
+      return;
+    }
     await sendMessage({ text });
   }
 
