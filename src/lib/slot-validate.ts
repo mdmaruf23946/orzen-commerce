@@ -112,8 +112,8 @@ export function sanitizeSlot<T extends Record<string, any>>(slot: T): { slot: T;
   return { slot: next as T, dropped };
 }
 
-const YES = /^(?:হ্যাঁ|হ্যা|হা|হাঁ|জি|জ্বি|জী|ঠিক|ঠিক আছে|সঠিক|হুম|হ্যাঁ ঠিক|yes|ya|yeah|yep|ha|haa|hya|ji|jee|ok|okay|right|correct|sure)[\s!.।]*$/i;
-const NO = /^(?:না|নাহ|ভুল|ঠিক না|no|na|nah|nope|wrong|vul|bhul)[\s!.।]*$/i;
+const YES = /^(?:হ্যাঁ|হ্যা|হা|হাঁ|হে|হেঁ|হ্যে|হুঁ|জি|জ্বি|জী|ঠিক|ঠিক আছে|সঠিক|হুম|হ্যাঁ ঠিক|কনফার্ম|কনফার্ম করুন|কনফাম|অর্ডার করুন|yes|ya|yeah|yep|ha|haa|hya|he|hea|ji|jee|ok|okay|right|correct|sure|confirm)(?:\s+(?:ভাই|আপু|ভাইয়া|ঠিক আছে|কনফার্ম|করুন|bhai|vai))*[\s!.।]*$/i;
+const NO = /^(?:না|নাহ|ভুল|ঠিক না|নিব না|নিবো না|নেব না|লাগবে না|no|na|nah|nope|wrong|vul|bhul|lagbe na|nibo na)(?:\s+(?:ভাই|আপু|bhai|vai))*[\s!.।]*$/i;
 export function isAffirmative(text: string) {
   return YES.test(String(text ?? "").trim());
 }
