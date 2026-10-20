@@ -141,8 +141,8 @@ export function OmniCustomerPanel({ conversationId, onClose }: { conversationId:
               return (
                 <Link
                   key={o.id}
-                  to="/admin/orders/$id"
-                  params={{ id: o.id }}
+                  to="/admin/invoice/$orderId"
+                  params={{ orderId: o.id }}
                   className="flex items-center gap-2 rounded-lg border p-2.5 text-xs transition-colors hover:bg-muted"
                 >
                   <div className="min-w-0 flex-1">
