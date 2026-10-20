@@ -1851,6 +1851,41 @@ async function sendAndLogText(
   }
 }
 
+/** Ask the next variant (Color → Size …) as tap buttons. Returns false when all are chosen. */
+async function sendNextVariantStep(
+  sb: ReturnType<typeof admin>,
+  token: string,
+  psid: string,
+  conversationId: string,
+  product: { id: string; name: string; variants?: unknown },
+  sel: Record<string, string>,
+) {
+  const { nextVariantStep, optionLabelBn, variantPayload, variantLabel } = await import("./messenger-variants");
+  const step = nextVariantStep(product.variants, sel);
+  if (!step) return false;
+  const label = optionLabelBn(step.name);
+  if (!step.values.length) {
+    await sendAndLogText(sb, token, psid, conversationId, `দুঃখিত, ${product.name}${Object.keys(sel).length ? ` (${variantLabel(sel)})` : ""} এর কোনো ${label} এখন স্টকে নেই। অন্য অপশন বেছে নিতে আবার Buy Now চাপুন।`);
+    return true;
+  }
+  const picked = Object.keys(sel).length ? `✅ ${variantLabel(sel)}\n` : "";
+  const text = `${picked}${product.name} — আপনার পছন্দের ${label} বেছে নিন 👇`;
+  try {
+    const sent = await sendQuickReplies(
+      token,
+      psid,
+      text,
+      step.values.slice(0, 13).map((v) => ({ title: v, payload: variantPayload(product.id, step.name, v) })),
+    );
+    await logOutgoingText(sb, conversationId, text, (sent as any)?.message_id ?? null);
+  } catch (e) {
+    await logOutgoingText(sb, conversationId, text, null, (e as Error).message);
+    throw e;
+  }
+  return true;
+}
+
+
 async function sendAndLogViewSiteButton(
   sb: ReturnType<typeof admin>,
   token: string,
