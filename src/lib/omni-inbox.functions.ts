@@ -121,3 +121,100 @@ export const setOmniHandoff = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
+// ---------- Customer CRM (right sidebar) ----------
+// Matches this store's orders by the conversation's phone (last 10 digits) so
+// "+8801…", "01…" and "8801…" are the same customer. Store-scoped always.
+function phoneKey(p?: string | null) {
+  const d = String(p ?? "").replace(/\D/g, "");
+  return d.length >= 10 ? d.slice(-10) : "";
+}
+
+export const getOmniCustomer = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ conversationId: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const sb = context.supabase;
+    const storeId = await storeIdFor(sb, context.userId);
+    const { data: conv } = await sb
+      .from("ai_conversations")
+      .select("id,store_id,channel,customer_name,phone,address,first_contact_at,tags,lead_status")
+      .eq("id", data.conversationId)
+      .maybeSingle();
+    if (!conv || (conv as any).store_id !== storeId) throw new Error("Conversation not found");
+    const key = phoneKey((conv as any).phone);
+    let orders: any[] = [];
+    if (key) {
+      const { data: rows, error } = await sb
+        .from("orders")
+        .select("id,invoice_no,status,subtotal,created_at,courier_status,followup_status,address,customer_name")
+        .eq("store_id", storeId)
+        .eq("is_test", false)
+        .ilike("phone", `%${key}`)
+        .order("created_at", { ascending: false })
+        .limit(200);
+      if (error) throw new Error(error.message);
+      orders = rows ?? [];
+    }
+    const total = orders.length;
+    const delivered = orders.filter((o) => o.status === "delivered").length;
+    const cancelled = orders.filter((o) => o.status === "cancelled").length;
+    const pending = orders.filter((o) => o.status === "pending").length;
+    const ltv = orders.filter((o) => o.status === "delivered").reduce((s, o) => s + Number(o.subtotal || 0), 0);
+    const closed = delivered + cancelled;
+    const c = conv as any;
+    return {
+      customer: {
+        name: c.customer_name ?? orders[0]?.customer_name ?? null,
+        phone: c.phone ?? null,
+        address: c.address ?? orders[0]?.address ?? null,
+        channel: c.channel,
+        firstContact: c.first_contact_at,
+      },
+      stats: {
+        total,
+        delivered,
+        cancelled,
+        pending,
+        ltv,
+        deliveryRate: closed ? Math.round((delivered / closed) * 100) : null,
+        cancelRate: closed ? Math.round((cancelled / closed) * 100) : null,
+      },
+      recent: orders.slice(0, 8).map((o) => ({
+        id: o.id,
+        invoice_no: o.invoice_no,
+        status: o.status,
+        followup_status: o.followup_status,
+        total: Number(o.subtotal || 0),
+        created_at: o.created_at,
+      })),
+    };
+  });
+
+export const updateOmniCustomer = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z
+      .object({
+        conversationId: z.string().uuid(),
+        name: z.string().trim().max(100),
+        phone: z.string().trim().max(20).regex(/^[+\d\s-]*$/, "ফোন নম্বর সঠিক নয়"),
+        address: z.string().trim().max(400),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const storeId = await storeIdFor(context.supabase, context.userId);
+    await assertConv(context.supabase, storeId, data.conversationId);
+    const { error } = await context.supabase
+      .from("ai_conversations")
+      .update({
+        customer_name: data.name || null,
+        phone: data.phone || null,
+        address: data.address || null,
+      } as any)
+      .eq("id", data.conversationId)
+      .eq("store_id", storeId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
