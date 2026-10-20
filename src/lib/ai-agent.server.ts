@@ -421,24 +421,24 @@ digital/service/subscription are bought on the website only: never collect order
   ].filter(Boolean);
   // Frontline greeting turn: no order/product-type sections (old monolithic prompt removed).
   const pureGreetingTurn = !po && !focus?.product && allowedToolsFor(latestUserText).size === 1;
+  const rules = drawerBoundRules({
+    text: latestUserText,
+    orderActive: !!po,
+    hasFocus: !!focus?.product,
+    displayTools,
+    allowRecommend,
+  });
+  const routed = specialistFocus("", channel, latestUserText);
+  const needsOrderSection = !!po || routed.agentId === "order" || routed.agentId === "tracking" ||
+    routed.secondaryAgents.includes("order") || routed.secondaryAgents.includes("tracking");
 
   return `${globalBlock ? globalBlock + "\n\n" : ""}You are ${agent.agent_name}, a warm human-sounding sales assistant for "${store.name}" chatting on ${channel}.
 ${agentDescription ? `Role: ${agentDescription}\n` : ""}${lang} ${emoji} ${human} Style: ${agent.style}.
 ${toggles}${offSources.length ? `\nDo not discuss: ${offSources.join(", ")}.` : ""}
 
 # Rules
-- Facts (price, stock, delivery charge, policy, product details) come ONLY from this turn's tool results, the Focus block or Store facts. Unverified numbers are auto-removed. Delivery charge: always call getDeliveryCharge.
-- Greeting/small talk: reply naturally, no tools, no old products.
-- Product/category/price/browse intent: call searchProducts immediately (listCategories for categories). If 0 results retry broader/English synonym before saying not found.
-- Show products with ${displayTools}, plus one short line that adds value (don't repeat name/price).
-- Out of stock: say so${allowRecommend ? " and search alternatives in the same category" : ""}.
-- Short, natural spoken language; vary openers; never repeat earlier sentences; no technical words (ক্যাটালগ, শনাক্ত, ids, errors).
-- Only say "see below"/👇 when sending a card/link this turn. Never type raw URLs; links come from tools. Never promise to send later.
-- Customer changes topic: answer the new topic first, resume order later. Never re-ask known info.
-- Customers often misspell or half-write words (e.g. "সার্চ"/"চাজ" = চার্জ, "dlvry" = delivery). Work out the intended meaning from context and answer that. If it is genuinely unclear, ask one short question: "আপনি কি … বোঝাতে চেয়েছেন?"
-- A question, greeting or product talk is never the customer's name or address. Only save customer_name/full_address the customer clearly gave; if unsure, confirm first ("আপনার নাম কি …?").
-- Delivery charge asked without an area: list every zone charge from getDeliveryCharge. When the customer then gives an address, tell that area's charge before anything else.
-${pureGreetingTurn ? "" : `${typeSection}\n\n${orderSection}`}
+${rules.join("\n")}
+${pureGreetingTurn ? "" : `${nonPhysicalInPlay || routed.agentId !== "frontline" ? typeSection : ""}${needsOrderSection ? `\n\n${orderSection}` : ""}`}
 
 ${latestBlock ? latestBlock + "\n\n" : ""}${focusBlock ? focusBlock + "\n\n" : ""}${stateBlock ? stateBlock + "\n\n" : ""}${factLines.length ? `# Store facts\n${factLines.join("\n")}\n\n` : ""}${pickedFaqs ? `# Relevant FAQ\n${pickedFaqs}` : ""}`.trim();
 }
