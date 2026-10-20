@@ -1,5 +1,5 @@
 import { customerTexts } from "@/lib/agents/customer-style";
-import { guardConversation } from "./conversation-guard.server";
+import { guardConversation, resolveHandoff } from "./conversation-guard.server";
 import { traceTime, setTraceMeta, currentTrace } from "./telemetry.server";
 
 /** Load-test jobs (mid "loadtest_…") never reach Meta. */
@@ -2362,7 +2362,7 @@ export async function handleMessengerWebhook(request: Request): Promise<Response
               // Ensure conversation
               let { data: conv } = await sb
                 .from("ai_conversations")
-                .select("id,psid_profile,unread_count,handoff_mode")
+                .select("id,psid_profile,unread_count,handoff_mode,handoff_reason,handoff_at")
                 .eq("store_id", integ.store_id)
                 .eq("channel", "messenger")
                 .eq("external_id", senderId)
@@ -2383,7 +2383,7 @@ export async function handleMessengerWebhook(request: Request): Promise<Response
                     customer_name: name,
                     psid_profile: profile ?? {},
                   })
-                  .select("id,psid_profile,unread_count,handoff_mode")
+                  .select("id,psid_profile,unread_count,handoff_mode,handoff_reason,handoff_at")
                   .single();
                 conv = created;
               } else if (token && profileIsStale(conv.psid_profile as any)) {
@@ -2683,7 +2683,20 @@ export async function handleMessengerWebhook(request: Request): Promise<Response
 
               // AI reply gate
               const handoff = (conv as any)!.handoff_mode ?? "ai";
-              if (handoff !== "ai") continue;
+              if (handoff !== "ai") {
+                // Never leave the customer in silence while in human mode.
+                const h = await resolveHandoff(sb, conv as any);
+                if (!h.resume) {
+                  if (h.ack && token) {
+                    try {
+                      const sent = await fbSend(token, senderId, h.ack);
+                      await markQueuedReply(sb, queuedJobId, h.ack, sent.message_id);
+                      await logOutgoingText(sb, conv!.id, h.ack, sent.message_id ?? null);
+                    } catch (e) { console.warn("[messenger] handoff ack failed", (e as Error).message); }
+                  }
+                  continue;
+                }
+              }
               if ((integ as any).human_takeover || (integ as any).ai_auto_reply === false) continue;
               if (!token) continue;
               if (await guardConversation(sb, conv!.id)) continue;
