@@ -150,3 +150,16 @@ export function allowedToolsFor(text: string, opts: { orderInProgress?: boolean;
   }
   return set;
 }
+
+/**
+ * Strict step budget (each step re-sends prompt + tool schemas):
+ * no card/search tools → 1 (answer from Focus/prompt); catalog/card → 2; live order → 3.
+ */
+export function stepBudget(toolNames: string[], opts: { orderInProgress?: boolean } = {}): 1 | 2 | 3 {
+  const t = new Set(toolNames.filter((k) => k !== "escalateToHuman"));
+  if (opts.orderInProgress && ["finalizeOrder", "createOrder", "placeOrder"].some((k) => t.has(k))) return 3;
+  if (t.size === 0) return 1;
+  const catalog = ["searchProducts", "showProducts", "sendProductCarousel", "sendProductCard", "showProduct"];
+  if (!catalog.some((k) => t.has(k))) return 1;
+  return 2;
+}
