@@ -1,6 +1,7 @@
 import { customerTexts } from "@/lib/agents/customer-style";
 import { guardConversation, resolveHandoff } from "./conversation-guard.server";
 import { traceTime, setTraceMeta, currentTrace } from "./telemetry.server";
+import { firstSighting, forget } from "./mid-dedupe";
 
 /** Load-test jobs (mid "loadtest_…") never reach Meta. */
 function isDryRun() {
@@ -2271,7 +2272,9 @@ export async function handleMessengerWebhook(request: Request): Promise<Response
               const senderId = String(ev?.sender?.id ?? "");
               const messageId = String(incoming?.mid ?? "");
               if (!senderId || !messageId || incoming?.is_echo) continue;
-              await sb.from("messenger_jobs").upsert(
+              const dedupeKey = `${pageId}:${messageId}`;
+              if (!firstSighting(dedupeKey)) continue;
+              const { error: queueError } = await sb.from("messenger_jobs").upsert(
                 {
                   store_id: integ.store_id,
                   integration_id: (integ as any).id,
@@ -2285,6 +2288,12 @@ export async function handleMessengerWebhook(request: Request): Promise<Response
                 } as any,
                 { onConflict: "page_id,message_id", ignoreDuplicates: true },
               );
+              // Never lose a message: if the durable write failed, forget the
+              // mid so Meta's redelivery is accepted, and ask Meta to retry.
+              if (queueError) {
+                forget(dedupeKey);
+                return new Response("Queue write failed", { status: 500 });
+              }
             }
             // Message events are now queued; everything else (postbacks,
             // delivery/read receipts, opt-ins, referrals) is still handled

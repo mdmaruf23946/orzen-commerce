@@ -2,6 +2,7 @@ import { runWithTrace, traceToJSON } from "@/lib/telemetry.server";
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
 import { handleMessengerWebhook } from "@/lib/messenger-webhook.server";
+import { claimInflight, releaseInflight } from "@/lib/mid-dedupe";
 
 const inputSchema = z.object({
   job_id: z.string().uuid(),
@@ -121,14 +122,23 @@ export const Route = createFileRoute("/api/public/messenger/process")({
             // A previous attempt can send successfully and then fail while doing
             // bookkeeping. Once recorded, never send that customer reply again.
             let timings: unknown = null;
-            if (!job.reply_text && !job.outbound_message_id) {
+            // Re-read the reply marker right before sending: a parallel wake may
+            // have delivered it after our claim snapshot was taken.
+            const { data: fresh } = await supabaseAdmin
+              .from("messenger_jobs")
+              .select("reply_text,outbound_message_id")
+              .eq("id", job.id)
+              .maybeSingle();
+            const alreadySent = !!((fresh as any)?.reply_text || (fresh as any)?.outbound_message_id);
+            if (!job.reply_text && !job.outbound_message_id && !alreadySent) {
+              if (!claimInflight(job.id)) return new Response("Already running", { status: 202 });
               const jobRef = job;
               const traced = runWithTrace(() => runQueuedDelivery(
                 request.url,
                 payload as { raw: string; signature: string; message_id: string },
                 jobRef,
               ));
-              const response = await traced.result;
+              const response = await traced.result.finally(() => releaseInflight(jobRef.id));
               timings = traceToJSON(traced.trace, (job as any).received_at ?? (job as any).created_at);
               if (!response.ok) {
                 const detail = (await response.text().catch(() => "")).slice(0, 200);
