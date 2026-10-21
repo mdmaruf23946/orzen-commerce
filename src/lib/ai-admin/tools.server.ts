@@ -1,3 +1,4 @@
+import { addCalendarMonths, daysToMonths } from "@/lib/plan-period";
 // Allow-listed action layer for the AI Admin Control agent.
 // The agent NEVER touches the database directly — every capability is one of
 // these handlers, each with a Zod schema, a risk level and a permission key.
@@ -225,7 +226,7 @@ export const TOOLS: ToolDef[] = [
         .limit(1)
         .maybeSingle();
       if (!pkg) throw new Error(`No plan matched "${a.plan}".`);
-      const expires = new Date(Date.now() + (pkg.duration_days || 30) * 86400000).toISOString();
+      const expires = addCalendarMonths(new Date(), daysToMonths(pkg.duration_days)).toISOString();
       const { error } = await sb
         .from("stores")
         .update({ package_id: pkg.id, subscription_status: "active", expires_at: expires })
@@ -393,7 +394,7 @@ export const TOOLS: ToolDef[] = [
         ? await sb.from("subscription_packages").select("duration_days, name").eq("id", s.package_id).maybeSingle()
         : { data: null };
       const base = s.expires_at && new Date(s.expires_at) > new Date() ? new Date(s.expires_at) : new Date();
-      const expires = new Date(base.getTime() + (pkg?.duration_days || 30) * 86400000).toISOString();
+      const expires = addCalendarMonths(base, daysToMonths(pkg?.duration_days)).toISOString();
       await sb
         .from("stores")
         .update({ subscription_status: "active", expires_at: expires, last_renewed_at: new Date().toISOString() })

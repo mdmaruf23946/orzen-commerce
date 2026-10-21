@@ -1,4 +1,5 @@
 import { grantPlanAiCredits } from "./ai-credit-grant.server";
+import { computePlanExpiry } from "./plan-period";
 // Server-only merchant wallet helpers. Never import from route/component
 // modules — go through `wallet.functions.ts`.
 import { CYCLE_MONTHS, type CycleKey } from "@/lib/billing.functions";
@@ -177,17 +178,21 @@ export async function payPlanFromWallet(
     return { ok: false, error: debit?.error ?? "Insufficient balance", balance: debit?.balance ?? 0, required: total };
   }
 
-  // Renewing the SAME plan stacks on the remaining time; switching to a
-  // different plan starts the new period from today.
-  let start = now;
+  // Only renewing the SAME paid plan keeps remaining time; free/trial time
+  // never stacks. Expiry = exact calendar months from start.
+  let st: any = null;
   if (args.storeId) {
-    const { data: st } = await sb.from("stores").select("expires_at, package_id").eq("id", args.storeId).maybeSingle();
-    const cur = (st as any)?.expires_at ? new Date((st as any).expires_at) : null;
-    const samePlan = (st as any)?.package_id === args.packageId;
-    if (samePlan && cur && cur > now) start = cur;
+    const { data } = await sb.from("stores")
+      .select("expires_at, package_id, subscription_packages(price,is_trial)")
+      .eq("id", args.storeId).maybeSingle();
+    st = data;
   }
-  const expires = new Date(start.getTime());
-  expires.setMonth(expires.getMonth() + months);
+  const curPkg = st?.subscription_packages;
+  const { expires } = computePlanExpiry({
+    now, months, targetPackageId: args.packageId,
+    currentPackageId: st?.package_id, currentExpiresAt: st?.expires_at,
+    currentPackagePaid: Number(curPkg?.price ?? 0) > 0 && !curPkg?.is_trial,
+  });
 
   if (args.storeId) {
     await sb
