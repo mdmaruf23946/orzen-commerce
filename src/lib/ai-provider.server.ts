@@ -693,10 +693,79 @@ export function toChatContent(parts: VisionPart[]): any[] {
  * Vision call returning the model's raw text, routed through the owner's keys.
  * Accepts Responses-style content parts so existing prompts stay unchanged.
  */
+/**
+ * Photo questions go straight to Gemini's native endpoint with inline images:
+ * ~1s and a few hundred tokens, versus the OpenAI-compatible path that timed
+ * out at 12s on photos. Returns null so callers fall back to the routed path.
+ */
+async function nativeGeminiVision(parts: VisionPart[], jsonOnly: boolean, maxTokens: number): Promise<string | null> {
+  if (!parts.some((p: any) => p?.type === "input_image" && String(p.image_url).startsWith("data:"))) return null;
+  const native: any[] = [];
+  for (const p of parts as any[]) {
+    if (p?.type === "input_text") native.push({ text: p.text });
+    else if (p?.type === "input_image") {
+      const m = String(p.image_url).match(/^data:([^;]+);base64,(.*)$/);
+      if (!m) return null; // remote links: let the routed path inline them
+      native.push({ inline_data: { mime_type: m[1], data: m[2] } });
+    }
+  }
+  const sb = admin();
+  const { data: settings } = await sb.from("ai_global_settings").select("gemini_api_keys").eq("id", 1).maybeSingle();
+  const { normalizeGeminiKeys, dhakaToday } = await import("./gemini-keys.server");
+  const today = dhakaToday();
+  const keys = normalizeGeminiKeys((settings as any)?.gemini_api_keys).filter(
+    (k) => k.enabled && k.key && k.provider === "gemini" && k.failed_on !== today,
+  );
+  for (const k of keys) {
+    for (const model of ["gemini-flash-lite-latest", "gemini-flash-latest"]) {
+      const bk = `native-vision|${k.id}|${model}`;
+      if (breakerOpen(bk)) continue;
+      try {
+        const res = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(k.key)}`,
+          {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            signal: AbortSignal.timeout(20_000),
+            body: JSON.stringify({
+              contents: [{ parts: native }],
+              generationConfig: {
+                temperature: 0,
+                maxOutputTokens: maxTokens,
+                ...(jsonOnly ? { responseMimeType: "application/json" } : {}),
+              },
+            }),
+          },
+        );
+        if (!res.ok) {
+          breakerFail(bk, `HTTP ${res.status}`);
+          continue;
+        }
+        const j: any = await res.json().catch(() => null);
+        const text = (j?.candidates?.[0]?.content?.parts ?? [])
+          .map((p: any) => (p?.thought ? "" : p?.text ?? ""))
+          .join("")
+          .trim();
+        if (text) {
+          breakerSuccess(bk);
+          return text;
+        }
+      } catch (e) {
+        breakerFail(bk, (e as Error).message);
+      }
+    }
+  }
+  return null;
+}
+
 export async function routedVisionText(
   parts: VisionPart[],
   opts?: { modelOverride?: string; jsonOnly?: boolean; maxTokens?: number },
 ): Promise<string> {
+  if (!opts?.modelOverride) {
+    const fast = await nativeGeminiVision(parts, !!opts?.jsonOnly, opts?.maxTokens ?? 400).catch(() => null);
+    if (fast) return fast;
+  }
   const text = await routedChatCompletion({
     messages: [{ role: "user", content: toChatContent(parts) }],
     temperature: 0,
