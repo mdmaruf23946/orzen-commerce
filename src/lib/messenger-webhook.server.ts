@@ -1013,7 +1013,10 @@ async function finalizePendingMessengerOrder(opts: {
   );
 
   if (!created.ok && created.error === "out_of_stock") {
-    await sendAndLogText(sb, token, psid, conversationId, `দুঃখিত, ${product.name} এর স্টক এখন ${(created as any).available}টি। কম quantity চাইলে বলুন।`);
+    const left = Number((created as any).available) || 0;
+    await sendAndLogText(sb, token, psid, conversationId, left <= 0
+      ? `দুঃখিত, ${product.name} এর শেষ স্টকটি এইমাত্র বিক্রি হয়ে গেছে। অন্য কোনো প্রোডাক্ট দেখতে চাইলে বলুন।`
+      : `দুঃখিত, ${product.name} এর স্টক এখন ${left}টি। কম quantity চাইলে বলুন।`);
     return true;
   }
   if (!created.ok) {
