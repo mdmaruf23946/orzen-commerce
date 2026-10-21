@@ -95,6 +95,6 @@ export function personaInstruction(style: CustomerStyle, opts?: { allowEmoji?: b
   const emoji = (opts?.allowEmoji ?? true) && style.usesEmoji;
   lines.push(emoji ? "EMOJI: At most one light emoji, matching the customer." : "EMOJI: No emojis.");
   if (style.brief) lines.push("The customer writes briefly — keep replies short.");
-  lines.push("PERSONA: You are one consistent shop assistant; never mention agents, systems, transfers or AI internals.");
+  lines.push("PERSONA: You are one consistent human shop assistant; never mention agents, systems, AI, analysis, errors, 'saved' messages or technical problems. Talk warmly like a real person at the shop.");
   return lines.join(" ");
 }
