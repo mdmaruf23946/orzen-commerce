@@ -68,6 +68,7 @@
     "isomorphic-dompurify": "^3.19.0",
     "jpeg-js": "^0.4.4",
     "jsbarcode": "^3.12.3",
+    "jssip": "^3.13.9",
     "lucide-react": "^0.575.0",
     "qrcode": "^1.5.4",
     "react": "^19.2.0",

@@ -4784,6 +4784,160 @@ export type Database = {
           },
         ]
       }
+      manual_call_gateways: {
+        Row: {
+          created_at: string
+          help_text: string | null
+          id: string
+          is_active: boolean
+          kind: string
+          name: string
+          sip_domain: string
+          updated_at: string
+          wss_url: string
+        }
+        Insert: {
+          created_at?: string
+          help_text?: string | null
+          id?: string
+          is_active?: boolean
+          kind?: string
+          name: string
+          sip_domain: string
+          updated_at?: string
+          wss_url: string
+        }
+        Update: {
+          created_at?: string
+          help_text?: string | null
+          id?: string
+          is_active?: boolean
+          kind?: string
+          name?: string
+          sip_domain?: string
+          updated_at?: string
+          wss_url?: string
+        }
+        Relationships: []
+      }
+      manual_call_lines: {
+        Row: {
+          caller_number: string | null
+          created_at: string
+          extension: string | null
+          gateway_id: string | null
+          id: string
+          is_default: boolean
+          label: string
+          record_calls: boolean
+          sip_password: string
+          sip_username: string
+          store_id: string
+          updated_at: string
+        }
+        Insert: {
+          caller_number?: string | null
+          created_at?: string
+          extension?: string | null
+          gateway_id?: string | null
+          id?: string
+          is_default?: boolean
+          label?: string
+          record_calls?: boolean
+          sip_password: string
+          sip_username: string
+          store_id: string
+          updated_at?: string
+        }
+        Update: {
+          caller_number?: string | null
+          created_at?: string
+          extension?: string | null
+          gateway_id?: string | null
+          id?: string
+          is_default?: boolean
+          label?: string
+          record_calls?: boolean
+          sip_password?: string
+          sip_username?: string
+          store_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "manual_call_lines_gateway_id_fkey"
+            columns: ["gateway_id"]
+            isOneToOne: false
+            referencedRelation: "manual_call_gateways"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      manual_calls: {
+        Row: {
+          answered_at: string | null
+          created_at: string
+          customer_name: string | null
+          direction: string
+          duration_sec: number
+          ended_at: string | null
+          id: string
+          line_id: string | null
+          notes: string | null
+          order_id: string | null
+          phone: string
+          recording_path: string | null
+          started_at: string
+          status: string
+          store_id: string
+          user_id: string | null
+        }
+        Insert: {
+          answered_at?: string | null
+          created_at?: string
+          customer_name?: string | null
+          direction?: string
+          duration_sec?: number
+          ended_at?: string | null
+          id?: string
+          line_id?: string | null
+          notes?: string | null
+          order_id?: string | null
+          phone: string
+          recording_path?: string | null
+          started_at?: string
+          status?: string
+          store_id: string
+          user_id?: string | null
+        }
+        Update: {
+          answered_at?: string | null
+          created_at?: string
+          customer_name?: string | null
+          direction?: string
+          duration_sec?: number
+          ended_at?: string | null
+          id?: string
+          line_id?: string | null
+          notes?: string | null
+          order_id?: string | null
+          phone?: string
+          recording_path?: string | null
+          started_at?: string
+          status?: string
+          store_id?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "manual_calls_line_id_fkey"
+            columns: ["line_id"]
+            isOneToOne: false
+            referencedRelation: "manual_call_lines"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       marketing_events: {
         Row: {
           created_at: string

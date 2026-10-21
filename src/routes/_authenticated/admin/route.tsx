@@ -198,6 +198,7 @@ const menuGroups: NavGroupDef[] = [
     icon: PhoneCall,
     items: [
       { to: CALL_SMS_HUB_PATH, label: "Call & SMS Apps", icon: Store },
+      { to: "/admin/manual-call", label: "Manual Call", icon: Phone },
     ],
   },
   {
