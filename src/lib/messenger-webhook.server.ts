@@ -2796,7 +2796,7 @@ export async function handleMessengerWebhook(request: Request): Promise<Response
               if (parsed.message_type === "image") {
                 const imageUrl = (parsed.attachments?.[0]?.url as string) || "";
                 if (fallbackOnly) {
-                  const fallback = "দুঃখিত, সাময়িক সমস্যার কারণে ছবিটি এখন বিশ্লেষণ করা যায়নি। ছবিটি সংরক্ষিত আছে—অনুগ্রহ করে একটু পরে আবার পাঠান।";
+                  const fallback = humanPhotoFallback();
                   const sent = await fbSend(token, senderId, fallback);
                   await markQueuedReply(sb, queuedJobId, fallback, sent.message_id);
                   await sb.from("ai_messages").insert({
