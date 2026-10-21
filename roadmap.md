@@ -108,3 +108,6 @@
 - [ ] Stage 3: history summary prompt compressor
 - [ ] Stage 4: per-store AI metrics dashboard
 - [ ] Stage 5: synthetic 50K load test on a test store
+
+## Self-learning automation (planned)
+- [ ] Learn store-scoped Q→A pairs from merchant manual replies + accepted AI replies (per store, never cross-store); serve as zero-token answers only for safe info (no price/stock/delivery/order).
