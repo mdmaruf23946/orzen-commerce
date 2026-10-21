@@ -10,6 +10,7 @@ import {
   logUsage,
   resolveFocusProduct,
 } from "@/lib/ai-agent.server";
+import { windowWebHistory } from "@/lib/web-history-window";
 
 function admin() {
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY!;
@@ -169,9 +170,10 @@ export const Route = createFileRoute("/api/ai/chat")({
             conversationId: ctxConvId,
             text: lastUserText,
           });
+          const win = windowWebHistory(body.messages);
           const result = streamText({
             model,
-            system: buildSystemPrompt(s, agent, {
+            system: (win.summary ? win.summary + "\n" : "") + buildSystemPrompt(s, agent, {
               channel: "web",
               settings,
               state: {
@@ -188,7 +190,7 @@ export const Route = createFileRoute("/api/ai/chat")({
                 .slice(-10),
             }),
 
-            messages: await convertToModelMessages(body.messages),
+            messages: await convertToModelMessages(win.recent),
             tools: await scopedToolsForText(
               {
                 storeId: store.id,
