@@ -19,6 +19,7 @@ import {
   listManualLines, saveManualLine, deleteManualLine, getManualLineCredentials,
   startManualCall, updateManualCall, listManualCalls, manualRecordingUrl,
 } from "@/lib/manual-call.functions";
+import { ZadarmaWebPhone } from "@/components/admin/manual-call/ZadarmaWebPhone";
 
 export const Route = createFileRoute("/_authenticated/admin/manual-call")({
   component: ManualCallPage,
@@ -50,14 +51,16 @@ function ManualCallPage() {
     <div className="space-y-4">
       <AdminPageHeader title="Manual Call" description="Connect your own phone line and call customers directly from the panel. Every call is saved with its recording." />
       <Tabs value={tab} onValueChange={setTab}>
-        <TabsList className="grid w-full grid-cols-4 sm:w-auto sm:inline-grid">
+        <TabsList className="grid w-full grid-cols-5 sm:w-auto sm:inline-grid">
           <TabsTrigger value="dashboard"><LayoutDashboard className="mr-1 h-4 w-4" />Dashboard</TabsTrigger>
           <TabsTrigger value="dialer"><Phone className="mr-1 h-4 w-4" />Dialer</TabsTrigger>
+          <TabsTrigger value="webphone"><PhoneCall className="mr-1 h-4 w-4" />Zadarma</TabsTrigger>
           <TabsTrigger value="history"><History className="mr-1 h-4 w-4" />History</TabsTrigger>
           <TabsTrigger value="setup"><Settings2 className="mr-1 h-4 w-4" />Setup</TabsTrigger>
         </TabsList>
         <TabsContent value="dashboard"><Dashboard onDial={() => setTab("dialer")} noLine={!lines.length} onSetup={() => setTab("setup")} /></TabsContent>
         <TabsContent value="dialer"><Dialer lines={lines} storeId={(linesQ.data as any)?.storeId} onSetup={() => setTab("setup")} /></TabsContent>
+        <TabsContent value="webphone"><ZadarmaWebPhone lines={lines} /></TabsContent>
         <TabsContent value="history"><CallHistory /></TabsContent>
         <TabsContent value="setup"><Setup data={linesQ.data as any} /></TabsContent>
       </Tabs>

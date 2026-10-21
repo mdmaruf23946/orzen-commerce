@@ -226,3 +226,48 @@ export const manualRecordingUrl = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { url: s.signedUrl };
   });
+
+// ---------- Zadarma Web Phone (official WebRTC widget) ----------
+async function zadarmaCall(method: "GET" | "POST", path: string, params: Record<string, string>) {
+  const key = process.env["ZADARMA_API_KEY"];
+  const secret = process.env["ZADARMA_API_SECRET"];
+  if (!key || !secret) throw new Error("Zadarma keys are not saved yet");
+  const q = new URLSearchParams(Object.entries(params).sort(([a], [b]) => (a < b ? -1 : 1))).toString();
+  const enc = new TextEncoder();
+  const { md5 } = await import("@/lib/md5");
+  const ck = await crypto.subtle.importKey("raw", enc.encode(secret), { name: "HMAC", hash: "SHA-1" }, false, ["sign"]);
+  const sig = new Uint8Array(await crypto.subtle.sign("HMAC", ck, enc.encode(path + q + md5(q))));
+  const hex = Array.from(sig, (b) => b.toString(16).padStart(2, "0")).join("");
+  const headers: Record<string, string> = { Authorization: `${key}:${btoa(hex)}` };
+  let url = `https://api.zadarma.com${path}`;
+  let body: string | undefined;
+  if (method === "GET") url += q ? `?${q}` : "";
+  else { body = q; headers["Content-Type"] = "application/x-www-form-urlencoded"; }
+  const r = await fetch(url, { method, headers, body });
+  const j: any = await r.json().catch(() => ({}));
+  return { ok: r.ok && j?.status === "success", status: r.status, json: j };
+}
+
+export const getZadarmaWebPhone = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ id: z.string().uuid(), domain: z.string().max(253) }).parse(d))
+  .handler(async ({ data, context }) => {
+    const storeId = await storeIdFor(context.supabase, context.userId);
+    const { data: line } = await context.supabase
+      .from("manual_call_lines").select("sip_username")
+      .eq("id", data.id).eq("store_id", storeId).maybeSingle();
+    if (!line?.sip_username) return { ok: false as const, error: "Line not found" };
+    try {
+      // Allow this website for the widget (ignored if already added).
+      await zadarmaCall("POST", "/v1/webrtc/create/", { domain: data.domain }).catch(() => null);
+      await zadarmaCall("POST", "/v1/webrtc/domain/", { domain: data.domain }).catch(() => null);
+      const res = await zadarmaCall("GET", "/v1/webrtc/get_key/", { sip: String(line.sip_username) });
+      if (!res.ok) {
+        console.error("zadarma get_key", res.status, res.json?.message);
+        return { ok: false as const, error: res.status === 401 ? "Zadarma rejected the API keys" : (res.json?.message || "Zadarma error") };
+      }
+      return { ok: true as const, key: String(res.json.key), sip: String(line.sip_username) };
+    } catch (e: any) {
+      return { ok: false as const, error: e?.message || "Zadarma error" };
+    }
+  });
