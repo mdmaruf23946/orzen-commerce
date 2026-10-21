@@ -4,6 +4,8 @@ import { guardConversation, resolveHandoff } from "./conversation-guard.server";
 // Mirrors the Messenger webhook flow: log event → upsert conversation →
 // store inbound message → AI reply (unless a human took over).
 import { traceTime, setTraceMeta } from "./telemetry.server";
+import { firstSighting, forget } from "./mid-dedupe";
+import { cached } from "./ttl-cache.server";
 import { createClient } from "@supabase/supabase-js";
 import { createHmac, timingSafeEqual } from "node:crypto";
 import type { Database } from "@/integrations/supabase/types";
@@ -328,11 +330,10 @@ export async function handleWhatsAppWebhook(request: Request) {
       const phoneNumberId = value?.metadata?.phone_number_id as string | undefined;
       if (!phoneNumberId) continue;
 
-      const { data: integ } = await sb
-        .from("whatsapp_integrations")
-        .select("*")
-        .eq("phone_number_id", phoneNumberId)
-        .maybeSingle();
+      // Integration settings are store-level config: cache 60s per isolate.
+      const { data: integ } = await cached(`wa-integ:${phoneNumberId}`, 60_000, async () =>
+        await sb.from("whatsapp_integrations").select("*").eq("phone_number_id", phoneNumberId).maybeSingle(),
+      );
       if (!integ) continue;
 
       const appSecret = await decrypt((integ as any).app_secret_encrypted);
@@ -357,7 +358,7 @@ export async function handleWhatsAppWebhook(request: Request) {
 
       const storeId = (integ as any).store_id as string;
 
-      for (const st of value?.statuses ?? []) {
+      await Promise.all((value?.statuses ?? []).map(async (st: any) => {
         await sb.from("whatsapp_webhook_events").insert({
           store_id: storeId,
           phone_number_id: phoneNumberId,
@@ -373,12 +374,15 @@ export async function handleWhatsAppWebhook(request: Request) {
             ...(st?.errors?.[0]?.title ? { error: friendlyWaError(st.errors[0].title) } : {}),
           } as any)
           .eq("mid", st.id);
-      }
+      }));
 
       for (const msg of value?.messages ?? []) {
         const waId = String(msg.from ?? "");
         const mid = String(msg.id ?? "");
         if (!waId || !mid) continue;
+        // Fast first line: drop Meta re-deliveries before any database work.
+        const dedupeKey = `wa:${phoneNumberId}:${mid}`;
+        if (!firstSighting(dedupeKey)) continue;
         const profileName = value?.contacts?.[0]?.profile?.name ?? null;
 
         let text = "";
@@ -403,7 +407,7 @@ export async function handleWhatsAppWebhook(request: Request) {
         }
 
         const { conv, created } = await upsertConversation(sb, storeId, waId, profileName);
-        if (!conv) return new Response("Conversation store failed", { status: 500 });
+        if (!conv) { forget(dedupeKey); return new Response("Conversation store failed", { status: 500 }); }
 
         // Unique (phone_number_id, message_id): a Meta retry never creates a second job.
         const payload: WaJobPayload = {
@@ -431,46 +435,50 @@ export async function handleWhatsAppWebhook(request: Request) {
             { onConflict: "phone_number_id,message_id", ignoreDuplicates: true },
           )
           .select("id");
-        if (jobErr) return new Response("Queue failed", { status: 500 });
+        if (jobErr) { forget(dedupeKey); return new Response("Queue failed", { status: 500 }); }
         if (!job || (job as any[]).length === 0) continue; // duplicate delivery
 
-        // Recovery: re-wake a few jobs whose wake-up was lost (due > 60s ago).
-        const { data: stuck } = await (sb as any)
-          .from("whatsapp_jobs")
-          .select("id")
-          .in("status", ["pending", "retry"])
-          .lt("available_at", new Date(Date.now() - 60_000).toISOString())
-          .order("available_at", { ascending: true })
-          .limit(3);
-        for (const s of (stuck ?? []) as any[]) {
-          try { await (sb as any).rpc("kick_whatsapp_job", { _job_id: s.id }); } catch { /* best effort */ }
-        }
-
-        await sb.from("whatsapp_webhook_events").insert({
-          store_id: storeId,
-          phone_number_id: phoneNumberId,
-          event_type: `message:${msg.type}`,
-          external_id: mid,
-          payload: { from: waId, type: msg.type },
-        } as any);
-        await logInbound(sb, conv.id, { text, type, attachments, mid });
-        await sb
-          .from("ai_conversations")
-          .update({
-            last_message_at: new Date().toISOString(),
-            last_message_preview: (text || `[${type}]`).slice(0, 200),
-            unread_count: (conv.unread_count ?? 0) + 1,
-            status: "open",
-          })
-          .eq("id", conv.id);
-        await sb
-          .from("whatsapp_integrations")
-          .update({
-            last_webhook_at: new Date().toISOString(),
-            last_webhook_type: `message:${msg.type}`,
-            last_webhook_error: null,
-          } as any)
-          .eq("id", (integ as any).id);
+        // Recovery + bookkeeping run in parallel so Meta gets 200 fast.
+        const kickStuck = async () => {
+          const { data: stuck } = await (sb as any)
+            .from("whatsapp_jobs")
+            .select("id")
+            .in("status", ["pending", "retry"])
+            .lt("available_at", new Date(Date.now() - 60_000).toISOString())
+            .order("available_at", { ascending: true })
+            .limit(25);
+          await Promise.all(((stuck ?? []) as any[]).map((s) =>
+            (sb as any).rpc("kick_whatsapp_job", { _job_id: s.id }).then(() => null, () => null),
+          ));
+        };
+        await Promise.all([
+          kickStuck().catch(() => null),
+          sb.from("whatsapp_webhook_events").insert({
+            store_id: storeId,
+            phone_number_id: phoneNumberId,
+            event_type: `message:${msg.type}`,
+            external_id: mid,
+            payload: { from: waId, type: msg.type },
+          } as any),
+          logInbound(sb, conv.id, { text, type, attachments, mid }),
+          sb
+            .from("ai_conversations")
+            .update({
+              last_message_at: new Date().toISOString(),
+              last_message_preview: (text || `[${type}]`).slice(0, 200),
+              unread_count: (conv.unread_count ?? 0) + 1,
+              status: "open",
+            })
+            .eq("id", conv.id),
+          sb
+            .from("whatsapp_integrations")
+            .update({
+              last_webhook_at: new Date().toISOString(),
+              last_webhook_type: `message:${msg.type}`,
+              last_webhook_error: null,
+            } as any)
+            .eq("id", (integ as any).id),
+        ]);
 
         try {
           const { dispatchNotification } = await import("@/lib/notify-dispatch.server");
