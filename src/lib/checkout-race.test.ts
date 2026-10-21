@@ -10,7 +10,7 @@ function makeStore(stock: number) {
   return {
     order(key: string, qty = 1) {
       const run = chain.then(async () => {
-        await new Promise((r) => setTimeout(r, 0));
+        await Promise.resolve();
         if (orders.has(key)) return { ok: true, existing: true };
         if (s < qty) return { ok: false, error: "out_of_stock", available: s };
         s -= qty; orders.add(key);
