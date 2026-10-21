@@ -51,6 +51,7 @@ import {
   sanitizeSlot,
 } from "@/lib/slot-validate";
 import { isDeliveryChargeQuestion } from "@/lib/text-normalize";
+import { isCatalogBrowseIntent } from "@/lib/catalog-browse-intent";
 
 // Absolute origin used for images and product links sent to Messenger.
 // Configurable per deployment so it follows the live custom domain.
@@ -2104,6 +2105,46 @@ async function sendAndLogViewSiteButton(
   }
 }
 
+async function sendCatalogBrowseReply(opts: {
+  sb: ReturnType<typeof admin>;
+  storeId: string;
+  conversationId: string;
+  psid: string;
+  token: string;
+}) {
+  const { sb, storeId, conversationId, psid, token } = opts;
+  const cols = "id,name,slug,brand,product_code,sku,category_id,short_description,description,price,old_price,stock,primary_image_url,gallery,features,specifications,variants,total_sold,rating,is_featured";
+  const [{ data: prods }, { data: slugRow }, { data: cats }] = await Promise.all([
+    sb.from("products").select(cols).eq("store_id", storeId).eq("status", "active").gt("stock", 0)
+      .order("is_featured", { ascending: false }).order("total_sold", { ascending: false, nullsFirst: false }).limit(4),
+    sb.from("stores").select("slug").eq("id", storeId).maybeSingle(),
+    sb.from("categories").select("name").eq("store_id", storeId).limit(6),
+  ]);
+  const products = (prods ?? []) as ProductRow[];
+  if (!products.length) return false;
+  await sendAndLogText(sb, token, psid, conversationId, "জি, আমাদের জনপ্রিয় কিছু প্রোডাক্ট দেখুন 😊", { hasCard: true });
+  const storeSlug = (slugRow as any)?.slug ?? null;
+  const cards = await Promise.all(products.map((p) => productCardInput(storeSlug, p, storeId, psid)));
+  const result = cards.length === 1 ? await sendProductCard(token, psid, cards[0]) : await sendProductCarousel(token, psid, cards);
+  await sb.from("ai_messages").insert({
+    conversation_id: conversationId,
+    role: "assistant",
+    direction: "out",
+    message_type: cards.length === 1 ? "product_card" : "product_carousel",
+    content: `[carousel] ${cards.length} products`,
+    attachments: cards.map((card, i) => ({ type: "product_card", product_id: products[i].id, element: card })),
+    mid: result.message_id ?? null,
+    delivery_status: "sent",
+  } as any);
+  await logProductRecommendations(sb, storeId, conversationId, products, "catalog browse");
+  const names = ((cats ?? []) as any[]).map((c) => c.name).filter(Boolean).slice(0, 5);
+  const follow = names.length
+    ? `আমাদের আরও কালেকশন আছে: ${names.join(", ")}। কোনটি দেখতে চান, অথবা প্রোডাক্টের নাম লিখুন — খুঁজে দিচ্ছি।`
+    : "আরও প্রোডাক্ট আছে। আপনার পছন্দের প্রোডাক্টের নাম লিখুন — খুঁজে দিচ্ছি।";
+  await sendAndLogText(sb, token, psid, conversationId, follow);
+  return true;
+}
+
 async function maybeSendDirectProductReply(opts: {
   sb: ReturnType<typeof admin>;
   storeId: string;
@@ -3104,6 +3145,26 @@ export async function handleMessengerWebhook(request: Request): Promise<Response
                 }
               } catch {
                 /* fall through to AI */
+              }
+
+              // "আপনাদের কাছে কি আছে?" → this store's top products as cards + a
+              // category prompt. Zero AI tokens, store-scoped.
+              if (isCatalogBrowseIntent(effectiveText)) {
+                try {
+                  const done = await sendCatalogBrowseReply({ sb, storeId: integ.store_id, conversationId: conv!.id, psid: senderId, token });
+                  if (done) {
+                    setTraceMeta("route", "fast");
+                    setTraceMeta("fast_kind", "catalog_browse");
+                    await markQueuedReply(sb, queuedJobId, "[top products]", null);
+                    await sb
+                      .from("ai_conversations")
+                      .update({ last_message_at: new Date().toISOString(), last_message_preview: "[top products]" })
+                      .eq("id", conv!.id);
+                    continue;
+                  }
+                } catch (e) {
+                  console.warn("[messenger] catalog browse failed", (e as Error).message);
+                }
               }
 
               // Name-only product message ("মানিব্যাগ", also "টিসার্ট কছে?") → store-scoped
