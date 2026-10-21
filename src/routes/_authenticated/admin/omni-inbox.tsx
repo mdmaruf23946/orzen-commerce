@@ -210,14 +210,15 @@ function OmniInbox() {
                 aria-label={t.label}
                 aria-pressed={channel === t.key}
                 className={cn(
-                  "relative grid h-12 shrink-0 place-items-center rounded-full border-2 transition-all",
-                  t.key === "all" ? "min-w-12 px-4 text-sm font-semibold" : "w-12",
-                  channel === t.key
-                    ? t.key === "all" ? "border-primary bg-primary text-primary-foreground" : "border-primary bg-primary/10 scale-105"
-                    : "border-transparent bg-muted/60 hover:bg-muted",
+                  "relative grid h-12 w-12 shrink-0 place-items-center rounded-full transition-all",
+                  channel === t.key ? "ring-2 ring-primary ring-offset-2 ring-offset-card" : "opacity-90 hover:opacity-100",
                 )}
               >
-                {t.key === "all" ? "All" : <ChannelIcon channel={t.key} className="h-8 w-8" />}
+                {t.key === "all" ? (
+                  <span className="grid h-12 w-12 place-items-center rounded-full bg-primary text-sm font-semibold text-primary-foreground">All</span>
+                ) : (
+                  <ChannelIcon channel={t.key} className="h-12 w-12" />
+                )}
                 {!!counts[t.key] && (
                   <span className="absolute -right-1 -top-1 grid h-5 min-w-5 place-items-center rounded-full bg-destructive px-1 text-[10px] font-semibold text-destructive-foreground ring-2 ring-card">
                     {counts[t.key]}
