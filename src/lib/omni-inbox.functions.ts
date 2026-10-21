@@ -47,7 +47,7 @@ export const listOmniConversations = createServerFn({ method: "POST" })
 
     let q = sb
       .from("ai_conversations")
-      .select("id,channel,customer_name,phone,unread_count,last_message_at,last_message_preview,handoff_mode,handoff_reason,total_orders,total_spent,created_at")
+      .select("id,channel,customer_name,phone,unread_count,last_message_at,last_message_preview,handoff_mode,handoff_reason,total_orders,total_spent,lead_status,created_at,profile_pic:psid_profile->>profile_pic,pending_phone:psid_profile->pending_order->>phone,pending_product:psid_profile->pending_order->>product_id")
       .eq("store_id", storeId)
       .in("channel", data.channel === "all" ? [...OMNI_CHANNEL_KEYS] : [data.channel])
       .order("last_message_at", { ascending: false, nullsFirst: false })
@@ -61,13 +61,25 @@ export const listOmniConversations = createServerFn({ method: "POST" })
       q = q.in("id", [...failed]);
     }
     if (data.folder === "vip") q = q.or("total_orders.gte.3,total_spent.gte.5000");
+    // Automatic segments
+    if (data.folder === "customers") q = q.or("total_orders.gte.1,lead_status.eq.ordered");
+    if (data.folder === "hold") q = q.eq("lead_status", "hold");
+    if (data.folder === "interested")
+      q = q.eq("total_orders", 0).or("lead_status.is.null,lead_status.neq.ordered").not("psid_profile->pending_order", "is", null);
+    if (data.folder === "incomplete")
+      q = q.eq("total_orders", 0).not("psid_profile->pending_order", "is", null).is("psid_profile->pending_order->>phone", null);
+    if (data.folder === "new") q = q.gte("first_contact_at", new Date(Date.now() - 86400_000).toISOString());
     if (data.search) {
       const s = data.search.replace(/[%_,()]/g, "");
       q = q.or(`customer_name.ilike.%${s}%,phone.ilike.%${s}%,last_message_preview.ilike.%${s}%`);
     }
     const { data: rows, error } = await q;
     if (error) throw new Error(error.message);
-    const out = (rows ?? []).map((r: any) => ({ ...r, failed: failed.has(r.id), vip: isVip(r) }));
+    const out = (rows ?? []).map((r: any) => {
+      const ordered = (r.total_orders ?? 0) > 0 || r.lead_status === "ordered";
+      const segment = ordered ? "customer" : r.lead_status === "hold" ? "hold" : r.pending_product ? (r.pending_phone ? "interested" : "incomplete") : null;
+      return { ...r, failed: failed.has(r.id), vip: isVip(r), segment };
+    });
 
     // Badge counts per channel (unread conversations).
     const { data: unread } = await sb
