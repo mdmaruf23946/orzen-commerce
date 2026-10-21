@@ -41,10 +41,10 @@ export const PANEL_SECTIONS: PanelSection[] = [
   { key: "omni_inbox", label: "Omni Inbox", group: "Channels & AI", paths: ["/admin/omni-inbox"], feature: "ai_agent" },
   { key: "handoff_queue", label: "Handoff Queue", group: "Channels & AI", paths: ["/admin/handoff-queue"] },
   { key: "messenger", label: "Messenger AI Integration", group: "Channels & AI", paths: ["/admin/messenger", "/admin/ai-messaging"], feature: "ai_messenger" },
-  { key: "messenger_inbox", label: "Messenger Inbox", group: "Channels & AI", paths: ["/admin/messenger-inbox"], feature: "messenger_inbox" },
+  { key: "messenger_inbox", label: "Messenger Inbox", group: "Channels & AI", paths: [], feature: "messenger_inbox" },
   { key: "whatsapp", label: "WhatsApp AI Integration", group: "Channels & AI", paths: ["/admin/whatsapp"], feature: "whatsapp" },
-  { key: "whatsapp_inbox", label: "WhatsApp Inbox", group: "Channels & AI", paths: ["/admin/whatsapp-inbox"], feature: "whatsapp" },
-  { key: "webchat", label: "Web Chat AI", group: "Channels & AI", paths: ["/admin/webchat", "/admin/webchat-inbox"], feature: "ai_agent" },
+  { key: "whatsapp_inbox", label: "WhatsApp Inbox", group: "Channels & AI", paths: [], feature: "whatsapp" },
+  { key: "webchat", label: "Web Chat AI", group: "Channels & AI", paths: ["/admin/webchat"], feature: "ai_agent" },
   { key: "facebook", label: "Facebook Page", group: "Marketing & Sales", paths: ["/admin/facebook"], feature: "facebook_page" },
 
   { key: "marketing", label: "Marketing & Targeting Apps", group: "Marketing & Sales", paths: ["/admin/marketing"], feature: "pixel" },

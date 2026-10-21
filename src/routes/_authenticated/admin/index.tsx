@@ -322,7 +322,7 @@ function Dashboard() {
           <QuickAction to="/admin/coupons" icon={Ticket} label="Create Coupon" tone="text-emerald-600 bg-emerald-50 dark:text-emerald-300 dark:bg-emerald-500/15" />
           <QuickAction to="/admin/banners" icon={ImageIcon} label="Create Banner" tone="text-violet-600 bg-violet-50 dark:text-violet-300 dark:bg-violet-500/15" />
           <QuickAction to="/admin/orders" icon={ShoppingBag} label="View Orders" tone="text-blue-600 bg-blue-50 dark:text-blue-300 dark:bg-blue-500/15" />
-          <QuickAction to="/admin/messenger-inbox" icon={MessageSquare} label="Messenger Inbox" tone="text-amber-600 bg-amber-50 dark:text-amber-300 dark:bg-amber-500/15" />
+          <QuickAction to="/admin/omni-inbox" icon={MessageSquare} label="Inbox" tone="text-amber-600 bg-amber-50 dark:text-amber-300 dark:bg-amber-500/15" />
           <QuickAction onClick={shareStore} icon={Share2} label="Share Store" tone="text-slate-700 bg-slate-100 dark:text-slate-200 dark:bg-slate-500/15" />
         </div>
       </Card>
@@ -633,7 +633,7 @@ function InboxTile() {
           </span>
           <h2 className="text-base font-semibold tracking-tight">Messenger</h2>
         </div>
-        <Link to="/admin/messenger-inbox" className="text-xs font-medium text-primary hover:underline">
+        <Link to="/admin/omni-inbox" className="text-xs font-medium text-primary hover:underline">
           Open Inbox →
         </Link>
       </div>

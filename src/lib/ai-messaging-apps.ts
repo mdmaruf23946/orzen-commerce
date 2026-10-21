@@ -10,7 +10,6 @@ export type AiMessagingApp = {
   id: "messenger" | "whatsapp" | "webchat";
   name: string;
   description: string;
-  inboxPath: string;
   integrationPath: string;
 };
 
@@ -21,21 +20,18 @@ export const AI_MESSAGING_APPS: AiMessagingApp[] = [
     id: "messenger",
     name: "Messenger AI",
     description: "AI replies to your Facebook Page messages, takes orders and answers customers 24/7.",
-    inboxPath: "/admin/messenger-inbox",
     integrationPath: "/admin/messenger",
   },
   {
     id: "whatsapp",
     name: "WhatsApp AI",
     description: "AI replies on your WhatsApp Business number, takes orders and answers customers 24/7.",
-    inboxPath: "/admin/whatsapp-inbox",
     integrationPath: "/admin/whatsapp",
   },
   {
     id: "webchat",
     name: "Web Chat AI",
     description: "AI replies in the chat box on your website, takes orders and answers customers 24/7.",
-    inboxPath: "/admin/webchat-inbox",
     integrationPath: "/admin/webchat",
   },
 ];
