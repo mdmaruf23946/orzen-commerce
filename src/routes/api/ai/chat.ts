@@ -192,7 +192,8 @@ export const Route = createFileRoute("/api/ai/chat")({
                     },
                   });
                   const res = createUIMessageStreamResponse({ stream });
-                  res.headers.set("x-conversation-id", ctxConvId);
+                  res.headers.set("x-orzen-conversation-id", ctxConvId);
+                  res.headers.set("access-control-expose-headers", "x-orzen-conversation-id");
                   return res;
                 }
               }
