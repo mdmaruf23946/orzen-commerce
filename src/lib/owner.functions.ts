@@ -504,14 +504,16 @@ export const verifyPayment = createServerFn({ method: "POST" })
 
     if (!pkg) throw new Error("Package missing");
     const now = new Date();
-    const base =
-      store?.expires_at && new Date(store.expires_at) > now ? new Date(store.expires_at) : now;
-    const newExpiry = new Date(base);
-    // Multi-month payments (3m/6m/yearly) extend by the months actually bought.
     const cycleKey = /Cycle:\s*(monthly|3m|6m|yearly)\b/i.exec(String((pay as any).notes ?? ""))?.[1]?.toLowerCase();
-    const boughtMonths = ({ monthly: 1, "3m": 3, "6m": 6, yearly: 12 } as Record<string, number>)[cycleKey ?? ""] ?? 0;
-    if (boughtMonths > 1) newExpiry.setMonth(newExpiry.getMonth() + boughtMonths);
-    else newExpiry.setDate(newExpiry.getDate() + (pkg.duration_days || 30));
+    const boughtMonths = ({ monthly: 1, "3m": 3, "6m": 6, yearly: 12 } as Record<string, number>)[cycleKey ?? ""] ?? daysToMonths(pkg.duration_days);
+    const { data: curPkg } = store?.package_id
+      ? await sb.from("subscription_packages").select("price,is_trial").eq("id", store.package_id).maybeSingle()
+      : { data: null };
+    const { expires: newExpiry } = computePlanExpiry({
+      now, months: boughtMonths, targetPackageId: pkg.id,
+      currentPackageId: store?.package_id, currentExpiresAt: store?.expires_at,
+      currentPackagePaid: Number(curPkg?.price ?? 0) > 0 && !curPkg?.is_trial,
+    });
     const cycleStart = now.toISOString().slice(0, 10);
     const cycleEnd = newExpiry.toISOString().slice(0, 10);
     const invoiceNo = `INV-S-${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}-${pay.id.slice(0, 6).toUpperCase()}`;
