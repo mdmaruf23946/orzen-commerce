@@ -3,6 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
 import { handleMessengerWebhook } from "@/lib/messenger-webhook.server";
 import { claimInflight, releaseInflight } from "@/lib/mid-dedupe";
+import { acquireStoreSlot } from "@/lib/store-slots";
 
 const inputSchema = z.object({
   job_id: z.string().uuid(),
@@ -133,12 +134,16 @@ export const Route = createFileRoute("/api/public/messenger/process")({
             if (!job.reply_text && !job.outbound_message_id && !alreadySent) {
               if (!claimInflight(job.id)) return new Response("Already running", { status: 202 });
               const jobRef = job;
+              const releaseSlot = await acquireStoreSlot(jobRef.store_id);
               const traced = runWithTrace(() => runQueuedDelivery(
                 request.url,
                 payload as { raw: string; signature: string; message_id: string },
                 jobRef,
               ));
-              const response = await traced.result.finally(() => releaseInflight(jobRef.id));
+              const response = await traced.result.finally(() => {
+                releaseSlot();
+                releaseInflight(jobRef.id);
+              });
               timings = traceToJSON(traced.trace, (job as any).received_at ?? (job as any).created_at);
               if (!response.ok) {
                 const detail = (await response.text().catch(() => "")).slice(0, 200);
