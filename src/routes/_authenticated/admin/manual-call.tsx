@@ -131,7 +131,7 @@ function CallRows({ calls }: { calls: any[] }) {
               }}><Play className="h-4 w-4" /></Button>
             )}
           </div>
-          {playing?.id === c.id && <audio className="w-full sm:w-64" src={playing.url} controls autoPlay />}
+          {playing?.id === c.id && <audio className="w-full sm:w-64" src={playing?.url} controls autoPlay />}
         </div>
       ))}
     </div>
