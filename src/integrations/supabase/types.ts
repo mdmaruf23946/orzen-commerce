@@ -4138,6 +4138,30 @@ export type Database = {
         }
         Relationships: []
       }
+      global_phrase_patterns: {
+        Row: {
+          hits: number
+          intent: string
+          phrase_key: string
+          store_hashes: string[]
+          updated_at: string
+        }
+        Insert: {
+          hits?: number
+          intent: string
+          phrase_key: string
+          store_hashes?: string[]
+          updated_at?: string
+        }
+        Update: {
+          hits?: number
+          intent?: string
+          phrase_key?: string
+          store_hashes?: string[]
+          updated_at?: string
+        }
+        Relationships: []
+      }
       invoice_template_versions: {
         Row: {
           brand: Json
@@ -12430,6 +12454,15 @@ export type Database = {
         Returns: Json
       }
       get_store_template_for_seed: { Args: never; Returns: Json }
+      global_phrase_stats: {
+        Args: never
+        Returns: {
+          hits: number
+          intent: string
+          phrase_key: string
+          stores: number
+        }[]
+      }
       grant_ai_credits: {
         Args: { _credits: number; _kind: string; _note: string; _store: string }
         Returns: number
@@ -12449,6 +12482,10 @@ export type Database = {
       is_store_owner: { Args: { _store_id: string }; Returns: boolean }
       kick_whatsapp_job: { Args: { _job_id: string }; Returns: undefined }
       landing_public_host: { Args: { _slug: string }; Returns: string }
+      learn_global_phrase: {
+        Args: { p_intent: string; p_key: string; p_store: string }
+        Returns: undefined
+      }
       list_ai_call_tones_public: {
         Args: never
         Returns: {
