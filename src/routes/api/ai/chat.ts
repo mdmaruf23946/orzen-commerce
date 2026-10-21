@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { convertToModelMessages, streamText, stepCountIs, type UIMessage } from "ai";
+import { convertToModelMessages, streamText, stepCountIs, createUIMessageStream, createUIMessageStreamResponse, type UIMessage } from "ai";
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 import {
@@ -170,6 +170,37 @@ export const Route = createFileRoute("/api/ai/chat")({
             conversationId: ctxConvId,
             text: lastUserText,
           });
+          // Platform-wide learned wording → this store's fresh delivery data, zero tokens.
+          // Any doubt (order in progress, no exact match, lookup miss) goes to AI.
+          const orderBusy = Object.keys(pending).filter((k) => k !== "_at").length > 0;
+          if (!orderBusy && lastUserText.trim()) {
+            try {
+              const { lookupGlobalIntent } = await import("@/lib/global-phrasebook.server");
+              if ((await lookupGlobalIntent(sb, lastUserText)) === "delivery_charge") {
+                const { tryFastPath } = await import("@/lib/fast-path.server");
+                const bn = /[\u0980-\u09FF]/.test(lastUserText);
+                const fast = await tryFastPath(sb, { storeId: store.id, conversationId: ctxConvId, text: bn ? "ডেলিভারি চার্জ কত" : "delivery charge koto", customerPhone: null });
+                if (fast?.kind === "delivery_charge") {
+                  await sb.from("ai_messages").insert({ conversation_id: ctxConvId, role: "assistant", direction: "out", message_type: "text", content: fast.reply } as any);
+                  const stream = createUIMessageStream({
+                    originalMessages: body.messages,
+                    execute: ({ writer }) => {
+                      const id = "learned-" + Date.now();
+                      writer.write({ type: "text-start", id });
+                      writer.write({ type: "text-delta", id, delta: fast.reply });
+                      writer.write({ type: "text-end", id });
+                    },
+                  });
+                  const res = createUIMessageStreamResponse({ stream });
+                  res.headers.set("x-orzen-conversation-id", ctxConvId);
+                  res.headers.set("access-control-expose-headers", "x-orzen-conversation-id");
+                  return res;
+                }
+              }
+            } catch {
+              /* doubt → AI */
+            }
+          }
           const win = windowWebHistory(body.messages);
           const result = streamText({
             model,
@@ -207,8 +238,14 @@ export const Route = createFileRoute("/api/ai/chat")({
             temperature,
             maxOutputTokens,
 
-            onFinish: async ({ usage, text }) => {
+            onFinish: async ({ usage, text, steps }) => {
               void logUsage(store.id, modelId, usage, "chat");
+              const calls = (steps ?? []).flatMap((st: any) => st.toolCalls ?? []).map((c: any) => ({ name: c.toolName, args: c.input }));
+              if (!orderBusy && calls.length) {
+                void import("@/lib/global-phrasebook.server")
+                  .then((m) => m.learnFromAiTurn(sb, { storeId: store.id, text: lastUserText, toolCalls: calls }))
+                  .catch(() => {});
+              }
               // Persist the assistant reply (text only; product cards logged separately via tools).
               const clean = (text ?? "").trim().slice(0, 8000);
               if (clean) {
