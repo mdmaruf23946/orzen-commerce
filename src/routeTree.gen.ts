@@ -68,6 +68,7 @@ import { Route as AuthenticatedAdminInventoryRouteImport } from './routes/_authe
 import { Route as AuthenticatedAdminInvoiceTemplatesRouteImport } from './routes/_authenticated/admin/invoice-templates'
 import { Route as AuthenticatedAdminLegalRouteImport } from './routes/_authenticated/admin/legal'
 import { Route as AuthenticatedAdminLowStockRouteImport } from './routes/_authenticated/admin/low-stock'
+import { Route as AuthenticatedAdminManualCallRouteImport } from './routes/_authenticated/admin/manual-call'
 import { Route as AuthenticatedAdminMarketingRouteImport } from './routes/_authenticated/admin/marketing'
 import { Route as AuthenticatedAdminMessengerRouteImport } from './routes/_authenticated/admin/messenger'
 import { Route as AuthenticatedAdminNotificationsRouteImport } from './routes/_authenticated/admin/notifications'
@@ -114,6 +115,7 @@ import { Route as AuthenticatedOwnerFraudRouteImport } from './routes/_authentic
 import { Route as AuthenticatedOwnerHealthRouteImport } from './routes/_authenticated/owner/health'
 import { Route as AuthenticatedOwnerInvoiceTemplatesRouteImport } from './routes/_authenticated/owner/invoice-templates'
 import { Route as AuthenticatedOwnerLogsRouteImport } from './routes/_authenticated/owner/logs'
+import { Route as AuthenticatedOwnerManualCallGatewaysRouteImport } from './routes/_authenticated/owner/manual-call-gateways'
 import { Route as AuthenticatedOwnerMarketingRouteImport } from './routes/_authenticated/owner/marketing'
 import { Route as AuthenticatedOwnerMessagePerformanceRouteImport } from './routes/_authenticated/owner/message-performance'
 import { Route as AuthenticatedOwnerMetaAppRouteImport } from './routes/_authenticated/owner/meta-app'
@@ -606,6 +608,12 @@ const AuthenticatedAdminLowStockRoute =
     path: '/low-stock',
     getParentRoute: () => AuthenticatedAdminRouteRoute,
   } as any)
+const AuthenticatedAdminManualCallRoute =
+  AuthenticatedAdminManualCallRouteImport.update({
+    id: '/manual-call',
+    path: '/manual-call',
+    getParentRoute: () => AuthenticatedAdminRouteRoute,
+  } as any)
 const AuthenticatedAdminMarketingRoute =
   AuthenticatedAdminMarketingRouteImport.update({
     id: '/marketing',
@@ -871,6 +879,12 @@ const AuthenticatedOwnerLogsRoute = AuthenticatedOwnerLogsRouteImport.update({
   path: '/logs',
   getParentRoute: () => AuthenticatedOwnerRouteRoute,
 } as any)
+const AuthenticatedOwnerManualCallGatewaysRoute =
+  AuthenticatedOwnerManualCallGatewaysRouteImport.update({
+    id: '/manual-call-gateways',
+    path: '/manual-call-gateways',
+    getParentRoute: () => AuthenticatedOwnerRouteRoute,
+  } as any)
 const AuthenticatedOwnerMarketingRoute =
   AuthenticatedOwnerMarketingRouteImport.update({
     id: '/marketing',
@@ -1889,6 +1903,7 @@ export interface FileRoutesByFullPath {
   '/admin/invoice-templates': typeof AuthenticatedAdminInvoiceTemplatesRoute
   '/admin/legal': typeof AuthenticatedAdminLegalRoute
   '/admin/low-stock': typeof AuthenticatedAdminLowStockRoute
+  '/admin/manual-call': typeof AuthenticatedAdminManualCallRoute
   '/admin/marketing': typeof AuthenticatedAdminMarketingRouteWithChildren
   '/admin/messenger': typeof AuthenticatedAdminMessengerRoute
   '/admin/notifications': typeof AuthenticatedAdminNotificationsRoute
@@ -1932,6 +1947,7 @@ export interface FileRoutesByFullPath {
   '/owner/health': typeof AuthenticatedOwnerHealthRoute
   '/owner/invoice-templates': typeof AuthenticatedOwnerInvoiceTemplatesRoute
   '/owner/logs': typeof AuthenticatedOwnerLogsRoute
+  '/owner/manual-call-gateways': typeof AuthenticatedOwnerManualCallGatewaysRoute
   '/owner/marketing': typeof AuthenticatedOwnerMarketingRoute
   '/owner/message-performance': typeof AuthenticatedOwnerMessagePerformanceRoute
   '/owner/meta-app': typeof AuthenticatedOwnerMetaAppRoute
@@ -2152,6 +2168,7 @@ export interface FileRoutesByTo {
   '/admin/invoice-templates': typeof AuthenticatedAdminInvoiceTemplatesRoute
   '/admin/legal': typeof AuthenticatedAdminLegalRoute
   '/admin/low-stock': typeof AuthenticatedAdminLowStockRoute
+  '/admin/manual-call': typeof AuthenticatedAdminManualCallRoute
   '/admin/messenger': typeof AuthenticatedAdminMessengerRoute
   '/admin/notifications': typeof AuthenticatedAdminNotificationsRoute
   '/admin/omni-inbox': typeof AuthenticatedAdminOmniInboxRoute
@@ -2192,6 +2209,7 @@ export interface FileRoutesByTo {
   '/owner/health': typeof AuthenticatedOwnerHealthRoute
   '/owner/invoice-templates': typeof AuthenticatedOwnerInvoiceTemplatesRoute
   '/owner/logs': typeof AuthenticatedOwnerLogsRoute
+  '/owner/manual-call-gateways': typeof AuthenticatedOwnerManualCallGatewaysRoute
   '/owner/marketing': typeof AuthenticatedOwnerMarketingRoute
   '/owner/message-performance': typeof AuthenticatedOwnerMessagePerformanceRoute
   '/owner/meta-app': typeof AuthenticatedOwnerMetaAppRoute
@@ -2424,6 +2442,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/invoice-templates': typeof AuthenticatedAdminInvoiceTemplatesRoute
   '/_authenticated/admin/legal': typeof AuthenticatedAdminLegalRoute
   '/_authenticated/admin/low-stock': typeof AuthenticatedAdminLowStockRoute
+  '/_authenticated/admin/manual-call': typeof AuthenticatedAdminManualCallRoute
   '/_authenticated/admin/marketing': typeof AuthenticatedAdminMarketingRouteWithChildren
   '/_authenticated/admin/messenger': typeof AuthenticatedAdminMessengerRoute
   '/_authenticated/admin/notifications': typeof AuthenticatedAdminNotificationsRoute
@@ -2467,6 +2486,7 @@ export interface FileRoutesById {
   '/_authenticated/owner/health': typeof AuthenticatedOwnerHealthRoute
   '/_authenticated/owner/invoice-templates': typeof AuthenticatedOwnerInvoiceTemplatesRoute
   '/_authenticated/owner/logs': typeof AuthenticatedOwnerLogsRoute
+  '/_authenticated/owner/manual-call-gateways': typeof AuthenticatedOwnerManualCallGatewaysRoute
   '/_authenticated/owner/marketing': typeof AuthenticatedOwnerMarketingRoute
   '/_authenticated/owner/message-performance': typeof AuthenticatedOwnerMessagePerformanceRoute
   '/_authenticated/owner/meta-app': typeof AuthenticatedOwnerMetaAppRoute
@@ -2699,6 +2719,7 @@ export interface FileRouteTypes {
     | '/admin/invoice-templates'
     | '/admin/legal'
     | '/admin/low-stock'
+    | '/admin/manual-call'
     | '/admin/marketing'
     | '/admin/messenger'
     | '/admin/notifications'
@@ -2742,6 +2763,7 @@ export interface FileRouteTypes {
     | '/owner/health'
     | '/owner/invoice-templates'
     | '/owner/logs'
+    | '/owner/manual-call-gateways'
     | '/owner/marketing'
     | '/owner/message-performance'
     | '/owner/meta-app'
@@ -2962,6 +2984,7 @@ export interface FileRouteTypes {
     | '/admin/invoice-templates'
     | '/admin/legal'
     | '/admin/low-stock'
+    | '/admin/manual-call'
     | '/admin/messenger'
     | '/admin/notifications'
     | '/admin/omni-inbox'
@@ -3002,6 +3025,7 @@ export interface FileRouteTypes {
     | '/owner/health'
     | '/owner/invoice-templates'
     | '/owner/logs'
+    | '/owner/manual-call-gateways'
     | '/owner/marketing'
     | '/owner/message-performance'
     | '/owner/meta-app'
@@ -3233,6 +3257,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/invoice-templates'
     | '/_authenticated/admin/legal'
     | '/_authenticated/admin/low-stock'
+    | '/_authenticated/admin/manual-call'
     | '/_authenticated/admin/marketing'
     | '/_authenticated/admin/messenger'
     | '/_authenticated/admin/notifications'
@@ -3276,6 +3301,7 @@ export interface FileRouteTypes {
     | '/_authenticated/owner/health'
     | '/_authenticated/owner/invoice-templates'
     | '/_authenticated/owner/logs'
+    | '/_authenticated/owner/manual-call-gateways'
     | '/_authenticated/owner/marketing'
     | '/_authenticated/owner/message-performance'
     | '/_authenticated/owner/meta-app'
@@ -3936,6 +3962,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminLowStockRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
+    '/_authenticated/admin/manual-call': {
+      id: '/_authenticated/admin/manual-call'
+      path: '/manual-call'
+      fullPath: '/admin/manual-call'
+      preLoaderRoute: typeof AuthenticatedAdminManualCallRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
     '/_authenticated/admin/marketing': {
       id: '/_authenticated/admin/marketing'
       path: '/marketing'
@@ -4256,6 +4289,13 @@ declare module '@tanstack/react-router' {
       path: '/logs'
       fullPath: '/owner/logs'
       preLoaderRoute: typeof AuthenticatedOwnerLogsRouteImport
+      parentRoute: typeof AuthenticatedOwnerRouteRoute
+    }
+    '/_authenticated/owner/manual-call-gateways': {
+      id: '/_authenticated/owner/manual-call-gateways'
+      path: '/manual-call-gateways'
+      fullPath: '/owner/manual-call-gateways'
+      preLoaderRoute: typeof AuthenticatedOwnerManualCallGatewaysRouteImport
       parentRoute: typeof AuthenticatedOwnerRouteRoute
     }
     '/_authenticated/owner/marketing': {
@@ -5607,6 +5647,7 @@ interface AuthenticatedAdminRouteRouteChildren {
   AuthenticatedAdminInvoiceTemplatesRoute: typeof AuthenticatedAdminInvoiceTemplatesRoute
   AuthenticatedAdminLegalRoute: typeof AuthenticatedAdminLegalRoute
   AuthenticatedAdminLowStockRoute: typeof AuthenticatedAdminLowStockRoute
+  AuthenticatedAdminManualCallRoute: typeof AuthenticatedAdminManualCallRoute
   AuthenticatedAdminMarketingRoute: typeof AuthenticatedAdminMarketingRouteWithChildren
   AuthenticatedAdminMessengerRoute: typeof AuthenticatedAdminMessengerRoute
   AuthenticatedAdminNotificationsRoute: typeof AuthenticatedAdminNotificationsRoute
@@ -5684,6 +5725,7 @@ const AuthenticatedAdminRouteRouteChildren: AuthenticatedAdminRouteRouteChildren
       AuthenticatedAdminInvoiceTemplatesRoute,
     AuthenticatedAdminLegalRoute: AuthenticatedAdminLegalRoute,
     AuthenticatedAdminLowStockRoute: AuthenticatedAdminLowStockRoute,
+    AuthenticatedAdminManualCallRoute: AuthenticatedAdminManualCallRoute,
     AuthenticatedAdminMarketingRoute:
       AuthenticatedAdminMarketingRouteWithChildren,
     AuthenticatedAdminMessengerRoute: AuthenticatedAdminMessengerRoute,
@@ -5900,6 +5942,7 @@ interface AuthenticatedOwnerRouteRouteChildren {
   AuthenticatedOwnerHealthRoute: typeof AuthenticatedOwnerHealthRoute
   AuthenticatedOwnerInvoiceTemplatesRoute: typeof AuthenticatedOwnerInvoiceTemplatesRoute
   AuthenticatedOwnerLogsRoute: typeof AuthenticatedOwnerLogsRoute
+  AuthenticatedOwnerManualCallGatewaysRoute: typeof AuthenticatedOwnerManualCallGatewaysRoute
   AuthenticatedOwnerMarketingRoute: typeof AuthenticatedOwnerMarketingRoute
   AuthenticatedOwnerMessagePerformanceRoute: typeof AuthenticatedOwnerMessagePerformanceRoute
   AuthenticatedOwnerMetaAppRoute: typeof AuthenticatedOwnerMetaAppRoute
@@ -5961,6 +6004,8 @@ const AuthenticatedOwnerRouteRouteChildren: AuthenticatedOwnerRouteRouteChildren
     AuthenticatedOwnerInvoiceTemplatesRoute:
       AuthenticatedOwnerInvoiceTemplatesRoute,
     AuthenticatedOwnerLogsRoute: AuthenticatedOwnerLogsRoute,
+    AuthenticatedOwnerManualCallGatewaysRoute:
+      AuthenticatedOwnerManualCallGatewaysRoute,
     AuthenticatedOwnerMarketingRoute: AuthenticatedOwnerMarketingRoute,
     AuthenticatedOwnerMessagePerformanceRoute:
       AuthenticatedOwnerMessagePerformanceRoute,
