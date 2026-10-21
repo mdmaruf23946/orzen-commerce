@@ -2532,13 +2532,17 @@ export async function generateAgentReply(opts: {
   try {
     attempt = await runGenerate(opts);
   } catch (err) {
-    // Try fallback model once if configured and error is transient
+    // Transient (429/5xx/timeout): switch once — merchant's fallback model if set,
+    // otherwise one short-delayed re-route (provider rotation skips the busy model).
+    if (!isTransientGatewayError(err)) throw err;
     const { settings } = await getModelForStore({ fast: opts.fast });
     const fb = (settings?.fallback_model || "").trim();
-    if (fb && isTransientGatewayError(err)) {
+    try { const { setTraceMeta } = await import("./telemetry.server"); setTraceMeta("failover", fb || "reroute"); } catch {}
+    if (fb) {
       attempt = await runGenerate({ ...opts, modelOverride: fb });
     } else {
-      throw err;
+      await new Promise((r) => setTimeout(r, 300 + Math.floor(Math.random() * 400)));
+      attempt = await runGenerate({ ...opts, fast: !opts.fast });
     }
   }
   const { result, modelId } = attempt;

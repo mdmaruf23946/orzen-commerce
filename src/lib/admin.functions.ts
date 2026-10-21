@@ -1329,6 +1329,7 @@ export const createDeliveryZone = createServerFn({ method: "POST" })
       .select("id")
       .single();
     if (error) throw new Error(error.message);
+    await (await import("@/lib/store-cache-bust.server")).bustStoreCaches(storeId);
     return row;
   });
 
@@ -1362,6 +1363,7 @@ export const updateDeliveryZone = createServerFn({ method: "POST" })
       .eq("id", data.id)
       .eq("store_id", storeId);
     if (error) throw new Error(error.message);
+    await (await import("@/lib/store-cache-bust.server")).bustStoreCaches(storeId);
     return { ok: true };
   });
 
@@ -1376,6 +1378,7 @@ export const deleteDeliveryZone = createServerFn({ method: "POST" })
       .eq("id", data.id)
       .eq("store_id", storeId);
     if (error) throw new Error(error.message);
+    await (await import("@/lib/store-cache-bust.server")).bustStoreCaches(storeId);
     return { ok: true };
   });
 
@@ -1394,6 +1397,7 @@ export const setDefaultDeliveryZone = createServerFn({ method: "POST" })
       .eq("id", data.id)
       .eq("store_id", storeId);
     if (error) throw new Error(error.message);
+    await (await import("@/lib/store-cache-bust.server")).bustStoreCaches(storeId);
     return { ok: true };
   });
 
