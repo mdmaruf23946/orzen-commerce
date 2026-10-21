@@ -7,7 +7,9 @@
 const active = new Map<string, number>();
 const waiters = new Map<string, Array<() => void>>();
 
-export const STORE_SLOT_LIMIT = 4;
+// Unlimited by default: each message job already runs in its own Worker
+// invocation, so there is no shared cap. Callers may still pass a limit.
+export const STORE_SLOT_LIMIT = Number.POSITIVE_INFINITY;
 
 export async function acquireStoreSlot(
   storeId: string,
