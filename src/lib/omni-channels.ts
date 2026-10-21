@@ -9,11 +9,17 @@ export const OMNI_CHANNELS: { key: OmniChannelKey; label: string }[] = [
 ];
 export const OMNI_CHANNEL_KEYS = OMNI_CHANNELS.map((c) => c.key);
 
+// Segments are computed automatically from conversation + order data.
 export const OMNI_FOLDERS = [
   { key: "all", label: "সব" },
   { key: "unread", label: "না-পড়া" },
-  { key: "human", label: "মানুষ চায়" },
+  { key: "interested", label: "আগ্রহী, কেনেনি" },
+  { key: "incomplete", label: "অসম্পূর্ণ অর্ডার" },
+  { key: "hold", label: "হোল্ড" },
+  { key: "customers", label: "ক্রেতা" },
   { key: "vip", label: "VIP" },
+  { key: "new", label: "নতুন (২৪ঘ)" },
+  { key: "human", label: "মানুষ চায়" },
   { key: "attention", label: "পাঠানো যায়নি" },
   { key: "ai", label: "AI চালাচ্ছে" },
 ] as const;

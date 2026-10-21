@@ -71,7 +71,8 @@ async function upsertConversation(sb: any, storeId: string, waId: string, profil
     .eq("external_id", waId)
     .maybeSingle();
   if (existing) {
-    if (profileName && !existing.customer_name) {
+    // Use the customer's real WhatsApp profile name unless the merchant set one.
+    if (profileName && (!existing.customer_name || existing.customer_name === waId)) {
       await sb.from("ai_conversations").update({ customer_name: profileName }).eq("id", existing.id);
     }
     return { conv: existing, created: false };

@@ -11,7 +11,7 @@ import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { FeatureGate } from "@/components/admin/FeatureGate";
 import { listOmniConversations, listOmniMessages, setOmniHandoff } from "@/lib/omni-inbox.functions";
 import { OMNI_CHANNELS, OMNI_FOLDERS, type OmniFolder } from "@/lib/omni-channels";
-import { sendManualMessage as sendMessenger } from "@/lib/messenger-inbox.functions";
+import { sendManualMessage as sendMessenger, refreshMessengerProfiles } from "@/lib/messenger-inbox.functions";
 import { sendManualMessage as sendWhatsapp } from "@/lib/whatsapp-inbox.functions";
 import { sendWebManualMessage } from "@/lib/webchat-inbox.functions";
 import { Button } from "@/components/ui/button";
@@ -74,6 +74,25 @@ function nameOf(c: any) {
   return c.customer_name || c.phone || (c.channel === "web" ? `Visitor ${c.id.slice(0, 4)}` : `Customer ${c.id.slice(0, 4)}`);
 }
 
+const SEGMENT: Record<string, { label: string; cls: string }> = {
+  customer: { label: "ক্রেতা", cls: "bg-primary/10 text-primary" },
+  interested: { label: "আগ্রহী", cls: "bg-accent text-accent-foreground" },
+  incomplete: { label: "অসম্পূর্ণ", cls: "bg-secondary text-secondary-foreground" },
+  hold: { label: "হোল্ড", cls: "bg-destructive/10 text-destructive" },
+};
+
+/** Real profile photo when the channel gives one; initial letter otherwise. */
+function Avatar({ c, className }: { c: any; className?: string }) {
+  const [broken, setBroken] = useState(false);
+  if (c.profile_pic && !broken)
+    return <img src={c.profile_pic} alt="" referrerPolicy="no-referrer" onError={() => setBroken(true)} className={cn("rounded-full object-cover", className)} />;
+  return (
+    <div className={cn("grid place-items-center rounded-full bg-secondary text-sm font-semibold text-secondary-foreground", className)}>
+      {nameOf(c).slice(0, 1).toUpperCase()}
+    </div>
+  );
+}
+
 function OmniInbox() {
   const qc = useQueryClient();
   const fetchList = useServerFn(listOmniConversations);
@@ -100,6 +119,21 @@ function OmniInbox() {
     refetchInterval: 6000,
   });
   const convs = (data?.rows ?? []) as any[];
+
+  // Pull real Facebook name + photo for Messenger customers missing them (server caches 6h).
+  const refreshFb = useServerFn(refreshMessengerProfiles);
+  const askedRef = useRef(new Set<string>());
+  useEffect(() => {
+    const ids = convs
+      .filter((c) => c.channel === "messenger" && (!c.profile_pic || !c.customer_name) && !askedRef.current.has(c.id))
+      .map((c) => c.id)
+      .slice(0, 30);
+    if (!ids.length) return;
+    ids.forEach((id) => askedRef.current.add(id));
+    refreshFb({ data: { ids } })
+      .then((r: any[]) => { if (r?.some((x) => x.profile_pic || x.name)) qc.invalidateQueries({ queryKey: ["omni-inbox"] }); })
+      .catch(() => {});
+  }, [convs, refreshFb, qc]);
   const counts = (data?.counts ?? {}) as Record<string, number>;
   const active = convs.find((c) => c.id === activeId) ?? (activeConv?.id === activeId ? activeConv : null);
 
@@ -167,20 +201,25 @@ function OmniInbox() {
           </div>
 
           {/* Channel line */}
-          <div className="-mx-3 flex gap-1 overflow-x-auto border-b px-3 pb-2 [scrollbar-width:none]">
+          <div className="-mx-3 flex items-center gap-2 overflow-x-auto border-b px-3 pb-2 pt-1 [scrollbar-width:none]">
             {tabs.map((t) => (
               <button
                 key={t.key}
                 onClick={() => setChannel(t.key)}
+                title={t.label}
+                aria-label={t.label}
+                aria-pressed={channel === t.key}
                 className={cn(
-                  "flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
-                  channel === t.key ? "border-primary bg-primary text-primary-foreground" : "bg-background hover:bg-muted",
+                  "relative grid h-12 shrink-0 place-items-center rounded-full border-2 transition-all",
+                  t.key === "all" ? "min-w-12 px-4 text-sm font-semibold" : "w-12",
+                  channel === t.key
+                    ? t.key === "all" ? "border-primary bg-primary text-primary-foreground" : "border-primary bg-primary/10 scale-105"
+                    : "border-transparent bg-muted/60 hover:bg-muted",
                 )}
               >
-                {t.key !== "all" && <ChannelIcon channel={t.key} className="h-4 w-4" />}
-                {t.label}
+                {t.key === "all" ? "All" : <ChannelIcon channel={t.key} className="h-8 w-8" />}
                 {!!counts[t.key] && (
-                  <span className={cn("rounded-full px-1.5 text-[10px]", channel === t.key ? "bg-primary-foreground/20" : "bg-primary text-primary-foreground")}>
+                  <span className="absolute -right-1 -top-1 grid h-5 min-w-5 place-items-center rounded-full bg-destructive px-1 text-[10px] font-semibold text-destructive-foreground ring-2 ring-card">
                     {counts[t.key]}
                   </span>
                 )}
@@ -228,15 +267,16 @@ function OmniInbox() {
               className={cn("flex w-full gap-3 border-b px-3 py-3 text-left transition-colors hover:bg-muted/50", c.id === activeId && "bg-muted")}
             >
               <div className="relative shrink-0">
-                <div className="grid h-11 w-11 place-items-center rounded-full bg-secondary text-sm font-semibold text-secondary-foreground">
-                  {nameOf(c).slice(0, 1).toUpperCase()}
-                </div>
+                <Avatar c={c} className="h-11 w-11" />
                 <ChannelIcon channel={c.channel} className="absolute -bottom-0.5 -right-0.5 h-[18px] w-[18px] rounded-full ring-2 ring-card" />
               </div>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-1.5">
                   <span className={cn("truncate text-sm", c.unread_count > 0 ? "font-semibold" : "font-medium")}>{nameOf(c)}</span>
                   {c.vip && <Crown className="h-3.5 w-3.5 shrink-0 text-primary" aria-label="VIP" />}
+                  {c.segment && SEGMENT[c.segment] && (
+                    <span className={cn("shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium", SEGMENT[c.segment].cls)}>{SEGMENT[c.segment].label}</span>
+                  )}
                   <span className="ml-auto shrink-0 text-[11px] text-muted-foreground">{timeShort(c.last_message_at ?? c.created_at)}</span>
                 </div>
                 <div className="mt-0.5 flex items-center gap-1.5">
@@ -272,7 +312,10 @@ function OmniInbox() {
               <Button size="icon" variant="ghost" className="md:hidden" onClick={() => setActiveId(null)} aria-label="ফিরে যান">
                 <ArrowLeft className="h-4 w-4" />
               </Button>
-              <ChannelIcon channel={active.channel} className="h-8 w-8 shrink-0" />
+              <div className="relative shrink-0">
+                <Avatar c={active} className="h-9 w-9" />
+                <ChannelIcon channel={active.channel} className="absolute -bottom-0.5 -right-0.5 h-4 w-4 rounded-full ring-2 ring-card" />
+              </div>
               <button type="button" onClick={() => setInfoOpen(true)} className="min-w-0 flex-1 text-left xl:pointer-events-none" aria-label="কাস্টমার তথ্য দেখুন">
                 <div className="flex items-center gap-1.5 truncate font-medium">
                   <span className="truncate">{nameOf(active)}</span>
