@@ -1,4 +1,5 @@
 import { estimateCostUsd } from "./ai-pricing";
+import { computePlanExpiry, daysToMonths } from "./plan-period";
 // Platform-owner-only server functions.
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
