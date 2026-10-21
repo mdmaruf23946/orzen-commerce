@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
 import { runWithTrace, traceToJSON } from "@/lib/telemetry.server";
+import { acquireStoreSlot } from "@/lib/store-slots";
 import { processWhatsAppJob, sendWhatsAppFallback, type WaJobRow } from "@/lib/whatsapp-webhook.server";
 
 const inputSchema = z.object({ job_id: z.string().uuid(), wake_token: z.string().uuid() });
@@ -90,10 +91,12 @@ export const Route = createFileRoute("/api/public/whatsapp/process")({
           const started = Date.now();
           try {
             const jobRef = job;
+            const releaseSlot = await acquireStoreSlot(jobRef.store_id);
             const traced = runWithTrace(() => processWhatsAppJob(jobRef));
-            const res: { reply: string | null; skipped?: string } = job.reply_text
-              ? { reply: job.reply_text }
-              : await traced.result;
+            const res: { reply: string | null; skipped?: string } = await (job.reply_text
+              ? Promise.resolve({ reply: job.reply_text })
+              : traced.result
+            ).finally(releaseSlot);
             const timings = job.reply_text ? null : traceToJSON(traced.trace, (job as any).received_at ?? (job as any).created_at);
             await sb
               .from("whatsapp_jobs")
