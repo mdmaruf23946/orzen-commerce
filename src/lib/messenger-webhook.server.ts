@@ -3209,6 +3209,43 @@ export async function handleMessengerWebhook(request: Request): Promise<Response
                 }
               }
 
+              // Platform-wide learned wording (3+ stores agreed) → this store's own
+              // fresh data, zero AI tokens. Never during an order in progress.
+              try {
+                const { lookupGlobalIntent } = await import("@/lib/global-phrasebook.server");
+                const learned = await lookupGlobalIntent(sb, effectiveText);
+                if (learned) {
+                  const slot = await getConversationPendingOrder(sb, conv!.id).catch(() => ({ x: 1 }) as Record<string, any>);
+                  const busy = Object.keys(slot ?? {}).filter((k) => k !== "_at").length > 0;
+                  if (!busy && learned === "catalog_browse") {
+                    const done = await sendCatalogBrowseReply({ sb, storeId: integ.store_id, conversationId: conv!.id, psid: senderId, token });
+                    if (done) {
+                      setTraceMeta("route", "fast");
+                      setTraceMeta("fast_kind", "learned_catalog_browse");
+                      await markQueuedReply(sb, queuedJobId, "[top products]", null);
+                      await sb.from("ai_conversations").update({ last_message_at: new Date().toISOString(), last_message_preview: "[top products]" }).eq("id", conv!.id);
+                      continue;
+                    }
+                  }
+                  if (!busy && learned === "delivery_charge") {
+                    const { tryFastPath } = await import("@/lib/fast-path.server");
+                    const bn = /[\u0980-\u09FF]/.test(effectiveText);
+                    const fast = await tryFastPath(sb, { storeId: integ.store_id, conversationId: conv!.id, text: bn ? "ডেলিভারি চার্জ কত" : "delivery charge koto", customerPhone: null });
+                    if (fast?.kind === "delivery_charge") {
+                      setTraceMeta("route", "fast");
+                      setTraceMeta("fast_kind", "learned_delivery_charge");
+                      const sent = await fbSend(token, senderId, fast.reply);
+                      await markQueuedReply(sb, queuedJobId, fast.reply, sent.message_id);
+                      await logOutgoingText(sb, conv!.id, fast.reply, sent.message_id ?? null);
+                      await sb.from("ai_conversations").update({ last_message_at: new Date().toISOString(), last_message_preview: fast.reply.slice(0, 200) }).eq("id", conv!.id);
+                      continue;
+                    }
+                  }
+                }
+              } catch (e) {
+                console.warn("[messenger] learned phrase failed", (e as Error).message);
+              }
+
               // Reply pacing is merchant-controlled. Timing starts the moment the
               // customer's message lands, so the AI's own thinking time counts
               // toward the configured delay instead of adding to it.
