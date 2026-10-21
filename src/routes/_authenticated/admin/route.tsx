@@ -3,6 +3,7 @@ import { useCourierConnections, type CourierConnectionMap } from "@/lib/courier-
 import { MARKETING_PLATFORMS, useMarketingConnections, type MarketingConnectionMap } from "@/lib/marketing-platforms";
 import { CALL_SMS_PROVIDERS, CALL_SMS_HUB_PATH, type ProviderConnectionMap } from "@/lib/call-sms-providers";
 import { useProviderConnections } from "@/lib/use-call-sms-connections";
+import { isBetaPath, isBetaTester } from "@/lib/beta-features";
 import { PAYMENT_SECTIONS, usePaymentGatewayConnections } from "@/lib/payment-gateway-apps";
 import { AI_MESSAGING_APPS, useAiMessagingConnections, type AiMessagingConnectionMap } from "@/lib/ai-messaging-apps";
 import { createFileRoute, Link, Outlet, useNavigate, useRouter, useRouterState } from "@tanstack/react-router";
@@ -566,14 +567,16 @@ function AdminLayout() {
   }
 
   const access = useStoreAccess();
+  const betaTester = isBetaTester((accountProfile as any)?.email);
   const canSee = useMemo(
     () => (path: string) => {
+      if (isBetaPath(path) && !betaTester) return false;
       if (!access.isEmployee) return true;
       const section = sectionForPath(path);
       if (!section) return false;
       return access.can(section.key, "view");
     },
-    [access],
+    [access, betaTester],
   );
   const { connected: providerConnected } = useProviderConnections();
   const providerKey = JSON.stringify(providerConnected);
@@ -593,9 +596,9 @@ function AdminLayout() {
 
   const currentSection = sectionForPath(currentPath);
   const isPersonalProfile = currentPath === "/admin/profile";
-  const pageAllowed = isPersonalProfile
+  const pageAllowed = (!isBetaPath(currentPath) || betaTester) && (isPersonalProfile
     || !access.isEmployee
-    || (!!currentSection && access.can(currentSection.key, "view"));
+    || (!!currentSection && access.can(currentSection.key, "view")));
 
   const asideWidth = collapsed ? "md:w-[72px]" : "md:w-64";
 
