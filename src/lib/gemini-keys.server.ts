@@ -60,7 +60,8 @@ export const PROVIDER_PRESETS: Record<KeyProvider, ProviderPreset> = {
     baseURL: "https://api.groq.com/openai/v1",
     // Verified 2026-09-28 against the Groq /models list (older Llama ids retired).
     model: "qwen/qwen3.8-27b",
-    fallbacks: ["openai/gpt-oss-120b", "openai/gpt-oss-20b"],
+    // Fast non-thinking fallbacks; retired ids just get skipped for an hour (404 breaker).
+    fallbacks: ["llama-3.3-70b-versatile", "openai/gpt-oss-120b", "llama-3.1-8b-instant", "openai/gpt-oss-20b"],
     vision: true,
     keyHint: "gsk_…",
     signupUrl: "https://console.groq.com/keys",

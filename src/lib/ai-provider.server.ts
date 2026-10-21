@@ -146,12 +146,9 @@ function buildCandidates(settings: any, modelId: string): Candidate[] {
     : allKeys.filter((k) => k.enabled);
   const usable = ordered.filter((k) => k.id === active?.id || k.failed_on !== today);
   const parked = ordered.filter((k) => !usable.includes(k));
-  // Usable keys first, ordered Gemini → Groq → OpenRouter → others (stable,
-  // so the active key stays first within its provider); parked keys last.
-  const rank = (p: string) => ({ gemini: 0, groq: 1, openrouter: 2, openai: 3 } as Record<string, number>)[p] ?? 4;
-  const byProvider = (a: GeminiKey, b: GeminiKey) =>
-    (a.id === active?.id ? -1 : 0) - (b.id === active?.id ? -1 : 0) || rank(a.provider) - rank(b.provider);
-  for (const k of [...[...usable].sort(byProvider), ...parked]) {
+  // Usable keys first, strictly in the owner's saved order (Winner Admin ↑/↓),
+  // so whichever provider the owner puts on top (e.g. Groq) always answers first.
+  for (const k of [...usable, ...parked]) {
     const c = candidateFromKey(k, modelId);
     if (c) out.push(c);
   }
