@@ -85,7 +85,7 @@ function HandoffQueuePage() {
               </div>
               <div className="flex items-center gap-2">
                 <Link
-                  to="/admin/messenger-inbox"
+                  to="/admin/omni-inbox"
                   search={{ conversation: c.id } as any}
                   className="inline-flex items-center gap-1 rounded-md border px-3 py-1.5 text-xs font-medium hover:bg-muted"
                 >

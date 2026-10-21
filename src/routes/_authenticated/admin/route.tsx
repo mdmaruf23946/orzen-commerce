@@ -376,17 +376,12 @@ function marketingItems(connected: MarketingConnectionMap): LinkDef[] {
   }));
 }
 
-/** Connected AI messaging apps only — each keeps its existing Inbox + Integration. */
+/** Connected AI messaging apps only — chats live in the single Omni Inbox; each app keeps its Integration page. */
 function aiMessagingItems(connected: AiMessagingConnectionMap): LinkDef[] {
   return AI_MESSAGING_APPS.filter((a) => connected[a.id]).map((a) => ({
-    to: a.inboxPath,
+    to: a.integrationPath,
     label: a.name,
     icon: a.id === "messenger" ? MessageSquare : a.id === "webchat" ? Globe : MessageCircle,
-    ...(a.id === "messenger" ? { badgeKey: "messenger" as const } : {}),
-    children: [
-      { to: a.inboxPath, label: "Inbox", icon: InboxIcon, ...(a.id === "messenger" ? { badgeKey: "messenger" as const } : {}) },
-      { to: a.integrationPath, label: "Integration", icon: PlugIcon },
-    ],
   })) as LinkDef[];
 }
 
@@ -881,9 +876,9 @@ function AdminLayout() {
             <div className="ml-auto flex items-center gap-2">
               {!access.isEmployee && <><AiCreditsChip /><AdFundChip /></>}
               <Link
-                to="/admin/messenger-inbox"
+                to="/admin/omni-inbox"
                 className="relative grid h-9 w-9 place-items-center rounded-full border hover:bg-muted"
-                aria-label="Messenger inbox"
+                aria-label="Inbox"
               >
                 <MessageSquare className="h-4 w-4" />
                 {counts.messenger > 0 && (

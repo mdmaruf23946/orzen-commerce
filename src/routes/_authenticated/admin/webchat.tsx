@@ -67,7 +67,7 @@ function WebchatPage() {
           <h1 className="text-2xl font-semibold">Web Chat AI</h1>
           <p className="text-sm text-muted-foreground">আপনার ওয়েবসাইটের চ্যাট বক্স। গত ৭ দিনে {data?.conversations_7d ?? 0}টি কথোপকথন।</p>
         </div>
-        <Button asChild variant="outline" size="sm"><Link to="/admin/webchat-inbox"><Inbox className="mr-1 h-4 w-4" />Inbox</Link></Button>
+        <Button asChild variant="outline" size="sm"><Link to="/admin/omni-inbox"><Inbox className="mr-1 h-4 w-4" />Inbox</Link></Button>
       </div>
 
       <div className="flex items-center justify-between rounded-xl border bg-card p-4">
