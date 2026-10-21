@@ -3333,6 +3333,11 @@ export async function handleMessengerWebhook(request: Request): Promise<Response
                 fast: true,
               }));
               if (compact) void refreshSummary(sb, cc, conv!.id);
+              if (!smallTalk && !Object.keys(cc.pending_order ?? {}).length && (reply as any)?.toolCalls?.length) {
+                void import("@/lib/global-phrasebook.server")
+                  .then((m) => m.learnFromAiTurn(sb, { storeId: integ.store_id, text: effectiveText, toolCalls: (reply as any).toolCalls }))
+                  .catch(() => {});
+              }
 
 
 
