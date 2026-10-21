@@ -332,7 +332,7 @@ export const verifyPayment = createServerFn({ method: "POST" })
 
     const { data: store } = await sb
       .from("stores")
-      .select("id,name,slug,expires_at,owner_user_id")
+      .select("id,name,slug,expires_at,owner_user_id,package_id")
       .eq("id", pay.store_id)
       .maybeSingle();
     const { data: pkg } = await sb

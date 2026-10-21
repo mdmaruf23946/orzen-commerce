@@ -526,8 +526,19 @@ export const verifyAndActivateSubscription = createServerFn({ method: "POST" })
       .maybeSingle();
     const months = CYCLE_MONTHS[(inv as any).billing_cycle as CycleKey];
     const now = new Date();
-    const expires = new Date(now.getTime());
-    expires.setMonth(expires.getMonth() + months);
+    let st: any = null;
+    if ((inv as any).store_id) {
+      const { data } = await supabaseAdmin.from("stores")
+        .select("expires_at, package_id, subscription_packages(price,is_trial)")
+        .eq("id", (inv as any).store_id).maybeSingle();
+      st = data;
+    }
+    const { computePlanExpiry } = await import("@/lib/plan-period");
+    const { expires } = computePlanExpiry({
+      now, months, targetPackageId: (inv as any).package_id,
+      currentPackageId: st?.package_id, currentExpiresAt: st?.expires_at,
+      currentPackagePaid: Number(st?.subscription_packages?.price ?? 0) > 0 && !st?.subscription_packages?.is_trial,
+    });
 
     if ((inv as any).store_id) {
       await supabaseAdmin
