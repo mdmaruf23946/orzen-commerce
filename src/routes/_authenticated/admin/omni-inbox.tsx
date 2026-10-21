@@ -119,6 +119,21 @@ function OmniInbox() {
     refetchInterval: 6000,
   });
   const convs = (data?.rows ?? []) as any[];
+
+  // Pull real Facebook name + photo for Messenger customers missing them (server caches 6h).
+  const refreshFb = useServerFn(refreshMessengerProfiles);
+  const askedRef = useRef(new Set<string>());
+  useEffect(() => {
+    const ids = convs
+      .filter((c) => c.channel === "messenger" && (!c.profile_pic || !c.customer_name) && !askedRef.current.has(c.id))
+      .map((c) => c.id)
+      .slice(0, 30);
+    if (!ids.length) return;
+    ids.forEach((id) => askedRef.current.add(id));
+    refreshFb({ data: { ids } })
+      .then((r: any[]) => { if (r?.some((x) => x.profile_pic || x.name)) qc.invalidateQueries({ queryKey: ["omni-inbox"] }); })
+      .catch(() => {});
+  }, [convs, refreshFb, qc]);
   const counts = (data?.counts ?? {}) as Record<string, number>;
   const active = convs.find((c) => c.id === activeId) ?? (activeConv?.id === activeId ? activeConv : null);
 
@@ -297,7 +312,10 @@ function OmniInbox() {
               <Button size="icon" variant="ghost" className="md:hidden" onClick={() => setActiveId(null)} aria-label="ফিরে যান">
                 <ArrowLeft className="h-4 w-4" />
               </Button>
-              <ChannelIcon channel={active.channel} className="h-8 w-8 shrink-0" />
+              <div className="relative shrink-0">
+                <Avatar c={active} className="h-9 w-9" />
+                <ChannelIcon channel={active.channel} className="absolute -bottom-0.5 -right-0.5 h-4 w-4 rounded-full ring-2 ring-card" />
+              </div>
               <button type="button" onClick={() => setInfoOpen(true)} className="min-w-0 flex-1 text-left xl:pointer-events-none" aria-label="কাস্টমার তথ্য দেখুন">
                 <div className="flex items-center gap-1.5 truncate font-medium">
                   <span className="truncate">{nameOf(active)}</span>
