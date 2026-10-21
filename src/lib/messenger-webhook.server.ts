@@ -179,6 +179,23 @@ function imageFailure(code: string, detail: string, retryable: boolean): never {
   throw new ImageProcessingError(code, detail, retryable);
 }
 
+// Customer-care wording for moments the photo can't be read. Never mention
+// AI, "analysis", "system" or "saved" — it must read like a shop assistant.
+function humanPhotoFallback(): string {
+  const list = [
+    "ছবিটা পেয়েছি 😊 প্রোডাক্টটার নাম বা কোডটা একটু লিখে দিবেন? মিলিয়ে দেখে এখনই জানাচ্ছি।",
+    "জি, ছবিটা দেখলাম। এটার নাম বা কোন ধরনের প্রোডাক্ট, একটু লিখে দিলে আমাদের কাছে আছে কিনা দেখে বলছি 😊",
+    "ধন্যবাদ ছবির জন্য! প্রোডাক্টটার নামটা একটু জানাবেন? তাহলে দ্রুত চেক করে দিতে পারব।",
+  ];
+  return list[Math.floor(Math.random() * list.length)];
+}
+
+function humanTextFallback(bangla: boolean): string {
+  return bangla
+    ? "জি, একটু সময় দিন প্লিজ, দেখে এখনই জানাচ্ছি 😊"
+    : "Sure, give me a moment please, I'll get back to you shortly 😊";
+}
+
 async function responseErrorMessage(response: Response) {
   const body = await response.text().catch(() => "");
   try {
@@ -2779,7 +2796,7 @@ export async function handleMessengerWebhook(request: Request): Promise<Response
               if (parsed.message_type === "image") {
                 const imageUrl = (parsed.attachments?.[0]?.url as string) || "";
                 if (fallbackOnly) {
-                  const fallback = "দুঃখিত, সাময়িক সমস্যার কারণে ছবিটি এখন বিশ্লেষণ করা যায়নি। ছবিটি সংরক্ষিত আছে—অনুগ্রহ করে একটু পরে আবার পাঠান।";
+                  const fallback = humanPhotoFallback();
                   const sent = await fbSend(token, senderId, fallback);
                   await markQueuedReply(sb, queuedJobId, fallback, sent.message_id);
                   await sb.from("ai_messages").insert({
@@ -2798,13 +2815,30 @@ export async function handleMessengerWebhook(request: Request): Promise<Response
                 // store's own products answers in ~1s; anything uncertain falls
                 // through to the full AI inspection below.
                 const fast = await fastImageLookup(sb, integ.store_id, imageUrl, token, String(msg.mid ?? ""));
-                const seen = fast.analysis
-                  ?? await describeImageAttachment(imageUrl, token, String(msg.mid ?? ""), fast.photo);
-                {
-                  imageAnalysis = seen;
+                // When the photo reader is slow/busy, never make the customer wait
+                // through minutes of retries: answer once, like a shop assistant.
+                let seen: ImageAnalysis;
+                try {
+                  seen = fast.analysis
+                    ?? await describeImageAttachment(imageUrl, token, String(msg.mid ?? ""), fast.photo);
                   imageMatch = fast.match ?? (seen.is_product
                     ? await visuallyMatchProduct(sb, integ.store_id, seen, fast.candidateIds)
                     : null);
+                } catch (imgErr) {
+                  console.warn("[messenger] photo read failed, human-style reply", (imgErr as Error).message);
+                  const soft = humanPhotoFallback();
+                  const sent = await fbSend(token, senderId, soft);
+                  await markQueuedReply(sb, queuedJobId, soft, sent.message_id);
+                  await sb.from("ai_messages").insert({
+                    conversation_id: conv!.id, role: "assistant", direction: "out", message_type: "text",
+                    content: soft,
+                    attachments: [{ in_reply_to_mid: msg.mid ?? null, image_processing_failed: true }],
+                    mid: sent.message_id ?? null, delivery_status: "sent",
+                  });
+                  continue;
+                }
+                {
+                  imageAnalysis = seen;
                   const terms = seen.keywords.length ? ` Search terms: ${seen.keywords.join(", ")}.` : "";
                   effectiveText = seen.is_product
                     ? `[The customer sent a photo of a product. The photo shows: ${seen.description}.${terms}] ` +
@@ -2983,9 +3017,7 @@ export async function handleMessengerWebhook(request: Request): Promise<Response
               }
 
               if (fallbackOnly) {
-                const fallback = /[\u0980-\u09ff]/.test(effectiveText)
-                  ? "দুঃখিত, এই মুহূর্তে আপনার মেসেজের পূর্ণ উত্তর তৈরি করা যায়নি। আপনার মেসেজটি সংরক্ষিত আছে—অনুগ্রহ করে একটু পরে আবার চেষ্টা করুন।"
-                  : "Sorry, I couldn't complete the full answer right now. Your message is saved—please try again shortly.";
+                const fallback = humanTextFallback(/[\u0980-\u09ff]/.test(effectiveText) || !/[a-z]{3}/i.test(effectiveText));
                 const sent = await fbSend(token, senderId, fallback);
                 await markQueuedReply(sb, queuedJobId, fallback, sent.message_id);
                 await sb.from("ai_messages").insert({
