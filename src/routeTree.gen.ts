@@ -70,7 +70,6 @@ import { Route as AuthenticatedAdminLegalRouteImport } from './routes/_authentic
 import { Route as AuthenticatedAdminLowStockRouteImport } from './routes/_authenticated/admin/low-stock'
 import { Route as AuthenticatedAdminMarketingRouteImport } from './routes/_authenticated/admin/marketing'
 import { Route as AuthenticatedAdminMessengerRouteImport } from './routes/_authenticated/admin/messenger'
-import { Route as AuthenticatedAdminMessengerInboxRouteImport } from './routes/_authenticated/admin/messenger-inbox'
 import { Route as AuthenticatedAdminNotificationsRouteImport } from './routes/_authenticated/admin/notifications'
 import { Route as AuthenticatedAdminOmniInboxRouteImport } from './routes/_authenticated/admin/omni-inbox'
 import { Route as AuthenticatedAdminOrdersRouteImport } from './routes/_authenticated/admin/orders'
@@ -89,9 +88,7 @@ import { Route as AuthenticatedAdminSubscriptionRouteImport } from './routes/_au
 import { Route as AuthenticatedAdminSupportRouteImport } from './routes/_authenticated/admin/support'
 import { Route as AuthenticatedAdminThemeRouteImport } from './routes/_authenticated/admin/theme'
 import { Route as AuthenticatedAdminWebchatRouteImport } from './routes/_authenticated/admin/webchat'
-import { Route as AuthenticatedAdminWebchatInboxRouteImport } from './routes/_authenticated/admin/webchat-inbox'
 import { Route as AuthenticatedAdminWhatsappRouteImport } from './routes/_authenticated/admin/whatsapp'
-import { Route as AuthenticatedAdminWhatsappInboxRouteImport } from './routes/_authenticated/admin/whatsapp-inbox'
 import { Route as AuthenticatedOwnerIndexRouteImport } from './routes/_authenticated/owner/index'
 import { Route as AuthenticatedOwnerAdsRouteImport } from './routes/_authenticated/owner/ads'
 import { Route as AuthenticatedOwnerAiRouteImport } from './routes/_authenticated/owner/ai'
@@ -621,12 +618,6 @@ const AuthenticatedAdminMessengerRoute =
     path: '/messenger',
     getParentRoute: () => AuthenticatedAdminRouteRoute,
   } as any)
-const AuthenticatedAdminMessengerInboxRoute =
-  AuthenticatedAdminMessengerInboxRouteImport.update({
-    id: '/messenger-inbox',
-    path: '/messenger-inbox',
-    getParentRoute: () => AuthenticatedAdminRouteRoute,
-  } as any)
 const AuthenticatedAdminNotificationsRoute =
   AuthenticatedAdminNotificationsRouteImport.update({
     id: '/notifications',
@@ -731,22 +722,10 @@ const AuthenticatedAdminWebchatRoute =
     path: '/webchat',
     getParentRoute: () => AuthenticatedAdminRouteRoute,
   } as any)
-const AuthenticatedAdminWebchatInboxRoute =
-  AuthenticatedAdminWebchatInboxRouteImport.update({
-    id: '/webchat-inbox',
-    path: '/webchat-inbox',
-    getParentRoute: () => AuthenticatedAdminRouteRoute,
-  } as any)
 const AuthenticatedAdminWhatsappRoute =
   AuthenticatedAdminWhatsappRouteImport.update({
     id: '/whatsapp',
     path: '/whatsapp',
-    getParentRoute: () => AuthenticatedAdminRouteRoute,
-  } as any)
-const AuthenticatedAdminWhatsappInboxRoute =
-  AuthenticatedAdminWhatsappInboxRouteImport.update({
-    id: '/whatsapp-inbox',
-    path: '/whatsapp-inbox',
     getParentRoute: () => AuthenticatedAdminRouteRoute,
   } as any)
 const AuthenticatedOwnerIndexRoute = AuthenticatedOwnerIndexRouteImport.update({
@@ -1912,7 +1891,6 @@ export interface FileRoutesByFullPath {
   '/admin/low-stock': typeof AuthenticatedAdminLowStockRoute
   '/admin/marketing': typeof AuthenticatedAdminMarketingRouteWithChildren
   '/admin/messenger': typeof AuthenticatedAdminMessengerRoute
-  '/admin/messenger-inbox': typeof AuthenticatedAdminMessengerInboxRoute
   '/admin/notifications': typeof AuthenticatedAdminNotificationsRoute
   '/admin/omni-inbox': typeof AuthenticatedAdminOmniInboxRoute
   '/admin/orders': typeof AuthenticatedAdminOrdersRoute
@@ -1931,9 +1909,7 @@ export interface FileRoutesByFullPath {
   '/admin/support': typeof AuthenticatedAdminSupportRoute
   '/admin/theme': typeof AuthenticatedAdminThemeRoute
   '/admin/webchat': typeof AuthenticatedAdminWebchatRoute
-  '/admin/webchat-inbox': typeof AuthenticatedAdminWebchatInboxRoute
   '/admin/whatsapp': typeof AuthenticatedAdminWhatsappRoute
-  '/admin/whatsapp-inbox': typeof AuthenticatedAdminWhatsappInboxRoute
   '/owner/ads': typeof AuthenticatedOwnerAdsRoute
   '/owner/ai': typeof AuthenticatedOwnerAiRoute
   '/owner/ai-call-center': typeof AuthenticatedOwnerAiCallCenterRoute
@@ -2177,7 +2153,6 @@ export interface FileRoutesByTo {
   '/admin/legal': typeof AuthenticatedAdminLegalRoute
   '/admin/low-stock': typeof AuthenticatedAdminLowStockRoute
   '/admin/messenger': typeof AuthenticatedAdminMessengerRoute
-  '/admin/messenger-inbox': typeof AuthenticatedAdminMessengerInboxRoute
   '/admin/notifications': typeof AuthenticatedAdminNotificationsRoute
   '/admin/omni-inbox': typeof AuthenticatedAdminOmniInboxRoute
   '/admin/orders': typeof AuthenticatedAdminOrdersRoute
@@ -2194,9 +2169,7 @@ export interface FileRoutesByTo {
   '/admin/support': typeof AuthenticatedAdminSupportRoute
   '/admin/theme': typeof AuthenticatedAdminThemeRoute
   '/admin/webchat': typeof AuthenticatedAdminWebchatRoute
-  '/admin/webchat-inbox': typeof AuthenticatedAdminWebchatInboxRoute
   '/admin/whatsapp': typeof AuthenticatedAdminWhatsappRoute
-  '/admin/whatsapp-inbox': typeof AuthenticatedAdminWhatsappInboxRoute
   '/owner/ads': typeof AuthenticatedOwnerAdsRoute
   '/owner/ai': typeof AuthenticatedOwnerAiRoute
   '/owner/ai-call-center': typeof AuthenticatedOwnerAiCallCenterRoute
@@ -2453,7 +2426,6 @@ export interface FileRoutesById {
   '/_authenticated/admin/low-stock': typeof AuthenticatedAdminLowStockRoute
   '/_authenticated/admin/marketing': typeof AuthenticatedAdminMarketingRouteWithChildren
   '/_authenticated/admin/messenger': typeof AuthenticatedAdminMessengerRoute
-  '/_authenticated/admin/messenger-inbox': typeof AuthenticatedAdminMessengerInboxRoute
   '/_authenticated/admin/notifications': typeof AuthenticatedAdminNotificationsRoute
   '/_authenticated/admin/omni-inbox': typeof AuthenticatedAdminOmniInboxRoute
   '/_authenticated/admin/orders': typeof AuthenticatedAdminOrdersRoute
@@ -2472,9 +2444,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/support': typeof AuthenticatedAdminSupportRoute
   '/_authenticated/admin/theme': typeof AuthenticatedAdminThemeRoute
   '/_authenticated/admin/webchat': typeof AuthenticatedAdminWebchatRoute
-  '/_authenticated/admin/webchat-inbox': typeof AuthenticatedAdminWebchatInboxRoute
   '/_authenticated/admin/whatsapp': typeof AuthenticatedAdminWhatsappRoute
-  '/_authenticated/admin/whatsapp-inbox': typeof AuthenticatedAdminWhatsappInboxRoute
   '/_authenticated/owner/ads': typeof AuthenticatedOwnerAdsRoute
   '/_authenticated/owner/ai': typeof AuthenticatedOwnerAiRoute
   '/_authenticated/owner/ai-call-center': typeof AuthenticatedOwnerAiCallCenterRoute
@@ -2731,7 +2701,6 @@ export interface FileRouteTypes {
     | '/admin/low-stock'
     | '/admin/marketing'
     | '/admin/messenger'
-    | '/admin/messenger-inbox'
     | '/admin/notifications'
     | '/admin/omni-inbox'
     | '/admin/orders'
@@ -2750,9 +2719,7 @@ export interface FileRouteTypes {
     | '/admin/support'
     | '/admin/theme'
     | '/admin/webchat'
-    | '/admin/webchat-inbox'
     | '/admin/whatsapp'
-    | '/admin/whatsapp-inbox'
     | '/owner/ads'
     | '/owner/ai'
     | '/owner/ai-call-center'
@@ -2996,7 +2963,6 @@ export interface FileRouteTypes {
     | '/admin/legal'
     | '/admin/low-stock'
     | '/admin/messenger'
-    | '/admin/messenger-inbox'
     | '/admin/notifications'
     | '/admin/omni-inbox'
     | '/admin/orders'
@@ -3013,9 +2979,7 @@ export interface FileRouteTypes {
     | '/admin/support'
     | '/admin/theme'
     | '/admin/webchat'
-    | '/admin/webchat-inbox'
     | '/admin/whatsapp'
-    | '/admin/whatsapp-inbox'
     | '/owner/ads'
     | '/owner/ai'
     | '/owner/ai-call-center'
@@ -3271,7 +3235,6 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/low-stock'
     | '/_authenticated/admin/marketing'
     | '/_authenticated/admin/messenger'
-    | '/_authenticated/admin/messenger-inbox'
     | '/_authenticated/admin/notifications'
     | '/_authenticated/admin/omni-inbox'
     | '/_authenticated/admin/orders'
@@ -3290,9 +3253,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/support'
     | '/_authenticated/admin/theme'
     | '/_authenticated/admin/webchat'
-    | '/_authenticated/admin/webchat-inbox'
     | '/_authenticated/admin/whatsapp'
-    | '/_authenticated/admin/whatsapp-inbox'
     | '/_authenticated/owner/ads'
     | '/_authenticated/owner/ai'
     | '/_authenticated/owner/ai-call-center'
@@ -3989,13 +3950,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminMessengerRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
-    '/_authenticated/admin/messenger-inbox': {
-      id: '/_authenticated/admin/messenger-inbox'
-      path: '/messenger-inbox'
-      fullPath: '/admin/messenger-inbox'
-      preLoaderRoute: typeof AuthenticatedAdminMessengerInboxRouteImport
-      parentRoute: typeof AuthenticatedAdminRouteRoute
-    }
     '/_authenticated/admin/notifications': {
       id: '/_authenticated/admin/notifications'
       path: '/notifications'
@@ -4122,25 +4076,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminWebchatRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
-    '/_authenticated/admin/webchat-inbox': {
-      id: '/_authenticated/admin/webchat-inbox'
-      path: '/webchat-inbox'
-      fullPath: '/admin/webchat-inbox'
-      preLoaderRoute: typeof AuthenticatedAdminWebchatInboxRouteImport
-      parentRoute: typeof AuthenticatedAdminRouteRoute
-    }
     '/_authenticated/admin/whatsapp': {
       id: '/_authenticated/admin/whatsapp'
       path: '/whatsapp'
       fullPath: '/admin/whatsapp'
       preLoaderRoute: typeof AuthenticatedAdminWhatsappRouteImport
-      parentRoute: typeof AuthenticatedAdminRouteRoute
-    }
-    '/_authenticated/admin/whatsapp-inbox': {
-      id: '/_authenticated/admin/whatsapp-inbox'
-      path: '/whatsapp-inbox'
-      fullPath: '/admin/whatsapp-inbox'
-      preLoaderRoute: typeof AuthenticatedAdminWhatsappInboxRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
     '/_authenticated/owner/': {
@@ -5669,7 +5609,6 @@ interface AuthenticatedAdminRouteRouteChildren {
   AuthenticatedAdminLowStockRoute: typeof AuthenticatedAdminLowStockRoute
   AuthenticatedAdminMarketingRoute: typeof AuthenticatedAdminMarketingRouteWithChildren
   AuthenticatedAdminMessengerRoute: typeof AuthenticatedAdminMessengerRoute
-  AuthenticatedAdminMessengerInboxRoute: typeof AuthenticatedAdminMessengerInboxRoute
   AuthenticatedAdminNotificationsRoute: typeof AuthenticatedAdminNotificationsRoute
   AuthenticatedAdminOmniInboxRoute: typeof AuthenticatedAdminOmniInboxRoute
   AuthenticatedAdminOrdersRoute: typeof AuthenticatedAdminOrdersRoute
@@ -5688,9 +5627,7 @@ interface AuthenticatedAdminRouteRouteChildren {
   AuthenticatedAdminSupportRoute: typeof AuthenticatedAdminSupportRoute
   AuthenticatedAdminThemeRoute: typeof AuthenticatedAdminThemeRoute
   AuthenticatedAdminWebchatRoute: typeof AuthenticatedAdminWebchatRoute
-  AuthenticatedAdminWebchatInboxRoute: typeof AuthenticatedAdminWebchatInboxRoute
   AuthenticatedAdminWhatsappRoute: typeof AuthenticatedAdminWhatsappRoute
-  AuthenticatedAdminWhatsappInboxRoute: typeof AuthenticatedAdminWhatsappInboxRoute
   AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
   AuthenticatedAdminAiMessagingAppsRoute: typeof AuthenticatedAdminAiMessagingAppsRoute
   AuthenticatedAdminAiAgentsRoute: typeof AuthenticatedAdminAiAgentsRoute
@@ -5750,8 +5687,6 @@ const AuthenticatedAdminRouteRouteChildren: AuthenticatedAdminRouteRouteChildren
     AuthenticatedAdminMarketingRoute:
       AuthenticatedAdminMarketingRouteWithChildren,
     AuthenticatedAdminMessengerRoute: AuthenticatedAdminMessengerRoute,
-    AuthenticatedAdminMessengerInboxRoute:
-      AuthenticatedAdminMessengerInboxRoute,
     AuthenticatedAdminNotificationsRoute: AuthenticatedAdminNotificationsRoute,
     AuthenticatedAdminOmniInboxRoute: AuthenticatedAdminOmniInboxRoute,
     AuthenticatedAdminOrdersRoute: AuthenticatedAdminOrdersRoute,
@@ -5774,9 +5709,7 @@ const AuthenticatedAdminRouteRouteChildren: AuthenticatedAdminRouteRouteChildren
     AuthenticatedAdminSupportRoute: AuthenticatedAdminSupportRoute,
     AuthenticatedAdminThemeRoute: AuthenticatedAdminThemeRoute,
     AuthenticatedAdminWebchatRoute: AuthenticatedAdminWebchatRoute,
-    AuthenticatedAdminWebchatInboxRoute: AuthenticatedAdminWebchatInboxRoute,
     AuthenticatedAdminWhatsappRoute: AuthenticatedAdminWhatsappRoute,
-    AuthenticatedAdminWhatsappInboxRoute: AuthenticatedAdminWhatsappInboxRoute,
     AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
     AuthenticatedAdminAiMessagingAppsRoute:
       AuthenticatedAdminAiMessagingAppsRoute,
