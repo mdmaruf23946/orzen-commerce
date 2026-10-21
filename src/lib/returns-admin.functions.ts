@@ -124,6 +124,7 @@ export const saveReturnSettings = createServerFn({ method: "POST" })
       .from("store_return_settings")
       .upsert({ store_id: sid, ...data } as any, { onConflict: "store_id" });
     if (error) throw new Error(error.message);
+    await (await import("@/lib/store-cache-bust.server")).bustStoreCaches(sid);
     return { ok: true };
   });
 
