@@ -624,6 +624,31 @@ export async function processWhatsAppJob(job: WaJobRow): Promise<{ reply: string
     /* fall through to AI */
   }
 
+  // Platform-wide learned wording → this store's fresh delivery data, zero tokens.
+  // Any doubt (order in progress, no exact match, lookup miss) goes straight to AI.
+  try {
+    const { lookupGlobalIntent } = await import("@/lib/global-phrasebook.server");
+    const learned = await lookupGlobalIntent(sb, text);
+    if (learned === "delivery_charge") {
+      const slot = await loadPendingSlot(sb, conversationId).catch(() => ({ x: 1 }) as Record<string, any>);
+      const busy = Object.keys(slot ?? {}).filter((k) => k !== "_at").length > 0;
+      if (!busy) {
+        const { tryFastPath } = await import("@/lib/fast-path.server");
+        const bn = /[\u0980-\u09FF]/.test(text);
+        const fast = await tryFastPath(sb, { storeId, conversationId, text: bn ? "ডেলিভারি চার্জ কত" : "delivery charge koto", customerPhone: waId });
+        if (fast?.kind === "delivery_charge") {
+          setTraceMeta("route", "fast");
+          setTraceMeta("fast_kind", "learned_delivery_charge");
+          await sendAndLog(sb, phoneNumberId, token, waId, conversationId, fast.reply);
+          await (sb as any).from("whatsapp_jobs").update({ reply_text: fast.reply, route: "fast:learned_delivery_charge" }).eq("id", job.id);
+          return { reply: fast.reply };
+        }
+      }
+    }
+  } catch {
+    /* doubt → AI */
+  }
+
   try {
     const { store, agent, settings } = await loadAiContext(storeId);
     const useHistory = (integ as any).conversation_history !== false;
