@@ -101,3 +101,10 @@
 - Guarded wrangler deploy to Cloudflare Worker orzen-commerce-production, version bb9273e7, verified at https://orzen.top (robots.txt AI bots, /llms.txt, /sitemap.xml, FAQPage schema, /features, /pricing all confirmed live).
 - Still blocked (owner): verify orzen.top in Google Search Console for real click/impression data.
 - [ ] Reconnect Google Search Console in new workspace
+
+## Messaging Agent V2 — 50K scale (2026-10-21)
+- [x] Stage 1: store-isolated safe answer cache (informational only; never price/stock/delivery/order/payment) — live 9f2ca00a
+- [ ] Stage 2: Cloudflare Queue ingress + consumer (needs new queue setup on Cloudflare account)
+- [ ] Stage 3: history summary prompt compressor
+- [ ] Stage 4: per-store AI metrics dashboard
+- [ ] Stage 5: synthetic 50K load test on a test store
