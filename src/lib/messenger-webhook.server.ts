@@ -3017,9 +3017,7 @@ export async function handleMessengerWebhook(request: Request): Promise<Response
               }
 
               if (fallbackOnly) {
-                const fallback = /[\u0980-\u09ff]/.test(effectiveText)
-                  ? "দুঃখিত, এই মুহূর্তে আপনার মেসেজের পূর্ণ উত্তর তৈরি করা যায়নি। আপনার মেসেজটি সংরক্ষিত আছে—অনুগ্রহ করে একটু পরে আবার চেষ্টা করুন।"
-                  : "Sorry, I couldn't complete the full answer right now. Your message is saved—please try again shortly.";
+                const fallback = humanTextFallback(/[\u0980-\u09ff]/.test(effectiveText) || !/[a-z]{3}/i.test(effectiveText));
                 const sent = await fbSend(token, senderId, fallback);
                 await markQueuedReply(sb, queuedJobId, fallback, sent.message_id);
                 await sb.from("ai_messages").insert({
