@@ -2512,6 +2512,22 @@ export async function generateAgentReply(opts: {
       }
     }
   } catch { /* fall through to AI */ }
+  // Store-isolated safe answer cache (informational replies only; 0 tokens).
+  let safeKey: string | null = null;
+  try {
+    const sac = await import("./safe-answer-cache");
+    const last = [...opts.messages].reverse().find((m) => m?.role === "user");
+    const lt = typeof last?.content === "string" ? last.content : "";
+    if (!opts.ctx.focusProductId && opts.ctx.conversationId) {
+      const slot = await getConversationSlot(opts.ctx.conversationId).catch(() => ({ x: 1 }));
+      if (!Object.keys(slot ?? {}).length) safeKey = sac.cacheKey(opts.ctx.storeId, opts.ctx.channel ?? "messenger", lt);
+    }
+    const hit = sac.getSafeAnswer(safeKey);
+    if (hit) {
+      try { const { setTraceMeta } = await import("./telemetry.server"); setTraceMeta("cache_hit", true); } catch {}
+      return { text: hit, facts: {} as MessengerPayloadFacts, verified: collectVerifiedFacts({ steps: [] } as any), raw: true };
+    }
+  } catch { safeKey = null; }
   let attempt: Awaited<ReturnType<typeof runGenerate>>;
   try {
     attempt = await runGenerate(opts);
@@ -2538,5 +2554,10 @@ export async function generateAgentReply(opts: {
   const verified = collectVerifiedFacts(result);
   const duplicateReply = findDuplicateBlockedReply(result as any);
   if (duplicateReply) return { text: duplicateReply, facts: {} as MessengerPayloadFacts, verified, raw: true };
+  try {
+    const usedTools = ((result as any).steps ?? []).some((s: any) => (s?.toolCalls ?? []).length > 0);
+    const { putSafeAnswer } = await import("./safe-answer-cache");
+    putSafeAnswer(safeKey, String(result.text ?? ""), usedTools);
+  } catch {}
   return { text: result.text as string, facts: payloadFactsFromResult(result), verified, raw: false };
 }
