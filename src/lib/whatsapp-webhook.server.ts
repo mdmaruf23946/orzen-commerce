@@ -630,7 +630,7 @@ export async function processWhatsAppJob(job: WaJobRow): Promise<{ reply: string
     const { lookupGlobalIntent } = await import("@/lib/global-phrasebook.server");
     const learned = await lookupGlobalIntent(sb, text);
     if (learned === "delivery_charge") {
-      const slot = await loadPendingSlot(sb, conversationId).catch(() => ({ x: 1 }) as Record<string, any>);
+      const slot = await pendingOrder(sb, conversationId).catch(() => ({ x: 1 }) as Record<string, any>);
       const busy = Object.keys(slot ?? {}).filter((k) => k !== "_at").length > 0;
       if (!busy) {
         const { tryFastPath } = await import("@/lib/fast-path.server");
@@ -694,6 +694,11 @@ export async function processWhatsAppJob(job: WaJobRow): Promise<{ reply: string
       fast: true,
     })));
 
+    if (!Object.keys(cc.pending_order ?? {}).length && (reply as any)?.toolCalls?.length) {
+      void import("@/lib/global-phrasebook.server")
+        .then((m) => m.learnFromAiTurn(sb, { storeId, text, toolCalls: (reply as any).toolCalls }))
+        .catch(() => {});
+    }
     const rawText = reply?.text ?? "";
     let guardedText = rawText;
     if (reply?.verified && !reply.raw && rawText.trim()) {
