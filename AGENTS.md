@@ -23,13 +23,10 @@
 - Chat name/address slots pass `src/lib/slot-validate.ts` (questions/greetings/product talk never stored; free-text names only while we are waiting for them; stored bad values dropped on read); unsure text goes to `understandOrderReply` and low confidence asks the customer to confirm — prevents questions like "ডেলিভারি সার্চ কত" becoming order names.
 - `orders.subtotal` stores the grand total (items + delivery − discount) for every order source; UIs derive the items total from `order_items` and never add delivery again.
 - Platform Meta tracking lives only in `platform_meta_tracking`/`platform-meta.server.ts`/`PlatformPixel` (platform hosts only, shared browser+server event_id, paid events only after gateway verification); never reads `stores.marketing`.
-- Merchant call actions and provider controls use only the store-scoped ePBX voice connection; the retired Device/Twilio settings remain historical data only — keeps one secure calling path without deleting old call records.
-- ePBX callbacks use a per-call signed URL (`/api/public/voice/epbx?c=<call>&k=<HMAC>`, src/lib/voice/queue.server.ts) because ePBX sends no signature; COD auto-verification calls are queued by the `t_orders_voice_call` trigger and placed by `/api/public/voice/process` (minute cron, only when due rows exist) so retries/business-hours delays work for every order source.
-- Provider capabilities (numbers/extensions/IVR/WebRTC) are declared in each voice adapter's `capabilities`; UI shows "Not available through the current ePBX API access." instead of fake data — keeps new providers drop-in.
-- ePBX auto-call outcomes are written to `orders.voice_verification` (verified/cancelled/needs_agent/unanswered) only while the order is still pending, and call-script MP3s live in the private `voice-audio` bucket served to ePBX via HMAC-signed `/api/public/voice/audio` — manual decisions always win and audio stays non-enumerable.
 - Provider sidebar menus are registry-driven and connected-only; account profile fields live in authenticated user metadata, separate from store branding.
 - Prod minute jobs run as one pg_cron `dispatch_minute_jobs()`; tenant-host RPCs use the edge cache.
 - `deploy-production.sh` guards `_runtime.mjs`'s `createRequire(import.meta.url)` (undefined → SSR 500s); never remove the patch.
 - Delegated access = `store_staff` rows (access_type=delegated); active store comes from the `x-orzen-store` header, re-verified server-side; invites/revokes use only the caller's owned store — no re-sharing or cross-store leaks.
 - Subdirectories have their own AGENTS.md; read it before changing files there.
-- Global phrasebook (src/lib/global-phrasebook*.ts) learns only phrase→intent (no customer data, hashed stores, 3+ stores/90 0x0p+0greement) and answers from the current store's fresh data — cross-store learning without leaking or inventing facts.
+
+- Global phrasebook (src/lib/global-phrasebook*.ts) learns only phrase→intent (no customer data, hashed stores, 3+ stores and 90% agreement) and answers from the current store's fresh data — cross-store learning without leaks or invented facts.
