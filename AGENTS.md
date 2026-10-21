@@ -30,3 +30,4 @@
 - Subdirectories have their own AGENTS.md; read it before changing files there.
 
 - Global phrasebook (src/lib/global-phrasebook*.ts) learns only phrase→intent (no customer data, hashed stores, 3+ stores and 90% agreement) and answers from the current store's fresh data — cross-store learning without leaks or invented facts.
+- Manual Call (beta) calls from the browser via JsSIP to a Winner-Admin gateway (`manual_call_gateways`, wss + SIP domain); merchant lines/calls are store-scoped and recordings are uploaded to `voice-audio/manual/<store>/` — no server media relay needed.
