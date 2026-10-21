@@ -13,7 +13,7 @@ describe("store slots", () => {
     const rels = await Promise.all([1, 2, 3, 4].map(() => acquireStoreSlot("s1", 4)));
     expect(storeSlotsInUse("s1")).toBe(4);
     let fifth = false;
-    const p = acquireStoreSlot("s1").then((r) => { fifth = true; return r; });
+    const p = acquireStoreSlot("s1", 4).then((r) => { fifth = true; return r; });
     await new Promise((r) => setTimeout(r, 10));
     expect(fifth).toBe(false);
     rels[0]();
