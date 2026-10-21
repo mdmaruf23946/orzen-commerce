@@ -318,11 +318,14 @@ function Setup({ data }: { data?: { lines: any[]; gateways: any[] } }) {
             </Select>
             {gw?.help_text && <p className="text-xs text-muted-foreground">{gw.help_text}</p>}
           </div>
+          <div className="rounded-lg bg-muted p-3 text-xs text-muted-foreground sm:col-span-2">
+            Zadarma: open Settings → SIP connection. Your SIP login is a 6-digit number (for a PBX extension use the full login, e.g. 123456-100). A caller number is optional — without a purchased number the call shows the provider's default number.
+          </div>
           <div className="space-y-1"><Label>Line name</Label><Input value={form.label} onChange={(e) => set("label", e.target.value)} /></div>
-          <div className="space-y-1"><Label>Your mobile / caller number</Label><Input value={form.caller_number} onChange={(e) => set("caller_number", e.target.value)} placeholder="01XXXXXXXXX" /></div>
-          <div className="space-y-1"><Label>Provider ID / username</Label><Input value={form.sip_username} onChange={(e) => set("sip_username", e.target.value)} autoComplete="off" /></div>
-          <div className="space-y-1"><Label>Password</Label><Input type="password" value={form.sip_password} onChange={(e) => set("sip_password", e.target.value)} autoComplete="new-password" placeholder={form.id ? "Leave as is to keep" : ""} /></div>
-          <div className="space-y-1"><Label>Extension (optional)</Label><Input value={form.extension} onChange={(e) => set("extension", e.target.value)} /></div>
+          <div className="space-y-1"><Label>Caller number (optional)</Label><Input value={form.caller_number} onChange={(e) => set("caller_number", e.target.value)} placeholder="Leave empty if you have none" /></div>
+          <div className="space-y-1"><Label>SIP login / username</Label><Input value={form.sip_username} onChange={(e) => set("sip_username", e.target.value)} placeholder="e.g. 123456" autoComplete="off" /></div>
+          <div className="space-y-1"><Label>SIP password</Label><Input type="password" value={form.sip_password} onChange={(e) => set("sip_password", e.target.value)} autoComplete="new-password" placeholder={form.id ? "Leave as is to keep" : ""} /></div>
+          <div className="space-y-1"><Label>PBX extension (optional)</Label><Input value={form.extension} onChange={(e) => set("extension", e.target.value)} placeholder="e.g. 100" /></div>
           <div className="flex flex-col justify-end gap-2">
             <label className="flex items-center gap-2 text-sm"><Switch checked={form.record_calls} onCheckedChange={(v) => set("record_calls", v)} />Record calls</label>
             <label className="flex items-center gap-2 text-sm"><Switch checked={form.is_default} onCheckedChange={(v) => set("is_default", v)} />Default line</label>
