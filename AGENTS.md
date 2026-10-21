@@ -32,3 +32,4 @@
 - `deploy-production.sh` guards `_runtime.mjs`'s `createRequire(import.meta.url)` (undefined → SSR 500s); never remove the patch.
 - Delegated access = `store_staff` rows (access_type=delegated); active store comes from the `x-orzen-store` header, re-verified server-side; invites/revokes use only the caller's owned store — no re-sharing or cross-store leaks.
 - Subdirectories have their own AGENTS.md; read it before changing files there.
+- Global phrasebook (src/lib/global-phrasebook*.ts) learns only phrase→intent (no customer data, hashed stores, 3+ stores/90 0x0p+0greement) and answers from the current store's fresh data — cross-store learning without leaking or inventing facts.

@@ -2563,5 +2563,8 @@ export async function generateAgentReply(opts: {
     const { putSafeAnswer } = await import("./safe-answer-cache");
     putSafeAnswer(safeKey, String(result.text ?? ""), usedTools);
   } catch {}
-  return { text: result.text as string, facts: payloadFactsFromResult(result), verified, raw: false };
+  const toolCalls = ((result as any).steps ?? []).flatMap((s: any) =>
+    (s?.toolCalls ?? []).map((c: any) => ({ name: String(c?.toolName ?? ""), args: c?.input ?? c?.args ?? null })),
+  ) as { name: string; args: any }[];
+  return { text: result.text as string, facts: payloadFactsFromResult(result), verified, raw: false, toolCalls };
 }
