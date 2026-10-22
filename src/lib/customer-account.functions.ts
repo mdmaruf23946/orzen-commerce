@@ -460,3 +460,71 @@ export const listMyNotifications = createServerFn({ method: "POST" })
     out.sort((a, b) => +new Date(b.created_at) - +new Date(a.created_at));
     return out.slice(0, 60);
   });
+
+/**
+ * Attach guest activity done in THIS browser to the signed-in account:
+ * - guest web chats proven by their per-browser secret key
+ * - guest orders proven by the contact (phone/email) saved at checkout
+ * Only unowned rows of the same store are linked, so nothing can be taken
+ * from another account. Once linked they show on every device for this account.
+ */
+export const claimGuestActivity = createServerFn({ method: "POST" })
+  .inputValidator((d) =>
+    z
+      .object({
+        storeSlug: slugSchema,
+        token: tokenSchema,
+        chatKeys: z.array(z.string().min(16).max(200)).max(30).default([]),
+        orders: z
+          .array(z.object({ orderId: z.string().uuid(), contact: z.string().trim().min(3).max(255) }))
+          .max(100)
+          .default([]),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data }) => {
+    const { sb, storeId, customer } = await requireCustomer(data.storeSlug, data.token);
+    const { sha256Hex } = await import("@/lib/web-chat-access.server");
+    let chats = 0;
+    let orders = 0;
+
+    if (data.chatKeys.length) {
+      const hashes = await Promise.all(data.chatKeys.map((k) => sha256Hex(k)));
+      const { data: rows } = await (sb as any)
+        .from("ai_conversations")
+        .update({ web_customer_id: customer.id })
+        .eq("store_id", storeId)
+        .eq("channel", "web")
+        .is("web_customer_id", null)
+        .in("web_access_hash", hashes)
+        .select("id");
+      chats = rows?.length ?? 0;
+    }
+
+    if (data.orders.length) {
+      const ids = data.orders.map((o) => o.orderId);
+      const { data: rows } = await sb
+        .from("orders")
+        .select("id,phone,email")
+        .eq("store_id", storeId)
+        .is("customer_id", null)
+        .in("id", ids);
+      const digits = (s: string | null | undefined) => (s ?? "").replace(/\D/g, "");
+      const proven = ((rows ?? []) as any[]).filter((o) => {
+        const c = data.orders.find((x) => x.orderId === o.id)?.contact ?? "";
+        const cd = digits(c);
+        if (cd.length >= 9 && digits(o.phone).slice(-9) === cd.slice(-9)) return true;
+        return !!o.email && c.includes("@") && o.email.toLowerCase() === c.toLowerCase();
+      });
+      if (proven.length) {
+        const { data: up } = await sb
+          .from("orders")
+          .update({ customer_id: customer.id } as any)
+          .in("id", proven.map((o) => o.id))
+          .is("customer_id", null)
+          .select("id");
+        orders = up?.length ?? 0;
+      }
+    }
+    return { chats, orders };
+  });
