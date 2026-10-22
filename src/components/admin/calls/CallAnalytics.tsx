@@ -1,5 +1,6 @@
 // Call analytics cards (Overview) and detailed call log table (Calls & History).
 import { useMemo, useState } from "react";
+import { csvCell } from "@/lib/csv-safe";
 import { Link } from "@tanstack/react-router";
 import { useQuery, useInfiniteQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -163,7 +164,7 @@ export function CallLogTable() {
         all.push(...r.rows);
         if (!r.has_more) break;
       }
-      const esc = (v: unknown) => `"${String(v ?? "").replace(/"/g, '""')}"`;
+      const esc = csvCell;
       const lines = [["Order", "Customer", "Phone", "Time (Dhaka)", "Type", "Status", "Duration (sec)", "Keypress"].join(",")]
         .concat(all.map((r) => [r.invoice_no, r.customer_name, r.phone, fmtTime(r.created_at), typeLabel(r), STATUS_LABEL[r.status] ?? r.status, r.duration_sec ?? 0, keyLabel(r)].map(esc).join(",")));
       const blob = new Blob(["\uFEFF" + lines.join("\n")], { type: "text/csv;charset=utf-8" });

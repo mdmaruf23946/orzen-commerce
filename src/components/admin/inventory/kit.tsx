@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { csvCell } from "@/lib/csv-safe";
 import { cn } from "@/lib/utils";
 
 export function money(n: number | string | null | undefined) {
@@ -85,7 +86,7 @@ export function EmptyBox({ children }: { children: ReactNode }) {
 export function exportCsv(filename: string, rows: Record<string, unknown>[]) {
   if (rows.length === 0) return;
   const headers = Object.keys(rows[0]!);
-  const esc = (v: unknown) => `"${String(v ?? "").replace(/"/g, '""')}"`;
+  const esc = csvCell;
   const csv = [headers.join(","), ...rows.map((r) => headers.map((h) => esc(r[h])).join(","))].join("\n");
   const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8;" }));
   const a = document.createElement("a");

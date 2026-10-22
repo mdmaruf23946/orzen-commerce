@@ -53,10 +53,10 @@ export const Route = createFileRoute("/api/public/marketing/visit")({
         let orderId: string | null = null;
         if (p.event === "purchase" && p.order_id) {
           const { data: order } = await db
-            .from("orders").select("id,attribution_platform").eq("id", p.order_id).eq("store_id", store.id).maybeSingle();
+            .from("orders").select("id,attribution_platform,created_at").eq("id", p.order_id).eq("store_id", store.id).maybeSingle();
           if (order) {
             orderId = order.id;
-            if (!order.attribution_platform) {
+            if (!order.attribution_platform && Date.now() - new Date(order.created_at).getTime() < 60 * 60 * 1000) {
               await db.from("orders").update({
                 attribution_platform: platform, attribution_campaign: p.campaign ?? null, attribution_session_id: p.session_id,
               }).eq("id", order.id).is("attribution_platform", null);

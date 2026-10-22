@@ -116,7 +116,8 @@ export const initiateWalletTopup = createServerFn({ method: "POST" })
       .single();
     if (invErr) throw new Error(invErr.message);
 
-    const origin = data.return_origin.replace(/\/$/, "");
+    const { safeReturnOrigin } = await import("@/lib/safe-return-origin.server");
+    const origin = safeReturnOrigin(data.return_origin);
     const checkout = await provider.adapter.createCheckout(provider.config, {
       invoiceId: (inv as any).id,
       invoiceNo,

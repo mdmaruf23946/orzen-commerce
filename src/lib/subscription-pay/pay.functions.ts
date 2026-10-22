@@ -372,7 +372,8 @@ export const initiateSubscriptionCheckout = createServerFn({ method: "POST" })
       .single();
     if (invErr) throw new Error(invErr.message);
 
-    const origin = data.return_origin.replace(/\/$/, "");
+    const { safeReturnOrigin } = await import("@/lib/safe-return-origin.server");
+    const origin = safeReturnOrigin(data.return_origin);
     const returnUrl = `${origin}/admin/billing/return?invoice=${invoiceNo}`;
     const cancelUrl = `${origin}/admin/billing?cancelled=1&invoice=${invoiceNo}`;
     const webhookUrl = `${origin}/api/public/subscription-pay/webhook/${provider.id}`;

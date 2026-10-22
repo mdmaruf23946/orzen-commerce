@@ -1,6 +1,7 @@
 // Client-safe helpers for Physical Orders bulk actions.
 // Kept out of any *.functions.ts file so production code splitting stays safe.
 import type { AdminOrderRow } from "@/lib/orders-admin.functions";
+import { csvCell } from "@/lib/csv-safe";
 
 export const isPhysical = (o: AdminOrderRow) => (o.order_type ?? "physical") === "physical";
 
@@ -56,8 +57,7 @@ const CSV_HEADERS = [
 ];
 
 function cell(v: unknown) {
-  const s = String(v ?? "");
-  return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  return csvCell(v);
 }
 
 export function ordersToCsv(orders: AdminOrderRow[]) {

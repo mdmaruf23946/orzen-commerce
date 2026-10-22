@@ -1,4 +1,5 @@
 import { FeatureGate } from "@/components/admin/FeatureGate";
+import { csvCell } from "@/lib/csv-safe";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -100,7 +101,7 @@ function CustomerAccountsPage() {
         c.is_active ? "Active" : "Disabled",
         new Date(c.created_at).toLocaleDateString(),
       ]
-        .map((v) => `"${String(v).replace(/"/g, '""')}"`)
+        .map((v) => csvCell(v))
         .join(","),
     );
     const blob = new Blob([[head.join(","), ...lines].join("\n")], { type: "text/csv;charset=utf-8" });
