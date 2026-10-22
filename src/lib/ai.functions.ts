@@ -776,6 +776,11 @@ export const sendMessengerTestMessage = createServerFn({ method: "POST" })
   .handler(async ({ context, data }) => {
     const { storeId, row } = await loadIntegrationForOwner(context);
     if (!row) throw new Error("Not connected");
+    // Only allow test messages to people who have already messaged this store's page.
+    const { supabaseAdmin: _sa } = await import("@/integrations/supabase/client.server");
+    const { data: seen } = await (_sa as any)
+      .from("messenger_jobs").select("id").eq("store_id", storeId).eq("sender_id", data.recipient_id).limit(1);
+    if (!seen?.length) throw new Error("This person has not messaged your page yet. Send a message to your page first, then use your own ID.");
     const token = (await decryptToken(row.page_access_token_encrypted)) || row.page_access_token;
     if (!token) throw new Error("No token on file");
     const r = await fetch(
