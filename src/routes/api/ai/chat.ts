@@ -47,6 +47,8 @@ export const Route = createFileRoute("/api/ai/chat")({
           slug?: string;
           messages?: UIMessage[];
           conversationId?: string;
+          chatKey?: string;
+          customerToken?: string;
         };
         if (!body.slug || !Array.isArray(body.messages)) {
           return new Response("Invalid request", { status: 400 });
@@ -65,24 +67,32 @@ export const Route = createFileRoute("/api/ai/chat")({
 
         const sb = admin();
 
-        // Load or create the web conversation.
+        // Load or create the web conversation. A chat opens only for the browser
+        // holding its private key, or for the same signed-in store customer.
+        const { canAccessWebConv, customerIdFromToken, newChatKey, sha256Hex, clientInfo } = await import("@/lib/web-chat-access.server");
+        const customerId = await customerIdFromToken(sb, store.id, body.customerToken);
+        const client = clientInfo(request);
         let convId = body.conversationId?.trim() || null;
+        let issuedKey: string | null = null;
         if (convId) {
           const { data: existing } = await sb
             .from("ai_conversations")
-            .select("id,store_id,handoff_mode")
+            .select("id,store_id,web_access_hash,web_customer_id")
             .eq("id", convId)
             .maybeSingle();
-          if (!existing || existing.store_id !== store.id) convId = null;
+          if (!(await canAccessWebConv(existing as any, store.id, body.chatKey, customerId))) convId = null;
         }
         if (!convId) {
+          issuedKey = newChatKey();
           const { data: created, error } = await sb
             .from("ai_conversations")
-            .insert({ store_id: store.id, channel: "web", status: "open" } as any)
+            .insert({ store_id: store.id, channel: "web", status: "open", web_access_hash: await sha256Hex(issuedKey), web_customer_id: customerId, web_client: client } as any)
             .select("id")
             .single();
           if (error || !created) return new Response("Cannot start conversation", { status: 500 });
           convId = created.id;
+        } else {
+          await sb.from("ai_conversations").update({ web_client: client, ...(customerId ? { web_customer_id: customerId } : {}) } as any).eq("id", convId);
         }
 
         // Persist the newest user message (last item in UIMessages).
@@ -115,6 +125,19 @@ export const Route = createFileRoute("/api/ai/chat")({
               .eq("id", convId);
           }
         }
+
+        // Model history comes only from stored messages — never trust roles sent by the browser.
+        const { data: histRows } = await sb
+          .from("ai_messages")
+          .select("id,role,content,message_type")
+          .eq("conversation_id", convId)
+          .in("role", ["user", "assistant"])
+          .order("created_at", { ascending: false })
+          .limit(12);
+        const trusted: UIMessage[] = (histRows ?? [])
+          .reverse()
+          .filter((r: any) => r.content && r.message_type !== "error")
+          .map((r: any) => ({ id: r.id, role: r.role, parts: [{ type: "text", text: String(r.content) }] }) as UIMessage);
 
         // Respect human handoff — do not answer if conversation is in human mode.
         const { data: convRow } = await sb
@@ -193,7 +216,8 @@ export const Route = createFileRoute("/api/ai/chat")({
                   });
                   const res = createUIMessageStreamResponse({ stream });
                   res.headers.set("x-orzen-conversation-id", ctxConvId);
-                  res.headers.set("access-control-expose-headers", "x-orzen-conversation-id");
+                  if (issuedKey) res.headers.set("x-orzen-chat-key", issuedKey);
+                  res.headers.set("access-control-expose-headers", "x-orzen-conversation-id, x-orzen-chat-key");
                   return res;
                 }
               }
