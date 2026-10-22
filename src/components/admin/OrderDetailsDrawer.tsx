@@ -52,6 +52,8 @@ type Props = {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   orderId: string;
+  /** "page" renders inline inside the dashboard instead of a popup sheet. */
+  variant?: "sheet" | "page";
 };
 
 const STAGE_LABEL: Record<string, string> = {
@@ -60,7 +62,8 @@ const STAGE_LABEL: Record<string, string> = {
   delivered: "Delivered", returned: "Returned", cancelled: "Cancelled",
 };
 
-export function OrderDetailsDrawer({ open, onOpenChange, orderId }: Props) {
+export function OrderDetailsDrawer({ open, onOpenChange, orderId, variant = "sheet" }: Props) {
+  const asPage = variant === "page";
   const fn = useServerFn(getOrderDetails);
   const cacheFn = useServerFn(getCachedFraudCheck);
   const autoFn = useServerFn(ensureAutoFraudCheck);
@@ -215,12 +218,10 @@ export function OrderDetailsDrawer({ open, onOpenChange, orderId }: Props) {
           <EditItemsDialog open={editItems} onOpenChange={setEditItems} order={order} items={items} isPhysical={isPhysical} onSaved={refresh} />
         </>
       )}
-      <Sheet open={open} onOpenChange={onOpenChange}>
-        <SheetContent side="right" className="w-full overflow-y-auto overflow-x-hidden bg-muted p-0 sm:max-w-full lg:max-w-[1280px]">
-          <SheetHeader className="sr-only"><SheetTitle>Order Details</SheetTitle></SheetHeader>
+      <PageOrSheet asPage={asPage} open={open} onOpenChange={onOpenChange}>
 
           <div className="space-y-4 p-3 sm:p-5 lg:p-6">
-            <div className="flex flex-col gap-3 pr-8 sm:flex-row sm:items-end sm:justify-between">
+            <div className={`flex flex-col gap-3 ${asPage ? "" : "pr-8"} sm:flex-row sm:items-end sm:justify-between`}>
               <div>
                 <button type="button" onClick={() => onOpenChange(false)} className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
                   <ArrowLeft className="h-3.5 w-3.5" /> Back to Orders
@@ -478,8 +479,7 @@ export function OrderDetailsDrawer({ open, onOpenChange, orderId }: Props) {
               </div>
             )}
           </div>
-        </SheetContent>
-      </Sheet>
+      </PageOrSheet>
 
       {phone && <FraudCheckModal open={fraudOpen} onOpenChange={setFraudOpen} phone={phone} orderId={orderId} />}
     </>
@@ -793,5 +793,17 @@ function OurRecord({ phone, enabled }: { phone: string; enabled: boolean }) {
         </div>
       </div>
     </Card>
+  );
+}
+
+function PageOrSheet({ asPage, open, onOpenChange, children }: { asPage: boolean; open: boolean; onOpenChange: (v: boolean) => void; children: React.ReactNode }) {
+  if (asPage) return <div className="min-w-0 rounded-2xl bg-muted">{children}</div>;
+  return (
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent side="right" className="w-full overflow-y-auto overflow-x-hidden bg-muted p-0 sm:max-w-full lg:max-w-[1280px]">
+        <SheetHeader className="sr-only"><SheetTitle>Order Details</SheetTitle></SheetHeader>
+        {children}
+      </SheetContent>
+    </Sheet>
   );
 }

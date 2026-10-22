@@ -201,6 +201,7 @@ import { Route as AuthenticatedAdminMarketingAppsRouteImport } from './routes/_a
 import { Route as AuthenticatedAdminMarketingFacebookRouteImport } from './routes/_authenticated/admin/marketing.facebook'
 import { Route as AuthenticatedAdminMarketingGoogleRouteImport } from './routes/_authenticated/admin/marketing.google'
 import { Route as AuthenticatedAdminMarketingTiktokRouteImport } from './routes/_authenticated/admin/marketing.tiktok'
+import { Route as AuthenticatedAdminOrdersOrderIdRouteImport } from './routes/_authenticated/admin/orders_.$orderId'
 import { Route as AuthenticatedAdminPaymentGatewaysIndexRouteImport } from './routes/_authenticated/admin/payment-gateways.index'
 import { Route as AuthenticatedAdminPaymentGatewaysGatewayRouteImport } from './routes/_authenticated/admin/payment-gateways.$gateway'
 import { Route as AuthenticatedAdminPaymentGatewaysAppsRouteImport } from './routes/_authenticated/admin/payment-gateways.apps'
@@ -1370,6 +1371,12 @@ const AuthenticatedAdminMarketingTiktokRoute =
     path: '/tiktok',
     getParentRoute: () => AuthenticatedAdminMarketingRoute,
   } as any)
+const AuthenticatedAdminOrdersOrderIdRoute =
+  AuthenticatedAdminOrdersOrderIdRouteImport.update({
+    id: '/orders_/$orderId',
+    path: '/orders/$orderId',
+    getParentRoute: () => AuthenticatedAdminRouteRoute,
+  } as any)
 const AuthenticatedAdminPaymentGatewaysIndexRoute =
   AuthenticatedAdminPaymentGatewaysIndexRouteImport.update({
     id: '/',
@@ -2026,6 +2033,7 @@ export interface FileRoutesByFullPath {
   '/admin/marketing/facebook': typeof AuthenticatedAdminMarketingFacebookRoute
   '/admin/marketing/google': typeof AuthenticatedAdminMarketingGoogleRoute
   '/admin/marketing/tiktok': typeof AuthenticatedAdminMarketingTiktokRoute
+  '/admin/orders/$orderId': typeof AuthenticatedAdminOrdersOrderIdRoute
   '/admin/payment-gateways/$gateway': typeof AuthenticatedAdminPaymentGatewaysGatewayRoute
   '/admin/payment-gateways/apps': typeof AuthenticatedAdminPaymentGatewaysAppsRoute
   '/admin/payment-gateways/overview': typeof AuthenticatedAdminPaymentGatewaysOverviewRoute
@@ -2288,6 +2296,7 @@ export interface FileRoutesByTo {
   '/admin/marketing/facebook': typeof AuthenticatedAdminMarketingFacebookRoute
   '/admin/marketing/google': typeof AuthenticatedAdminMarketingGoogleRoute
   '/admin/marketing/tiktok': typeof AuthenticatedAdminMarketingTiktokRoute
+  '/admin/orders/$orderId': typeof AuthenticatedAdminOrdersOrderIdRoute
   '/admin/payment-gateways/$gateway': typeof AuthenticatedAdminPaymentGatewaysGatewayRoute
   '/admin/payment-gateways/apps': typeof AuthenticatedAdminPaymentGatewaysAppsRoute
   '/admin/payment-gateways/overview': typeof AuthenticatedAdminPaymentGatewaysOverviewRoute
@@ -2565,6 +2574,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/marketing/facebook': typeof AuthenticatedAdminMarketingFacebookRoute
   '/_authenticated/admin/marketing/google': typeof AuthenticatedAdminMarketingGoogleRoute
   '/_authenticated/admin/marketing/tiktok': typeof AuthenticatedAdminMarketingTiktokRoute
+  '/_authenticated/admin/orders_/$orderId': typeof AuthenticatedAdminOrdersOrderIdRoute
   '/_authenticated/admin/payment-gateways/$gateway': typeof AuthenticatedAdminPaymentGatewaysGatewayRoute
   '/_authenticated/admin/payment-gateways/apps': typeof AuthenticatedAdminPaymentGatewaysAppsRoute
   '/_authenticated/admin/payment-gateways/overview': typeof AuthenticatedAdminPaymentGatewaysOverviewRoute
@@ -2842,6 +2852,7 @@ export interface FileRouteTypes {
     | '/admin/marketing/facebook'
     | '/admin/marketing/google'
     | '/admin/marketing/tiktok'
+    | '/admin/orders/$orderId'
     | '/admin/payment-gateways/$gateway'
     | '/admin/payment-gateways/apps'
     | '/admin/payment-gateways/overview'
@@ -3104,6 +3115,7 @@ export interface FileRouteTypes {
     | '/admin/marketing/facebook'
     | '/admin/marketing/google'
     | '/admin/marketing/tiktok'
+    | '/admin/orders/$orderId'
     | '/admin/payment-gateways/$gateway'
     | '/admin/payment-gateways/apps'
     | '/admin/payment-gateways/overview'
@@ -3380,6 +3392,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/marketing/facebook'
     | '/_authenticated/admin/marketing/google'
     | '/_authenticated/admin/marketing/tiktok'
+    | '/_authenticated/admin/orders_/$orderId'
     | '/_authenticated/admin/payment-gateways/$gateway'
     | '/_authenticated/admin/payment-gateways/apps'
     | '/_authenticated/admin/payment-gateways/overview'
@@ -4893,6 +4906,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminMarketingTiktokRouteImport
       parentRoute: typeof AuthenticatedAdminMarketingRoute
     }
+    '/_authenticated/admin/orders_/$orderId': {
+      id: '/_authenticated/admin/orders_/$orderId'
+      path: '/orders/$orderId'
+      fullPath: '/admin/orders/$orderId'
+      preLoaderRoute: typeof AuthenticatedAdminOrdersOrderIdRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
     '/_authenticated/admin/payment-gateways/': {
       id: '/_authenticated/admin/payment-gateways/'
       path: '/'
@@ -5683,6 +5703,7 @@ interface AuthenticatedAdminRouteRouteChildren {
   AuthenticatedAdminInvoiceOrderIdRoute: typeof AuthenticatedAdminInvoiceOrderIdRoute
   AuthenticatedAdminLandingBuilderIdRoute: typeof AuthenticatedAdminLandingBuilderIdRoute
   AuthenticatedAdminLandingPagesIdRoute: typeof AuthenticatedAdminLandingPagesIdRoute
+  AuthenticatedAdminOrdersOrderIdRoute: typeof AuthenticatedAdminOrdersOrderIdRoute
   AuthenticatedAdminAiIndexRoute: typeof AuthenticatedAdminAiIndexRoute
   AuthenticatedAdminLandingBuilderIndexRoute: typeof AuthenticatedAdminLandingBuilderIndexRoute
   AuthenticatedAdminLandingPagesIndexRoute: typeof AuthenticatedAdminLandingPagesIndexRoute
@@ -5772,6 +5793,7 @@ const AuthenticatedAdminRouteRouteChildren: AuthenticatedAdminRouteRouteChildren
       AuthenticatedAdminLandingBuilderIdRoute,
     AuthenticatedAdminLandingPagesIdRoute:
       AuthenticatedAdminLandingPagesIdRoute,
+    AuthenticatedAdminOrdersOrderIdRoute: AuthenticatedAdminOrdersOrderIdRoute,
     AuthenticatedAdminAiIndexRoute: AuthenticatedAdminAiIndexRoute,
     AuthenticatedAdminLandingBuilderIndexRoute:
       AuthenticatedAdminLandingBuilderIndexRoute,
