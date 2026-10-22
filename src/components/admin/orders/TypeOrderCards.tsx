@@ -108,8 +108,37 @@ function InvoiceLink({ id }: { id: string }) {
 function Shell({
   order, right, children, actions,
 }: { order: AdminOrderRow; right: React.ReactNode; children: React.ReactNode; actions: React.ReactNode }) {
+  const invoice = order.invoice_no ?? `#${order.id.slice(0, 8).toUpperCase()}`;
+  const when = new Date(order.created_at).toLocaleString("en-GB", {
+    day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit",
+  });
   return (
-    <article className="group rounded-2xl border bg-card p-3 shadow-sm transition-all duration-200 hover:border-primary/40 hover:shadow-md sm:p-4">
+    <article className="group rounded-2xl border bg-card p-3 shadow-sm transition-all duration-200 hover:border-primary/40 hover:shadow-md sm:p-4 lg:rounded-xl lg:px-3 lg:py-2">
+      {/* Desktop: compact single row */}
+      <div className="hidden lg:grid lg:grid-cols-[auto_minmax(0,1.1fr)_minmax(0,1.3fr)_auto_auto_minmax(0,1.4fr)] lg:items-center lg:gap-4">
+        <div className="flex flex-col items-center gap-1">
+          <Thumb url={order.items[0]?.image} alt={order.items[0]?.name ?? "Product"} className="h-12 w-12" />
+          <TypeBadge type={order.order_type} />
+        </div>
+        <div className="min-w-0">
+          <div className="truncate text-sm font-semibold">{order.customer_name}</div>
+          <div className="flex items-center gap-1 truncate text-xs text-muted-foreground">
+            <Phone className="h-3 w-3 shrink-0" /> {order.phone}
+          </div>
+          {order.email && <div className="truncate text-[11px] text-muted-foreground">{order.email}</div>}
+          <div className="font-mono text-[10px] text-muted-foreground">{invoice} · {when}</div>
+        </div>
+        <div className="min-w-0 [&>div:first-child]:mt-0">{children}</div>
+        <div className="flex flex-col items-start gap-1">{right}</div>
+        <div className="flex flex-col items-end gap-1 text-right">
+          <div className="text-base font-bold leading-tight">{money(order.total)}</div>
+          <PaymentBadge order={order} />
+        </div>
+        <div className="flex flex-wrap items-center justify-end gap-1 [&_a]:h-7 [&_a]:px-2 [&_button]:h-7 [&_button]:px-2">{actions}</div>
+      </div>
+
+      {/* Mobile / tablet: unchanged */}
+      <div className="lg:hidden">
       <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] gap-3">
         <div className="flex flex-col items-center gap-1.5">
           <Thumb url={order.items[0]?.image} alt={order.items[0]?.name ?? "Product"} className="h-14 w-14 sm:h-16 sm:w-16" />
@@ -117,14 +146,8 @@ function Shell({
         </div>
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-            <span className="font-mono text-[11px] text-muted-foreground">
-              {order.invoice_no ?? `#${order.id.slice(0, 8).toUpperCase()}`}
-            </span>
-            <span className="text-[11px] text-muted-foreground">
-              {new Date(order.created_at).toLocaleString("en-GB", {
-                day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit",
-              })}
-            </span>
+            <span className="font-mono text-[11px] text-muted-foreground">{invoice}</span>
+            <span className="text-[11px] text-muted-foreground">{when}</span>
           </div>
           <div className="mt-0.5 truncate text-sm font-semibold">{order.customer_name}</div>
           {order.email && <div className="truncate text-xs text-muted-foreground">{order.email}</div>}
@@ -140,6 +163,7 @@ function Shell({
         </div>
       </div>
       <div className="mt-3 flex flex-wrap items-center gap-1.5 border-t pt-2.5">{actions}</div>
+      </div>
     </article>
   );
 }
