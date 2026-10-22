@@ -5,6 +5,7 @@ import { Send, X, LifeBuoy, ExternalLink } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { getWebChatHistory, escalateWebChat } from "@/lib/ai-web-chat.functions";
 import { useStoreT } from "@/lib/store-i18n";
+import { readToken } from "@/lib/customer-session";
 
 type WebProduct = {
   id: string;
@@ -28,6 +29,7 @@ function toUi(m: { id: string; role: string; content: string; products?: WebProd
 }
 
 const CID_KEY_PREFIX = "orzen_ai_cid:";
+const KEY_PREFIX = "orzen_ai_key:";
 
 const GENERIC_CHAT_ERROR =
   "দুঃখিত, এই মুহূর্তে উত্তর দেওয়া যাচ্ছে না। একটু পরে আবার চেষ্টা করুন। / Sorry, we couldn't reply right now. Please try again.";
@@ -58,6 +60,12 @@ export default function AIChatPanel({
 }) {
   const { t } = useStoreT();
   const cidKey = CID_KEY_PREFIX + slug;
+  const secretKey = KEY_PREFIX + slug;
+  // This browser's private chat key + (optional) signed-in store account.
+  const access = () => ({
+    chatKey: window.localStorage.getItem(secretKey) ?? undefined,
+    customerToken: readToken(slug) ?? undefined,
+  });
   const [input, setInput] = useState("");
   const [conversationId, setConversationId] = useState<string | null>(() => {
     if (typeof window === "undefined") return null;
@@ -79,11 +87,14 @@ export default function AIChatPanel({
           slug,
           messages,
           conversationId: window.localStorage.getItem(cidKey) ?? undefined,
+          ...access(),
         },
       }),
       fetch: async (url, init) => {
         const res = await fetch(url as string, init);
         const cid = res.headers.get("x-orzen-conversation-id");
+        const key = res.headers.get("x-orzen-chat-key");
+        if (key) window.localStorage.setItem(secretKey, key);
         if (cid) {
           window.localStorage.setItem(cidKey, cid);
           setConversationId(cid);
@@ -103,13 +114,22 @@ export default function AIChatPanel({
   // Load prior history once per open, if we have a conversation id.
   useEffect(() => {
     if (historyLoaded) return;
-    if (!conversationId) {
+    const a = access();
+    if (!conversationId && !a.customerToken) {
       setHistoryLoaded(true);
       return;
     }
     (async () => {
       try {
-        const res = await loadHistory({ data: { slug, conversationId } });
+        const res = await loadHistory({ data: { slug, conversationId: conversationId ?? undefined, ...a } });
+        if (res.conversationId && res.conversationId !== conversationId) {
+          window.localStorage.setItem(cidKey, res.conversationId);
+          setConversationId(res.conversationId);
+        } else if (!res.conversationId && conversationId) {
+          // Not this browser's chat (or expired) → start fresh.
+          window.localStorage.removeItem(cidKey);
+          setConversationId(null);
+        }
         if (res.handedOff) setHandedOff(true);
         if (res.messages.length) {
           setMessages(
@@ -139,7 +159,7 @@ export default function AIChatPanel({
     const id = setInterval(async () => {
       if (status === "submitted" || status === "streaming") return;
       try {
-        const res = await loadHistory({ data: { slug, conversationId } });
+        const res = await loadHistory({ data: { slug, conversationId, ...access() } });
         setHandedOff(!!res.handedOff);
         if (res.handedOff) {
           setChatError(null);
@@ -167,7 +187,7 @@ export default function AIChatPanel({
       await fetch("/api/ai/chat", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ slug, conversationId, messages: [{ id: "u", role: "user", parts: [{ type: "text", text }] }] }),
+        body: JSON.stringify({ slug, conversationId, ...access(), messages: [{ id: "u", role: "user", parts: [{ type: "text", text }] }] }),
       }).catch(() => setChatError(GENERIC_CHAT_ERROR));
       return;
     }
@@ -184,7 +204,7 @@ export default function AIChatPanel({
     if (!conversationId || escalating || handedOff) return;
     setEscalating(true);
     try {
-      await escalate({ data: { slug, conversationId } });
+      await escalate({ data: { slug, conversationId, ...access() } });
       setHandedOff(true);
     } catch {
       /* ignore */
