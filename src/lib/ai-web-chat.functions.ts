@@ -34,19 +34,41 @@ export const getWebChatHistory = createServerFn({ method: "GET" })
   .inputValidator((d) =>
     z.object({
       slug: z.string().min(1).max(120),
-      conversationId: z.string().uuid(),
+      conversationId: z.string().uuid().optional(),
+      chatKey: z.string().max(128).optional(),
+      customerToken: z.string().max(128).optional(),
     }).parse(d),
   )
   .handler(async ({ data }) => {
+    const empty = { messages: [] as any[], handedOff: false, conversationId: null as string | null };
     const storeId = await resolveStoreId(data.slug);
-    if (!storeId) return { messages: [], handedOff: false };
+    if (!storeId) return empty;
     const sb = admin();
-    const { data: conv } = await sb
-      .from("ai_conversations")
-      .select("id,store_id,handoff_mode")
-      .eq("id", data.conversationId)
-      .maybeSingle();
-    if (!conv || conv.store_id !== storeId) return { messages: [], handedOff: false };
+    const { canAccessWebConv, customerIdFromToken } = await import("@/lib/web-chat-access.server");
+    const customerId = await customerIdFromToken(sb, storeId, data.customerToken);
+    let conv: any = null;
+    if (data.conversationId) {
+      const { data: c } = await sb
+        .from("ai_conversations")
+        .select("id,store_id,handoff_mode,web_access_hash,web_customer_id")
+        .eq("id", data.conversationId)
+        .maybeSingle();
+      if (await canAccessWebConv(c as any, storeId, data.chatKey, customerId)) conv = c;
+    }
+    if (!conv && customerId) {
+      // Same signed-in account on another browser → their own latest chat.
+      const { data: c } = await sb
+        .from("ai_conversations")
+        .select("id,store_id,handoff_mode,web_access_hash,web_customer_id")
+        .eq("store_id", storeId)
+        .eq("channel", "web")
+        .eq("web_customer_id", customerId)
+        .order("last_message_at", { ascending: false, nullsFirst: false })
+        .limit(1)
+        .maybeSingle();
+      conv = c;
+    }
+    if (!conv) return empty;
     const { data: rows } = await sb
       .from("ai_messages")
       .select("id,role,content,message_type,attachments,created_at")
@@ -74,6 +96,7 @@ export const getWebChatHistory = createServerFn({ method: "GET" })
             : [],
       })),
       handedOff: conv.handoff_mode === "human",
+      conversationId: conv.id as string,
     };
   });
 
@@ -83,6 +106,8 @@ export const escalateWebChat = createServerFn({ method: "POST" })
       slug: z.string().min(1).max(120),
       conversationId: z.string().uuid(),
       reason: z.string().trim().min(1).max(500).optional().default("Customer requested a human agent"),
+      chatKey: z.string().max(128).optional(),
+      customerToken: z.string().max(128).optional(),
     }).parse(d),
   )
   .handler(async ({ data }) => {
@@ -91,10 +116,12 @@ export const escalateWebChat = createServerFn({ method: "POST" })
     const sb = admin();
     const { data: conv } = await sb
       .from("ai_conversations")
-      .select("id,store_id")
+      .select("id,store_id,web_access_hash,web_customer_id")
       .eq("id", data.conversationId)
       .maybeSingle();
-    if (!conv || conv.store_id !== storeId) throw new Error("Conversation not found");
+    const { canAccessWebConv, customerIdFromToken } = await import("@/lib/web-chat-access.server");
+    const customerId = await customerIdFromToken(sb, storeId, data.customerToken);
+    if (!(await canAccessWebConv(conv as any, storeId, data.chatKey, customerId))) throw new Error("Conversation not found");
     await sb.from("ai_conversations").update({
       handoff_mode: "human",
       handoff_reason: data.reason,
