@@ -719,7 +719,12 @@ export const exportProductsFiltered = createServerFn({ method: "POST" })
     const sid = await myStoreId(context.supabase, context.userId);
     if (!sid) return { header: data.columns, rows: [] };
 
-    const selectCols = Array.from(new Set([...data.columns, "id"])).join(",");
+    const { EXPORT_COLUMNS } = await import("@/components/admin/import-export/schema");
+    const allowed = new Set(EXPORT_COLUMNS.map((c) => c.key));
+    const cols = data.columns.filter((c) => allowed.has(c) && /^[a-z_][a-z0-9_]*$/.test(c));
+    if (cols.length === 0) throw new Error("No valid export columns selected");
+    data.columns = cols;
+    const selectCols = Array.from(new Set([...cols, "id"])).join(",");
     let q = context.supabase.from("products").select(selectCols).eq("store_id", sid);
     const f = data.filters;
     if (f.categoryIds?.length) q = q.in("category_id", f.categoryIds);

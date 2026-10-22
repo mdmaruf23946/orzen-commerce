@@ -6,6 +6,7 @@ import { CheckCheck, Bell, ExternalLink } from "lucide-react";
 import { listMyNotifications, markNotificationRead, markAllNotificationsRead } from "@/lib/notifications-inbox.functions";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import DOMPurify from "isomorphic-dompurify";
 
 export const Route = createFileRoute("/_authenticated/admin/inbox")({
   component: Inbox,
@@ -118,5 +119,8 @@ function escapeText(s: string): string {
   return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 function sanitize(html: string): string {
-  return String(html ?? "").replace(/<script[\s\S]*?<\/script>/gi, "").replace(/on\w+="[^"]*"/gi, "");
+  return DOMPurify.sanitize(String(html ?? ""), {
+    FORBID_TAGS: ["script", "style", "iframe", "object", "embed", "form", "input", "button"],
+    FORBID_ATTR: ["style"],
+  });
 }
