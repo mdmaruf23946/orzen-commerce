@@ -38,6 +38,7 @@ export function OrderTracker({
 }) {
   const trackFn = useServerFn(trackOrderPublic);
   const [value, setValue] = useState(initialQuery);
+  const [phone, setPhone] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [orders, setOrders] = useState<any[] | null>(null);
@@ -45,15 +46,15 @@ export function OrderTracker({
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     const q = value.trim();
-    if (q.length < 4) {
-      setError("Enter a full Order ID or phone number.");
+    if (q.length < 2 || phone.replace(/\D/g, "").length < 9) {
+      setError("Enter your Order ID and the phone number used for the order.");
       setOrders(null);
       return;
     }
     setBusy(true);
     setError(null);
     try {
-      const res: any = await trackFn({ data: { slug, query: q } });
+      const res: any = await trackFn({ data: { slug, query: q, phone: phone.trim() } });
       if (!res?.ok) {
         setOrders(null);
         setError(res?.error ?? "No order found.");
@@ -80,7 +81,7 @@ export function OrderTracker({
           <div>
             <h2 className="text-sm font-bold text-neutral-900">Instant Order Tracker</h2>
             <p className="text-[11px] text-neutral-500">
-              Track with your Order ID or the phone number used at checkout.
+              Enter your Order ID and the phone number used at checkout.
             </p>
           </div>
         </div>
@@ -91,10 +92,17 @@ export function OrderTracker({
             <input
               value={value}
               onChange={(e) => setValue(e.target.value)}
-              placeholder="Order ID (e.g. #1002) or Phone Number"
+              placeholder="Order ID (e.g. #1002)"
               className="h-11 w-full rounded-full border border-neutral-200 bg-white pl-9 pr-4 text-sm outline-none transition focus:border-sf-accent focus:ring-2 focus:ring-sf-accent/20"
             />
           </div>
+          <input
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            inputMode="tel"
+            placeholder="Phone number"
+            className="h-11 w-full rounded-full border border-neutral-200 bg-white px-4 text-sm outline-none transition focus:border-sf-accent focus:ring-2 focus:ring-sf-accent/20 sm:w-44"
+          />
           <button
             type="submit"
             disabled={busy}

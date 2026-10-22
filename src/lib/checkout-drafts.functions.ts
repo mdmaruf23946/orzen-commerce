@@ -45,8 +45,16 @@ export const completeCheckoutDraft = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => z.object({ id: z.string().uuid(), storeId: z.string().uuid(), orderId: z.string().max(64).optional() }).parse(d))
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    // Only a real order of this store, placed with the draft's own phone, can close a draft.
+    if (!data.orderId || !/^[0-9a-f-]{36}$/i.test(data.orderId)) return { ok: false };
+    const [{ data: draft }, { data: order }] = await Promise.all([
+      supabaseAdmin.from("checkout_drafts").select("phone").eq("id", data.id).eq("store_id", data.storeId).maybeSingle(),
+      supabaseAdmin.from("orders").select("phone").eq("id", data.orderId).eq("store_id", data.storeId).maybeSingle(),
+    ]);
+    const d = (p: any) => String(p ?? "").replace(/\D/g, "").slice(-10);
+    if (!draft || !order || !d((draft as any).phone) || d((draft as any).phone) !== d((order as any).phone)) return { ok: false };
     await supabaseAdmin.from("checkout_drafts")
-      .update({ converted_order_id: data.orderId && /^[0-9a-f-]{36}$/i.test(data.orderId) ? data.orderId : "00000000-0000-0000-0000-000000000000" })
+      .update({ converted_order_id: data.orderId })
       .eq("id", data.id).eq("store_id", data.storeId);
     return { ok: true };
   });

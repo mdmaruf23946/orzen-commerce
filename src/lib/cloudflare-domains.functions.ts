@@ -36,6 +36,14 @@ export const provisionCustomHostname = createServerFn({ method: "POST" })
     if (!HOSTNAME_RE.test(host)) throw new Error("Invalid hostname format");
 
     const store = await requireMyStore(supabase, userId);
+    // Never attach platform hosts or a hostname another store already claimed.
+    if (/(^|\.)(orzen\.top|lovable\.app|lovable\.dev|workers\.dev|pages\.dev)$/i.test(host))
+      throw new Error("This domain cannot be used");
+    {
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const { data: taken } = await supabaseAdmin.from("store_domains").select("store_id").eq("hostname", host).limit(1);
+      if (taken?.length) throw new Error(taken[0].store_id === store.id ? "This domain is already added" : "This domain is already used by another store");
+    }
     const { attachCustomHostname } = await import("./cloudflare-ssl.server");
     const cfHost = await attachCustomHostname(host);
 

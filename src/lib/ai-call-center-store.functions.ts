@@ -22,7 +22,16 @@ async function planAllowsAiCalls(supabase: any, storeId: string) {
   const { resolveEffectivePlan } = await import("@/lib/plan-guard");
   const pkg = await resolveEffectivePlan(supabase, data as any);
   if (!pkg) return false;
-  return pkg.is_trial === true || pkg.features?.ai_call_center === true;
+  // Active subscription + the plan must actually include AI calls (trials too).
+  if (["expired", "cancelled", "suspended", "past_due"].includes(String((data as any)?.subscription_status ?? ""))) return false;
+  return pkg.features?.ai_call_center === true;
+}
+
+/** AI calling is still a beta: only the designated test account may use it. */
+async function assertAiCallAllowed(context: any, storeId: string) {
+  const { isBetaTester } = await import("@/lib/beta-features");
+  if (!isBetaTester((context.claims as any)?.email)) throw new Error("AI Call Center এখনো চালু হয়নি।");
+  if (!(await planAllowsAiCalls(context.supabase, storeId))) throw new Error("আপনার প্যাকেজে AI Call নেই।");
 }
 
 
@@ -89,6 +98,10 @@ export const activateStoreAiCallCenter = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const sb = context.supabase;
     const storeId = await storeIdOrThrow(sb, context.userId);
+    {
+      const { isBetaTester } = await import("@/lib/beta-features");
+      if (!isBetaTester((context.claims as any)?.email)) throw new Error("AI Call Center এখনো চালু হয়নি।");
+    }
 
     if (!(await planAllowsAiCalls(sb, storeId))) {
       throw new Error("AI Call Center is not included in your current plan. Please upgrade to continue.");
@@ -148,6 +161,7 @@ export const setStoreAiCallActive = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const sb = context.supabase;
     const storeId = await storeIdOrThrow(sb, context.userId);
+    if (data.active) await assertAiCallAllowed(context, storeId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     await supabaseAdmin
       .from("store_ai_call_settings")

@@ -155,7 +155,8 @@ export const getPublicServiceCheckoutConfig = createServerFn({ method: "GET" })
         .eq("is_visible", true)
         .order("sort_order", { ascending: true }),
     ]);
-    return { settings: normalizeSettings(data.storeId, row), fields: (fields ?? []) as any[] };
+    // Staff-only notes never leave the merchant panel.
+    return { settings: { ...normalizeSettings(data.storeId, row), staff_notes: null }, fields: (fields ?? []) as any[] };
   });
 
 /**

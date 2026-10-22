@@ -1713,7 +1713,8 @@ export const trackOrderPublic = createServerFn({ method: "POST" })
     z
       .object({
         slug: z.string().min(1).max(120),
-        query: z.string().trim().min(4).max(60),
+        query: z.string().trim().min(2).max(60),
+        phone: z.string().trim().min(6).max(30),
       })
       .parse(d),
   )
@@ -1733,27 +1734,20 @@ export const trackOrderPublic = createServerFn({ method: "POST" })
     const sel =
       "id,invoice_no,order_type,status,payment_status,payment_method,created_at,subtotal,delivery_amount,discount_amount,customer_name,phone,area,courier_name,courier_tracking_id,courier_status,customer_id";
 
-    let rows: any[] = [];
-    if (isPhone) {
-      const tail = digits.slice(-9);
-      const { data: found } = await (supabaseAdmin as any)
-        .from("orders")
-        .select(sel)
-        .eq("store_id", storeId)
-        .ilike("phone", `%${tail}`)
-        .order("created_at", { ascending: false })
-        .limit(10);
-      rows = found ?? [];
-    } else {
-      const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(raw);
-      let q = (supabaseAdmin as any).from("orders").select(sel).eq("store_id", storeId);
-      q = uuid ? q.eq("id", raw) : q.eq("invoice_no", raw);
-      const { data: found } = await q.limit(1);
-      rows = found ?? [];
-    }
+    // Two facts required: the Order ID AND the phone used on that order.
+    const phoneDigits = toAsciiDigits(data.phone).replace(/[^0-9]/g, "");
+    if (phoneDigits.length < 9)
+      return { ok: false as const, error: "Enter the phone number used for this order.", orders: [] };
+    const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(raw);
+    let q = (supabaseAdmin as any).from("orders").select(sel).eq("store_id", storeId);
+    q = uuid ? q.eq("id", raw) : q.eq("invoice_no", raw);
+    const { data: found } = await q.limit(1);
+    const tail = phoneDigits.slice(-9);
+    let rows: any[] = (found ?? []).filter((r: any) => String(r.phone ?? "").replace(/[^0-9]/g, "").endsWith(tail));
+    void digits; void isPhone;
 
     if (!rows.length)
-      return { ok: false as const, error: "No order found for this Order ID or phone number.", orders: [] };
+      return { ok: false as const, error: "No order matches this Order ID and phone number.", orders: [] };
 
     const ids = rows.map((r) => r.id);
     const { data: tl } = await (supabaseAdmin as any)
