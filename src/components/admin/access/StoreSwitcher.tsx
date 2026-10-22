@@ -22,10 +22,11 @@ type Props = {
   storeIcon: string | null;
   color?: string | null;
   roleLabel: string;
+  compact?: boolean;
 };
 
 /** Sidebar store identity that doubles as the store switcher. */
-export function StoreSwitcher({ currentStoreId, storeName, storeIcon, color, roleLabel }: Props) {
+export function StoreSwitcher({ currentStoreId, storeName, storeIcon, color, roleLabel, compact }: Props) {
   const list = useServerFn(listMyStores);
   const doSwitch = useServerFn(switchStore);
   const { data: stores = [] } = useQuery({ queryKey: ["access", "my-stores"], queryFn: () => list(), staleTime: 60_000 });
@@ -60,6 +61,17 @@ export function StoreSwitcher({ currentStoreId, storeName, storeIcon, color, rol
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
+        {compact ? (
+          <button
+            type="button"
+            aria-label={`Store: ${storeName}`}
+            title={storeName}
+            className="flex items-center gap-1 rounded-lg border p-1 pr-1.5 transition hover:bg-muted"
+          >
+            {mark(storeName, storeIcon, "h-7 w-7")}
+            <ChevronsUpDown className="h-3.5 w-3.5 text-muted-foreground" />
+          </button>
+        ) : (
         <Button variant="ghost" className="flex h-auto w-full justify-start gap-2.5 rounded-none border-b px-4 py-2.5 text-left transition-colors hover:bg-muted/50">
           <div className="min-w-0 flex-1 leading-tight">
             {resolveStoreIcon({ logo_url: storeIcon }) ? (
@@ -75,8 +87,17 @@ export function StoreSwitcher({ currentStoreId, storeName, storeIcon, color, rol
           </div>
           {stores.length > 1 && <ChevronsUpDown className="h-4 w-4 shrink-0 text-muted-foreground" />}
         </Button>
+        )}
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-64">
+        <div className="flex items-center gap-2.5 px-2 py-2">
+          {mark(storeName, storeIcon, "h-9 w-9")}
+          <div className="min-w-0 leading-tight">
+            <div className="truncate text-sm font-semibold">{storeName}</div>
+            <div className="truncate text-[11px] text-muted-foreground">{roleLabel}</div>
+          </div>
+        </div>
+        <DropdownMenuSeparator />
         <DropdownMenuLabel className="text-xs text-muted-foreground">My Stores</DropdownMenuLabel>
         <DropdownMenuSeparator />
         {stores.map((s) => (
