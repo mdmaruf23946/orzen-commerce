@@ -5,7 +5,9 @@ import { createFileRoute } from "@tanstack/react-router";
 export const Route = createFileRoute("/api/public/voice/process")({
   server: {
     handlers: {
-      POST: async () => {
+      POST: async ({ request }) => {
+        const { verifyCronRequest } = await import("@/lib/cron-auth.server");
+        if (!(await verifyCronRequest(request))) return new Response("Unauthorized", { status: 401 });
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
         const { drainVoiceQueue } = await import("@/lib/voice/queue.server");
         try {
