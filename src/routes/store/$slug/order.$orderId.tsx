@@ -98,7 +98,7 @@ function OrderConfirmation() {
     let cancelledCheck = false;
     (async () => {
       try {
-        await verifyPay({ data: { orderId: (order as any).id } });
+        await verifyPay({ data: { orderId: (order as any).id, token: token ?? undefined, contact: contact ?? undefined } });
         if (!cancelledCheck) qc.invalidateQueries({ queryKey: ["order", orderId] });
       } catch {
         /* non-fatal */

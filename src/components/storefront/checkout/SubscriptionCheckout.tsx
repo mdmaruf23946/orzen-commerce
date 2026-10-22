@@ -203,7 +203,7 @@ export function SubscriptionCheckout({
       writeOrderContact((res as any).orderId, (phone || email || "").trim());
 
       if (isOnline) {
-        const pay = await startPay({ data: { orderId: (res as any).orderId, gatewayKey: method } });
+        const pay = await startPay({ data: { orderId: (res as any).orderId, gatewayKey: method, contact: phone } });
         if ((pay as any)?.redirect_url) {
           removeSelected(slug, items.map((i) => i.productId));
           window.location.href = (pay as any).redirect_url;
