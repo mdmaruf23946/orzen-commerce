@@ -479,6 +479,13 @@ export const respondInvite = createServerFn({ method: "POST" })
       return { ok: true, storeId: null };
     }
 
+    // Prove ownership of the invited mailbox with the emailed one-time code.
+    const { assertEmailVerified } = await import("@/lib/require-verified.server");
+    try {
+      await assertEmailVerified(context.userId);
+    } catch {
+      throw new Error("EMAIL_CODE_REQUIRED: Verify your email with the code we send, then accept again.");
+    }
     const { data: owner } = await sb.from("stores").select("owner_user_id").eq("id", inv.store_id).maybeSingle();
     if (owner?.owner_user_id === context.userId) throw new Error("You already own this store");
 
