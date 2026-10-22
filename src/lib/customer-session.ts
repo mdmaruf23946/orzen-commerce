@@ -6,6 +6,23 @@ import {
   getCurrentCustomer,
   logoutCustomer,
 } from "@/lib/customer-auth.functions";
+import { claimGuestActivity } from "@/lib/customer-account.functions";
+
+/** Guest chat keys + guest order proofs saved in this browser. */
+function collectGuestProofs() {
+  const chatKeys: string[] = [];
+  const orders: { orderId: string; contact: string }[] = [];
+  const uuid = /^[0-9a-f-]{36}$/i;
+  for (let i = 0; i < window.localStorage.length; i++) {
+    const k = window.localStorage.key(i) ?? "";
+    const v = window.localStorage.getItem(k) ?? "";
+    if (k.startsWith("orzen_ai_key:") && v.length >= 16) chatKeys.push(v);
+    const m = k.match(/^orzen_(?:order_contact|n)__(.+)$/);
+    if (m && uuid.test(m[1]) && v.trim().length >= 3 && !orders.some((o) => o.orderId === m[1]))
+      orders.push({ orderId: m[1], contact: v.trim() });
+  }
+  return { chatKeys: chatKeys.slice(0, 30), orders: orders.slice(-100) };
+}
 
 export type StoreCustomer = {
   id: string;
@@ -46,6 +63,7 @@ export function useCustomerSession(slug: string) {
   const qc = useQueryClient();
   const getCurrent = useServerFn(getCurrentCustomer);
   const logoutFn = useServerFn(logoutCustomer);
+  const claimFn = useServerFn(claimGuestActivity);
 
   useEffect(() => {
     const sync = () => {
@@ -71,6 +89,18 @@ export function useCustomerSession(slug: string) {
       if (!c) {
         writeToken(slug, null);
         return null;
+      }
+      try {
+        const flag = `orzen_claimed__${slug}__${token.slice(0, 12)}`;
+        const proofs = collectGuestProofs();
+        const sig = String(proofs.chatKeys.length + ":" + proofs.orders.length);
+        if ((proofs.chatKeys.length || proofs.orders.length) && window.sessionStorage.getItem(flag) !== sig) {
+          const r = await claimFn({ data: { storeSlug: slug, token, ...proofs } });
+          window.sessionStorage.setItem(flag, sig);
+          if (r.chats || r.orders) qc.invalidateQueries();
+        }
+      } catch {
+        /* linking is best-effort */
       }
       return c as StoreCustomer;
     },
