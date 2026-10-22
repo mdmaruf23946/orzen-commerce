@@ -258,7 +258,7 @@ export const getZadarmaWebPhone = createServerFn({ method: "POST" })
       const { data: line } = await context.supabase
         .from("manual_call_lines").select("sip_username")
         .eq("id", data.id).eq("store_id", storeId).maybeSingle();
-      sip = String(line?.sip_username ?? "").replace(/\D/g, "").slice(0, 6) || String(line?.sip_username ?? "");
+      sip = String(line?.sip_username ?? "").trim();
     }
     try {
       if (!sip) {
