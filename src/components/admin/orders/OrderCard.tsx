@@ -220,10 +220,126 @@ export function OrderCard({ order, onView, onFraud, onStatus, selected, onSelect
     );
   }
 
+  const statusControl = order.locked || nextStatuses(cur).length === 0 ? (
+    <span
+      title={order.locked ? "কুরিয়ার গ্রহণ করেছে — অর্ডার লক" : undefined}
+      className={`inline-flex h-7 items-center justify-center gap-1 rounded-lg px-2.5 text-xs font-semibold ring-1 ring-inset ${ORDER_STATUS_TONE[order.status] ?? "bg-muted ring-border"}`}
+    >
+      {order.locked && <Lock className="h-3 w-3" />} {order.locked ? "Locked" : ORDER_LABEL[cur] ?? cur}
+    </span>
+  ) : (
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        className={`inline-flex h-7 items-center justify-center gap-1 rounded-lg px-2.5 text-xs font-semibold ring-1 ring-inset transition-colors ${ORDER_STATUS_TONE[order.status] ?? "bg-muted ring-border"}`}
+      >
+        {ORDER_LABEL[cur] ?? cur}
+        <ChevronDown className="h-3 w-3" />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-40">
+        {nextStatuses(cur).map((s) => (
+          <DropdownMenuItem key={s} onClick={() => onStatus(s)} className="text-xs">
+            <span className={`mr-2 h-2 w-2 rounded-full ${ORDER_STATUS_TONE[s]?.split(" ")[0] ?? "bg-muted-foreground"}`} />
+            {ORDER_LABEL[s]}
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+
+  const invoiceLabel = order.invoice_no ?? `#${order.id.slice(0, 8).toUpperCase()}`;
+  const when = new Date(order.created_at).toLocaleString("en-GB", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
+  const ICON = "grid h-7 w-7 place-items-center rounded-lg border text-muted-foreground transition-colors hover:bg-muted hover:text-foreground";
+
   return (
     <article
-      className={`group rounded-2xl border bg-card p-3 shadow-sm transition-all duration-200 hover:border-primary/40 hover:shadow-md sm:p-4 ${selected ? "border-primary ring-1 ring-primary/30" : ""}`}
+      className={`group rounded-2xl border bg-card p-3 shadow-sm transition-all duration-200 hover:border-primary/40 hover:shadow-md sm:p-4 lg:rounded-xl lg:px-3 lg:py-2.5 ${selected ? "border-primary ring-1 ring-primary/30" : ""}`}
     >
+      {/* Desktop: compact single-row layout */}
+      <div className="hidden lg:grid lg:grid-cols-[auto_minmax(0,1.1fr)_minmax(0,1.5fr)_minmax(0,1fr)_auto_auto] lg:items-center lg:gap-4">
+        <div className="flex items-center gap-2.5">
+          {onSelectChange && (
+            <input
+              type="checkbox"
+              checked={!!selected}
+              onChange={(e) => onSelectChange(e.target.checked)}
+              aria-label={`Select order ${invoiceLabel}`}
+              className="h-4 w-4 accent-[hsl(var(--primary))]"
+            />
+          )}
+          <Thumb url={first?.image} alt={first?.name ?? "Product"} className="h-12 w-12" />
+        </div>
+
+        <div className="min-w-0">
+          <div className="flex min-w-0 items-center gap-1.5">
+            <span className="truncate text-sm font-semibold">{order.customer_name}</span>
+            {order.tags.includes("new_order") && <Tag tag="new_order" />}
+          </div>
+          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+            <span className="truncate">{order.phone}</span>
+            <CallButton phone={order.phone} customerName={order.customer_name} orderId={order.id} variant="icon" label="Call" />
+            <a href={waLink(order.phone)} target="_blank" rel="noreferrer" aria-label="WhatsApp" title="WhatsApp"
+              className="grid h-6 w-6 shrink-0 place-items-center rounded-md border text-emerald-600 hover:bg-emerald-500/10 dark:text-emerald-400">
+              <MessageCircle className="h-3 w-3" />
+            </a>
+          </div>
+          <div className="font-mono text-[10px] text-muted-foreground">{invoiceLabel} · {when}</div>
+        </div>
+
+        <div className="min-w-0">
+          <div className="truncate text-xs font-medium">
+            {first ? `${first.name}${order.items.length > 1 ? ` +${order.items.length - 1}` : ""}` : "—"}
+            <span className="text-muted-foreground"> × {order.qty}</span>
+          </div>
+          <div className="flex min-w-0 items-center gap-1 text-xs text-muted-foreground" title={order.address}>
+            <MapPin className="h-3 w-3 shrink-0" />
+            <span className="truncate">{order.area ? `${order.area} · ` : ""}{order.address}</span>
+          </div>
+          <div className="mt-0.5 flex flex-wrap items-center gap-1">
+            {order.tags.filter((t) => t !== "new_order").map((t) => <Tag key={t} tag={t} />)}
+            <VoiceBadge v={order.voice_verification} />
+          </div>
+        </div>
+
+        <div className="flex min-w-0 flex-col items-start gap-1">
+          <div className="flex flex-wrap gap-1">
+            <CourierBadge order={order} />
+            <ParcelBadge status={order.parcel?.status} />
+          </div>
+          <PaymentBadge order={order} />
+        </div>
+
+        <div className="text-right">
+          <div className="text-base font-bold leading-tight">{money(order.total)}</div>
+          <div className="text-[10px] text-muted-foreground">Delivery {money(order.delivery)}</div>
+          {order.profit != null && (
+            <div className="text-[10px] font-medium text-emerald-600 dark:text-emerald-400">Profit ≈ {money(order.profit)}</div>
+          )}
+        </div>
+
+        <div className="flex flex-col items-end gap-1.5">
+          {statusControl}
+          <div className="flex items-center gap-1">
+            <button type="button" onClick={onView} title="View" aria-label="View"
+              className="grid h-7 w-7 place-items-center rounded-lg border border-primary/30 bg-primary/10 text-primary hover:bg-primary/15">
+              <Eye className="h-3.5 w-3.5" />
+            </button>
+            <Link to="/admin/invoice/$orderId" params={{ orderId: order.id }} target="_blank" title="Invoice" aria-label="Invoice" className={ICON}>
+              <Printer className="h-3.5 w-3.5" />
+            </Link>
+            <button type="button" onClick={copyAddress} title="Copy address" aria-label="Copy address" className={ICON}>
+              <Copy className="h-3.5 w-3.5" />
+            </button>
+            <button type="button" onClick={onFraud} title="Fraud Check" aria-label="Fraud Check" className={ICON}>
+              <ShieldCheck className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {fraudPreview && <div className="hidden lg:block"><FraudSummary phone={order.phone} /></div>}
+
+      {/* Mobile / tablet: unchanged layout */}
+      <div className="lg:hidden">
       <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] gap-3">
         {/* Left */}
         <div className="flex flex-col items-center gap-1.5">
@@ -347,6 +463,7 @@ export function OrderCard({ order, onView, onFraud, onStatus, selected, onSelect
             </DropdownMenuContent>
           </DropdownMenu>
         )}
+      </div>
       </div>
     </article>
   );
