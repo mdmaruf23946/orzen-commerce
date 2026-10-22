@@ -199,7 +199,14 @@ const menuGroups: NavGroupDef[] = [
     icon: PhoneCall,
     items: [
       { to: CALL_SMS_HUB_PATH, label: "Call & SMS Apps", icon: Store },
-      { to: "/admin/manual-call", label: "Manual Call", icon: PhoneCall },
+    ],
+  },
+  {
+    label: "Calls",
+    icon: PhoneCall,
+    items: [
+      { to: "/admin/manual-call/apps", label: "Call Apps", icon: Store },
+      { to: "/admin/manual-call", label: "Calls Hub", icon: PhoneCall },
     ],
   },
   {

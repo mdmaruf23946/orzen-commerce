@@ -23,6 +23,7 @@ import { ZadarmaWebPhone } from "@/components/admin/manual-call/ZadarmaWebPhone"
 
 export const Route = createFileRoute("/_authenticated/admin/manual-call")({
   component: ManualCallPage,
+  validateSearch: (s: Record<string, unknown>) => ({ tab: typeof s.tab === "string" ? s.tab : undefined }),
   head: () => ({
     meta: [
       { title: "Manual Call — ORZEN Merchant Panel" },
@@ -44,12 +45,13 @@ const STATUS_TONE: Record<string, string> = {
 };
 
 function ManualCallPage() {
-  const [tab, setTab] = useState("dashboard");
+  const initialTab = Route.useSearch().tab;
+  const [tab, setTab] = useState(initialTab || "dashboard");
   const linesQ = useQuery({ queryKey: ["manual-lines"], queryFn: useServerFn(listManualLines) as any });
   const lines: any[] = (linesQ.data as any)?.lines ?? [];
   return (
     <div className="space-y-4">
-      <AdminPageHeader title="Manual Call" description="Connect your own phone line and call customers directly from the panel. Every call is saved with its recording." />
+      <AdminPageHeader title="Calls Hub" description="All your connected call providers in one place — dial, see history and recordings from one dashboard." />
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList className="grid w-full grid-cols-5 sm:w-auto sm:inline-grid">
           <TabsTrigger value="dashboard"><LayoutDashboard className="mr-1 h-4 w-4" />Dashboard</TabsTrigger>
