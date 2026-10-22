@@ -1,6 +1,5 @@
 // Merchant Wallet — client-callable server functions.
 import { createServerFn } from "@tanstack/react-start";
-import { safeReturnOrigin } from "@/lib/safe-return-origin.server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 
@@ -117,6 +116,7 @@ export const initiateWalletTopup = createServerFn({ method: "POST" })
       .single();
     if (invErr) throw new Error(invErr.message);
 
+    const { safeReturnOrigin } = await import("@/lib/safe-return-origin.server");
     const origin = safeReturnOrigin(data.return_origin);
     const checkout = await provider.adapter.createCheckout(provider.config, {
       invoiceId: (inv as any).id,
