@@ -48,7 +48,7 @@ export default defineConfig({
         enforce: "pre",
         applyToEnvironment: (env: any) => env.name === "client",
         resolveId(id: string) {
-          if (id === "events") return join(process.cwd(), "node_modules/events/events.js");
+          if (id === "events" || id === "node:events") return join(process.cwd(), "node_modules/events/events.js");
         },
       } as any,
     ],
