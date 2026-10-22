@@ -178,6 +178,16 @@ export const startCall = createServerFn({ method: "POST" })
       return { ok: false as const, reason: "not_connected" as const };
     }
 
+    // Only call numbers that belong to this store's customers/orders.
+    const digits = data.phone.replace(/\D/g, "");
+    const tail = digits.slice(-10);
+    if (tail.length < 7) return { ok: false as const, reason: "unknown_number" as const };
+    const [{ data: o }, { data: c }] = await Promise.all([
+      supabaseAdmin.from("orders").select("id").eq("store_id", storeId).ilike("phone", `%${tail}`).limit(1),
+      (supabaseAdmin as any).from("store_customers").select("id").eq("store_id", storeId).ilike("phone", `%${tail}`).limit(1),
+    ]);
+    if (!o?.length && !c?.length) return { ok: false as const, reason: "unknown_number" as const };
+
     const { openToken, getVoiceProvider, friendlyVoiceError } = await import("@/lib/voice/service.server");
     const { signedWebhookUrl } = await import("@/lib/voice/queue.server");
     const creds = openToken(connection.encrypted_token);
