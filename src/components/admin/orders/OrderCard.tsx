@@ -464,6 +464,7 @@ export function OrderCard({ order, onView, onFraud, onStatus, selected, onSelect
           </DropdownMenu>
         )}
       </div>
+      </div>
     </article>
   );
 }
