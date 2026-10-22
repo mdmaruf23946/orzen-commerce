@@ -154,18 +154,29 @@ export const listStoreOnlineGateways = createServerFn({ method: "GET" })
  */
 export const startOnlineCheckout = createServerFn({ method: "POST" })
   .inputValidator((d) =>
-    z.object({ orderId: z.string().uuid(), gatewayKey: z.string().min(3).max(120) }).parse(d),
+    z.object({
+      orderId: z.string().uuid(),
+      gatewayKey: z.string().min(3).max(120),
+      token: z.string().max(200).optional(),
+      contact: z.string().trim().max(160).optional(),
+    }).parse(d),
   )
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: order } = await supabaseAdmin
       .from("orders")
       .select(
-        "id,store_id,customer_name,phone,address,subtotal,delivery_amount,discount_amount,invoice_no,status,payment_status,payment_gateway_id,payment_method,fulfillment_meta,created_at",
+        "id,customer_id,email,store_id,customer_name,phone,address,subtotal,delivery_amount,discount_amount,invoice_no,status,payment_status,payment_gateway_id,payment_method,fulfillment_meta,created_at",
       )
       .eq("id", data.orderId)
       .maybeSingle();
     if (!order) throw new Error("Order not found");
+    // Only the person who placed the order (same phone/email or account) may pay for it.
+    {
+      const { ownsOrderRecord } = await import("@/lib/order-ownership.server");
+      if (!(await ownsOrderRecord(supabaseAdmin, order as any, { token: data.token, contact: data.contact })))
+        throw new Error("Order not found");
+    }
     // Guards: never re-open payment for a settled, cancelled or stale order.
     if ((order as any).payment_status === "paid") throw new Error("This order is already paid");
     if ((order as any).status === "cancelled") throw new Error("This order was cancelled");
@@ -334,9 +345,18 @@ export const startOnlineCheckout = createServerFn({ method: "POST" })
  * the provider directly and applies the store's configured status rules.
  */
 export const verifyOrderPayment = createServerFn({ method: "POST" })
-  .inputValidator((d) => z.object({ orderId: z.string().uuid() }).parse(d))
+  .inputValidator((d) =>
+    z.object({
+      orderId: z.string().uuid(),
+      token: z.string().max(200).optional(),
+      contact: z.string().trim().max(160).optional(),
+    }).parse(d),
+  )
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { ownsOrderById } = await import("@/lib/order-ownership.server");
+    if (!(await ownsOrderById(supabaseAdmin, data.orderId, { token: data.token, contact: data.contact })))
+      return { payment_status: null as string | null, checked: false };
     const { data: order } = await supabaseAdmin
       .from("orders")
       .select(

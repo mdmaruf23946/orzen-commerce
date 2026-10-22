@@ -404,7 +404,7 @@ function CheckoutPage() {
       if (isOnlineMethod) {
         // Hand the shopper over to the payment gateway BEFORE emptying the
         // cart, so a failed session leaves them able to retry.
-        const pay = await startPay({ data: { orderId: res.orderId, gatewayKey: method } });
+        const pay = await startPay({ data: { orderId: res.orderId, gatewayKey: method, contact: phone } });
         if (pay?.redirect_url) {
           removeSelected(slug, items.map((i) => i.productId));
           window.location.href = pay.redirect_url;

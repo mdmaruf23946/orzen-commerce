@@ -149,7 +149,7 @@ export function DigitalCheckout({ slug, store, items, info }: Props) {
         let pay: any = null;
         for (let attempt = 0; attempt < 2 && !pay?.redirect_url; attempt++) {
           try {
-            pay = await startPay({ data: { orderId: res.orderId, gatewayKey: method } });
+            pay = await startPay({ data: { orderId: res.orderId, gatewayKey: method, contact: phone } });
           } catch {
             /* retry */
           }

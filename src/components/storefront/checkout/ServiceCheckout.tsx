@@ -331,7 +331,7 @@ export function ServiceCheckout({ slug, store, items, info, images = {} }: Props
 
       if (total > 0 && isOnline) {
         setStage("redirecting");
-        const pay = await startPay({ data: { orderId: res.orderId, gatewayKey: method } });
+        const pay = await startPay({ data: { orderId: res.orderId, gatewayKey: method, contact: phone } });
         if (pay?.redirect_url) {
           removeSelected(slug, items.map((i) => i.productId));
           window.location.href = pay.redirect_url;

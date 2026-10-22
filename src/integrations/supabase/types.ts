@@ -1209,6 +1209,9 @@ export type Database = {
           total_spent: number
           unread_count: number
           updated_at: string
+          web_access_hash: string | null
+          web_client: Json
+          web_customer_id: string | null
         }
         Insert: {
           address?: string | null
@@ -1234,6 +1237,9 @@ export type Database = {
           total_spent?: number
           unread_count?: number
           updated_at?: string
+          web_access_hash?: string | null
+          web_client?: Json
+          web_customer_id?: string | null
         }
         Update: {
           address?: string | null
@@ -1259,6 +1265,9 @@ export type Database = {
           total_spent?: number
           unread_count?: number
           updated_at?: string
+          web_access_hash?: string | null
+          web_client?: Json
+          web_customer_id?: string | null
         }
         Relationships: [
           {
