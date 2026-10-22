@@ -27,6 +27,7 @@ import { UpgradeProvider } from "@/components/admin/UpgradeModal";
 import { ProductTypeScopeProvider } from "@/lib/product-type-scope";
 import { StoreBrandMark } from "@/components/admin/StoreBrandMark";
 import { StoreSwitcher, DelegatedStoreBanner } from "@/components/admin/access/StoreSwitcher";
+import { AdminGlobalSearch } from "@/components/admin/AdminGlobalSearch";
 import { CountBadge } from "@/components/admin/CountBadge";
 import { useBadgeCounts, useMarkSeen } from "@/lib/use-badge-counts";
 import { getMyStore } from "@/lib/admin.functions";
@@ -594,6 +595,8 @@ function AdminLayout() {
   const payKey = JSON.stringify(payConnected);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const groups = useMemo(() => buildGroups(search, canSee, providerConnected, mktConnected, aimConnected, courConnected, payConnected), [search, canSee, providerKey, mktKey, aimKey, courKey, payKey]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const allGroups = useMemo(() => buildGroups("", canSee, providerConnected, mktConnected, aimConnected, courConnected, payConnected), [canSee, providerKey, mktKey, aimKey, courKey, payKey]);
 
   const currentSection = sectionForPath(currentPath);
   const isPersonalProfile = currentPath === "/admin/profile";
@@ -601,7 +604,7 @@ function AdminLayout() {
     || !access.isEmployee
     || (!!currentSection && access.can(currentSection.key, "view")));
 
-  const asideWidth = collapsed ? "md:w-[72px]" : "md:w-64";
+  const asideWidth = collapsed ? "md:w-[72px]" : "md:w-[288px]";
 
   return (
     <UpgradeProvider>
@@ -629,6 +632,15 @@ function AdminLayout() {
             open ? "translate-x-0" : "-translate-x-full md:translate-x-0",
           )}
         >
+          {/* Collapse toggle — sits on the sidebar edge, outside the panel */}
+          <button
+            className="absolute -right-3.5 top-[26px] z-50 hidden h-7 w-7 place-items-center rounded-full border bg-background text-muted-foreground shadow-sm transition hover:bg-muted hover:text-foreground md:grid"
+            onClick={toggleCollapsed}
+            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+            title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          >
+            {collapsed ? <ChevronsRight className="h-4 w-4" /> : <ChevronsLeft className="h-4 w-4" />}
+          </button>
           {/* Brand */}
           <div className={cn("flex h-20 shrink-0 items-center gap-3 border-b px-4", collapsed && "md:justify-center md:px-2")}>
             {(!collapsed || open) ? (
@@ -639,32 +651,26 @@ function AdminLayout() {
             ) : (
               <StoreBrandMark iconOnly />
             )}
-            <button
-              className="ml-auto hidden md:inline-flex items-center rounded-md p-1 text-muted-foreground hover:bg-muted"
-              onClick={toggleCollapsed}
-              aria-label="Collapse sidebar"
-            >
-              {collapsed ? <ChevronsRight className="h-4 w-4" /> : <ChevronsLeft className="h-4 w-4" />}
-            </button>
+            {(!collapsed || open) && storeName && (
+              <div className="ml-auto shrink-0">
+                <StoreSwitcher
+                  compact
+                  currentStoreId={access.storeId ?? (myStore as any)?.id ?? null}
+                  storeName={storeName}
+                  storeIcon={storeIcon}
+                  color={(myStore as any)?.primary_color}
+                  roleLabel={access.isOwner ? "Owner" : (DELEGATE_ROLES.find((r) => r.value === access.staff?.role)?.label ?? access.staff?.role ?? "Team member")}
+                />
+              </div>
+            )}
             <button
               onClick={toggleDark}
-              className="ml-auto grid h-9 w-9 shrink-0 place-items-center rounded-full border hover:bg-muted md:hidden"
+              className="grid h-9 w-9 shrink-0 place-items-center rounded-full border hover:bg-muted md:hidden"
               aria-label="Toggle theme"
             >
               {dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </button>
           </div>
-
-          {/* Store identity + switcher (own store / delegated stores) */}
-          {(!collapsed || open) && storeName && (
-            <StoreSwitcher
-              currentStoreId={access.storeId ?? (myStore as any)?.id ?? null}
-              storeName={storeName}
-              storeIcon={storeIcon}
-              color={(myStore as any)?.primary_color}
-              roleLabel={access.isOwner ? "Owner" : (DELEGATE_ROLES.find((r) => r.value === access.staff?.role)?.label ?? access.staff?.role ?? "Team member")}
-            />
-          )}
 
           {/* Search */}
           {(!collapsed || open) && (
@@ -681,7 +687,7 @@ function AdminLayout() {
             </div>
           )}
 
-          <nav className="flex flex-1 flex-col gap-3 overflow-y-auto p-2 pb-4">
+          <nav className="flex flex-1 flex-col gap-3 overflow-y-auto overflow-x-hidden p-2 pb-4">
             {groups.map((g) => {
               const groupActive = g.items.some((item) => activeInItem(currentPath, item));
               const groupOpen = search.trim() ? true : (openGroups[g.label] ?? groupActive);
@@ -833,10 +839,7 @@ function AdminLayout() {
               to="/admin/profile"
               onClick={() => setOpen(false)}
               title={collapsed ? "Profile" : undefined}
-              className={cn(
-                "flex min-w-0 items-center gap-2.5 rounded-lg border px-2.5 py-2 hover:bg-muted",
-                collapsed && !open && "md:justify-center md:border-0 md:px-1",
-              )}
+              className="flex min-w-0 items-center gap-2.5 rounded-lg border px-2.5 py-2 hover:bg-muted md:hidden"
             >
               {accountProfile ? (
                 <AccountAvatar name={accountProfile.name} avatarUrl={accountProfile.avatarUrl} />
@@ -870,13 +873,7 @@ function AdminLayout() {
         <div className="flex min-w-0 flex-1 flex-col">
           {/* Desktop sticky header */}
           <header className="sticky top-0 z-20 hidden h-16 items-center gap-3 border-b bg-background/95 px-6 backdrop-blur md:flex">
-            <div className="relative w-full max-w-md">
-              <SearchIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <input
-                placeholder="Search anything…"
-                className="w-full rounded-full border bg-muted/40 py-2 pl-9 pr-3 text-sm outline-none placeholder:text-muted-foreground focus:border-primary/50 focus:bg-background focus:ring-2 focus:ring-primary/20"
-              />
-            </div>
+            <AdminGlobalSearch groups={allGroups} />
             <div className="ml-auto flex items-center gap-2">
               {!access.isEmployee && <><AiCreditsChip /><AdFundChip /></>}
               <Link
@@ -920,6 +917,20 @@ function AdminLayout() {
                 <Settings className="mr-1.5 h-4 w-4" />
                 Store
               </Button>
+              <Link
+                to="/admin/profile"
+                aria-label="My account"
+                title={accountProfile?.email ?? "My account"}
+                className="grid h-9 w-9 place-items-center rounded-full ring-offset-background transition hover:ring-2 hover:ring-primary/40"
+              >
+                {accountProfile ? (
+                  <AccountAvatar name={accountProfile.name} avatarUrl={accountProfile.avatarUrl} />
+                ) : (
+                  <span className="grid h-9 w-9 place-items-center rounded-full border bg-muted">
+                    <UserRound className="h-4 w-4 text-muted-foreground" />
+                  </span>
+                )}
+              </Link>
             </div>
           </header>
 
