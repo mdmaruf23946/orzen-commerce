@@ -196,6 +196,7 @@ import { Route as AuthenticatedAdminLandingBuilderIndexRouteImport } from './rou
 import { Route as AuthenticatedAdminLandingBuilderIdRouteImport } from './routes/_authenticated/admin/landing-builder.$id'
 import { Route as AuthenticatedAdminLandingPagesIndexRouteImport } from './routes/_authenticated/admin/landing-pages.index'
 import { Route as AuthenticatedAdminLandingPagesIdRouteImport } from './routes/_authenticated/admin/landing-pages.$id'
+import { Route as AuthenticatedAdminManualCallAppsRouteImport } from './routes/_authenticated/admin/manual-call_.apps'
 import { Route as AuthenticatedAdminMarketingIndexRouteImport } from './routes/_authenticated/admin/marketing.index'
 import { Route as AuthenticatedAdminMarketingAppsRouteImport } from './routes/_authenticated/admin/marketing.apps'
 import { Route as AuthenticatedAdminMarketingFacebookRouteImport } from './routes/_authenticated/admin/marketing.facebook'
@@ -1341,6 +1342,12 @@ const AuthenticatedAdminLandingPagesIdRoute =
     path: '/landing-pages/$id',
     getParentRoute: () => AuthenticatedAdminRouteRoute,
   } as any)
+const AuthenticatedAdminManualCallAppsRoute =
+  AuthenticatedAdminManualCallAppsRouteImport.update({
+    id: '/manual-call_/apps',
+    path: '/manual-call/apps',
+    getParentRoute: () => AuthenticatedAdminRouteRoute,
+  } as any)
 const AuthenticatedAdminMarketingIndexRoute =
   AuthenticatedAdminMarketingIndexRouteImport.update({
     id: '/',
@@ -2029,6 +2036,7 @@ export interface FileRoutesByFullPath {
   '/admin/invoice/$orderId': typeof AuthenticatedAdminInvoiceOrderIdRoute
   '/admin/landing-builder/$id': typeof AuthenticatedAdminLandingBuilderIdRoute
   '/admin/landing-pages/$id': typeof AuthenticatedAdminLandingPagesIdRoute
+  '/admin/manual-call/apps': typeof AuthenticatedAdminManualCallAppsRoute
   '/admin/marketing/apps': typeof AuthenticatedAdminMarketingAppsRoute
   '/admin/marketing/facebook': typeof AuthenticatedAdminMarketingFacebookRoute
   '/admin/marketing/google': typeof AuthenticatedAdminMarketingGoogleRoute
@@ -2292,6 +2300,7 @@ export interface FileRoutesByTo {
   '/admin/invoice/$orderId': typeof AuthenticatedAdminInvoiceOrderIdRoute
   '/admin/landing-builder/$id': typeof AuthenticatedAdminLandingBuilderIdRoute
   '/admin/landing-pages/$id': typeof AuthenticatedAdminLandingPagesIdRoute
+  '/admin/manual-call/apps': typeof AuthenticatedAdminManualCallAppsRoute
   '/admin/marketing/apps': typeof AuthenticatedAdminMarketingAppsRoute
   '/admin/marketing/facebook': typeof AuthenticatedAdminMarketingFacebookRoute
   '/admin/marketing/google': typeof AuthenticatedAdminMarketingGoogleRoute
@@ -2570,6 +2579,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/invoice/$orderId': typeof AuthenticatedAdminInvoiceOrderIdRoute
   '/_authenticated/admin/landing-builder/$id': typeof AuthenticatedAdminLandingBuilderIdRoute
   '/_authenticated/admin/landing-pages/$id': typeof AuthenticatedAdminLandingPagesIdRoute
+  '/_authenticated/admin/manual-call_/apps': typeof AuthenticatedAdminManualCallAppsRoute
   '/_authenticated/admin/marketing/apps': typeof AuthenticatedAdminMarketingAppsRoute
   '/_authenticated/admin/marketing/facebook': typeof AuthenticatedAdminMarketingFacebookRoute
   '/_authenticated/admin/marketing/google': typeof AuthenticatedAdminMarketingGoogleRoute
@@ -2848,6 +2858,7 @@ export interface FileRouteTypes {
     | '/admin/invoice/$orderId'
     | '/admin/landing-builder/$id'
     | '/admin/landing-pages/$id'
+    | '/admin/manual-call/apps'
     | '/admin/marketing/apps'
     | '/admin/marketing/facebook'
     | '/admin/marketing/google'
@@ -3111,6 +3122,7 @@ export interface FileRouteTypes {
     | '/admin/invoice/$orderId'
     | '/admin/landing-builder/$id'
     | '/admin/landing-pages/$id'
+    | '/admin/manual-call/apps'
     | '/admin/marketing/apps'
     | '/admin/marketing/facebook'
     | '/admin/marketing/google'
@@ -3388,6 +3400,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/invoice/$orderId'
     | '/_authenticated/admin/landing-builder/$id'
     | '/_authenticated/admin/landing-pages/$id'
+    | '/_authenticated/admin/manual-call_/apps'
     | '/_authenticated/admin/marketing/apps'
     | '/_authenticated/admin/marketing/facebook'
     | '/_authenticated/admin/marketing/google'
@@ -4871,6 +4884,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminLandingPagesIdRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
+    '/_authenticated/admin/manual-call_/apps': {
+      id: '/_authenticated/admin/manual-call_/apps'
+      path: '/manual-call/apps'
+      fullPath: '/admin/manual-call/apps'
+      preLoaderRoute: typeof AuthenticatedAdminManualCallAppsRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
     '/_authenticated/admin/marketing/': {
       id: '/_authenticated/admin/marketing/'
       path: '/'
@@ -5703,6 +5723,7 @@ interface AuthenticatedAdminRouteRouteChildren {
   AuthenticatedAdminInvoiceOrderIdRoute: typeof AuthenticatedAdminInvoiceOrderIdRoute
   AuthenticatedAdminLandingBuilderIdRoute: typeof AuthenticatedAdminLandingBuilderIdRoute
   AuthenticatedAdminLandingPagesIdRoute: typeof AuthenticatedAdminLandingPagesIdRoute
+  AuthenticatedAdminManualCallAppsRoute: typeof AuthenticatedAdminManualCallAppsRoute
   AuthenticatedAdminOrdersOrderIdRoute: typeof AuthenticatedAdminOrdersOrderIdRoute
   AuthenticatedAdminAiIndexRoute: typeof AuthenticatedAdminAiIndexRoute
   AuthenticatedAdminLandingBuilderIndexRoute: typeof AuthenticatedAdminLandingBuilderIndexRoute
@@ -5793,6 +5814,8 @@ const AuthenticatedAdminRouteRouteChildren: AuthenticatedAdminRouteRouteChildren
       AuthenticatedAdminLandingBuilderIdRoute,
     AuthenticatedAdminLandingPagesIdRoute:
       AuthenticatedAdminLandingPagesIdRoute,
+    AuthenticatedAdminManualCallAppsRoute:
+      AuthenticatedAdminManualCallAppsRoute,
     AuthenticatedAdminOrdersOrderIdRoute: AuthenticatedAdminOrdersOrderIdRoute,
     AuthenticatedAdminAiIndexRoute: AuthenticatedAdminAiIndexRoute,
     AuthenticatedAdminLandingBuilderIndexRoute:
