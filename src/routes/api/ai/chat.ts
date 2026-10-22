@@ -201,7 +201,7 @@ export const Route = createFileRoute("/api/ai/chat")({
               /* doubt → AI */
             }
           }
-          const win = windowWebHistory(body.messages);
+          const win = windowWebHistory(trusted);
           const result = streamText({
             model,
             system: (win.summary ? win.summary + "\n" : "") + buildSystemPrompt(s, agent, {
@@ -214,7 +214,7 @@ export const Route = createFileRoute("/api/ai/chat")({
               },
               focus,
               latestUserText: lastUserText,
-              customerHistory: body.messages
+              customerHistory: trusted
                 .filter((m) => m.role === "user")
                 .map((m) => (m.parts as any[]).map((p: any) => (p.type === "text" ? p.text : "")).join(""))
                 .filter(Boolean)
@@ -274,9 +274,10 @@ export const Route = createFileRoute("/api/ai/chat")({
               return msg.slice(0, 500);
             },
           });
-          // Expose conversation id to the browser so it can persist it.
+          // Expose conversation id (+ this browser's private key on first message).
           response.headers.set("x-orzen-conversation-id", ctxConvId);
-          response.headers.set("access-control-expose-headers", "x-orzen-conversation-id");
+          if (issuedKey) response.headers.set("x-orzen-chat-key", issuedKey);
+          response.headers.set("access-control-expose-headers", "x-orzen-conversation-id, x-orzen-chat-key");
           return response;
         } catch (e) {
           const raw = (e as Error).message || "AI request failed";
