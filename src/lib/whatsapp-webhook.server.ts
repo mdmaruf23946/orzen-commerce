@@ -349,12 +349,14 @@ export async function handleWhatsAppWebhook(request: Request) {
           return new Response("Invalid signature", { status: 401 });
         }
       } else {
+        // App Secret is mandatory: unsigned webhooks are rejected.
         await sb.from("whatsapp_webhook_events").insert({
           store_id: (integ as any).store_id,
           phone_number_id: phoneNumberId,
-          event_type: "unverified_webhook",
-          error: "No app secret configured — webhook accepted without signature verification",
+          event_type: "missing_app_secret",
+          error: "App Secret not configured — webhook rejected. Add the Meta App Secret in WhatsApp settings.",
         } as any);
+        return new Response("App secret required", { status: 401 });
       }
 
       const storeId = (integ as any).store_id as string;
