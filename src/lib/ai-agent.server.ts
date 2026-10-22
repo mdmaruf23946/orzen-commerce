@@ -2518,7 +2518,10 @@ export async function generateAgentReply(opts: {
     const sac = await import("./safe-answer-cache");
     const last = [...opts.messages].reverse().find((m) => m?.role === "user");
     const lt = typeof last?.content === "string" ? last.content : "";
-    if (!opts.ctx.focusProductId && opts.ctx.conversationId) {
+    // Only standalone opening questions: any earlier turn means the reply may depend on context.
+    const priorTurns = opts.messages.filter((m) => m?.role === "user" || m?.role === "assistant").length - 1;
+    const standalone = priorTurns <= 0 && lt.trim().split(/\s+/).length >= 3;
+    if (standalone && !opts.ctx.focusProductId && opts.ctx.conversationId) {
       const slot = await getConversationSlot(opts.ctx.conversationId).catch(() => ({ x: 1 }));
       if (!Object.keys(slot ?? {}).length) safeKey = sac.cacheKey(opts.ctx.storeId, opts.ctx.channel ?? "messenger", lt);
     }

@@ -37,7 +37,9 @@ export async function resolveHandoff(
     const rows = (outs ?? []) as any[];
     const merchantReplied = rows.some((r) => r.sent_by_user_id);
     const isSpam = reason.startsWith("auto_spam");
-    const aiMade = !isSpam && !merchantReplied && reason !== "" && reason !== "manual";
+    // Merchant takeovers ("manual", "admin_takeover") stay human until the merchant returns it.
+    const merchantTook = reason === "" || reason === "manual" || reason === "admin_takeover";
+    const aiMade = !isSpam && !merchantReplied && !merchantTook;
     const ageMs = Date.now() - Date.parse(at);
     const customerAskedHuman = /request|asked for a human|wants a human|মানুষ|প্রতিনিধি/i.test(reason);
     if (aiMade && (!customerAskedHuman || ageMs > 5 * 60_000)) {
