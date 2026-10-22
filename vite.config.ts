@@ -41,7 +41,19 @@ export default defineConfig({
     },
   } as any,
   vite: {
-    plugins: [mcpPlugin()],
+    plugins: [
+      mcpPlugin(),
+      {
+        name: "browser-events-shim",
+        enforce: "pre",
+        applyToEnvironment: (env: any) => env.name === "client",
+        resolveId(id: string) {
+          if (id === "events" || id === "node:events") return join(process.cwd(), "node_modules/events/events.js");
+        },
+      } as any,
+    ],
     server: { allowedHosts: true },
+    // JsSIP needs the real browser `events` package; the default Node shim is empty
+    // and crashes with "Class extends value undefined".
   },
 });
