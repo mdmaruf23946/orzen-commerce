@@ -29,7 +29,7 @@ import { QuickOrderSheet } from "@/components/admin/quick-order/QuickOrderSheet"
 import { RouteErrorPanel } from "@/components/admin/RouteErrorPanel";
 import { useRouteErrorTracking } from "@/hooks/use-error-tracking";
 import { recoverFromChunkError } from "@/lib/chunk-recovery";
-import { useRouter } from "@tanstack/react-router";
+import { useRouter, useNavigate } from "@tanstack/react-router";
 import { BulkActionsBar, BulkSummaryPanel, type BulkSummary } from "@/components/admin/orders/BulkActionsBar";
 import { isPhysical } from "@/lib/orders-bulk";
 
@@ -250,6 +250,8 @@ function OrdersPage() {
 
   const [fraudFor, setFraudFor] = useState<{ id: string; phone: string } | null>(null);
   const [detailsFor, setDetailsFor] = useState<string | null>(null);
+  const navigateTo = useNavigate();
+  const openDetails = (id: string) => navigateTo({ to: "/admin/orders/$orderId", params: { orderId: id } });
   const { allowed: fraudAllowed } = useFeature("fraud_checker");
   const [courierFor, setCourierFor] = useState<{ order: AdminOrderRow; key: string } | null>(null);
   const courierOverviewFn = useServerFn(getCourierOverview);
@@ -634,7 +636,7 @@ function OrdersPage() {
           {filtered.map((o) => {
             const kind: OrderKind = o.order_type ?? "physical";
             const actions = {
-              onView: () => setDetailsFor(o.id),
+              onView: () => openDetails(o.id),
               onConfirm: () => run(() => confirm({ data: { orderId: o.id } }), "Order confirmed"),
               onGrantAccess: () =>
                 o.access?.entitlementId
@@ -666,7 +668,7 @@ function OrdersPage() {
               <OrderCard
                 key={o.id}
                 order={o}
-                onView={() => setDetailsFor(o.id)}
+                onView={() => openDetails(o.id)}
                 selected={selectedIds.includes(o.id)}
                 onSelectChange={physicalView ? (v) => toggleOne(o.id, v) : undefined}
                 onStatus={(s) => setStatus(o.id, s)}

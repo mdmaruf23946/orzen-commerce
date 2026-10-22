@@ -221,7 +221,7 @@ export function OrderDetailsDrawer({ open, onOpenChange, orderId, variant = "she
       <PageOrSheet asPage={asPage} open={open} onOpenChange={onOpenChange}>
 
           <div className="space-y-4 p-3 sm:p-5 lg:p-6">
-            <div className={`flex flex-col gap-3 ${asPage ? "" : "pr-8"} sm:flex-row`} sm:items-end sm:justify-between">
+            <div className={`flex flex-col gap-3 ${asPage ? "" : "pr-8"} sm:flex-row sm:items-end sm:justify-between`}>
               <div>
                 <button type="button" onClick={() => onOpenChange(false)} className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
                   <ArrowLeft className="h-3.5 w-3.5" /> Back to Orders
@@ -797,7 +797,7 @@ function OurRecord({ phone, enabled }: { phone: string; enabled: boolean }) {
 }
 
 function PageOrSheet({ asPage, open, onOpenChange, children }: { asPage: boolean; open: boolean; onOpenChange: (v: boolean) => void; children: React.ReactNode }) {
-  if (asPage) return <div className="min-w-0 -m-3 sm:-m-4 lg:-m-6">{children}</div>;
+  if (asPage) return <div className="min-w-0 rounded-2xl bg-muted">{children}</div>;
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="right" className="w-full overflow-y-auto overflow-x-hidden bg-muted p-0 sm:max-w-full lg:max-w-[1280px]">
