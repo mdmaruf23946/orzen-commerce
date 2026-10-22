@@ -250,16 +250,25 @@ async function zadarmaCall(method: "GET" | "POST", path: string, params: Record<
 
 export const getZadarmaWebPhone = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) => z.object({ id: z.string().uuid(), domain: z.string().max(253) }).parse(d))
+  .inputValidator((d) => z.object({ id: z.string().uuid().optional(), domain: z.string().max(253) }).parse(d))
   .handler(async ({ data, context }) => {
     const storeId = await storeIdFor(context.supabase, context.userId);
-    const { data: line } = await context.supabase
-      .from("manual_call_lines").select("sip_username")
-      .eq("id", data.id).eq("store_id", storeId).maybeSingle();
-    if (!line?.sip_username) return { ok: false as const, error: "Line not found" };
+    let sip = "";
+    if (data.id) {
+      const { data: line } = await context.supabase
+        .from("manual_call_lines").select("sip_username")
+        .eq("id", data.id).eq("store_id", storeId).maybeSingle();
+      sip = String(line?.sip_username ?? "").replace(/\D/g, "").slice(0, 6) || String(line?.sip_username ?? "");
+    }
     try {
+      if (!sip) {
+        // No line saved: use the first SIP number on the connected Zadarma account.
+        const list = await zadarmaCall("GET", "/v1/sip/", {});
+        sip = String(list.json?.sips?.[0]?.id ?? "");
+        if (!sip) return { ok: false as const, error: list.status === 401 ? "Zadarma rejected the API keys" : "No SIP number found in Zadarma" };
+      }
+      const line = { sip_username: sip };
       // Allow this website for the widget (ignored if already added).
-      await zadarmaCall("POST", "/v1/webrtc/create/", { domain: data.domain }).catch(() => null);
       await zadarmaCall("POST", "/v1/webrtc/domain/", { domain: data.domain }).catch(() => null);
       const res = await zadarmaCall("GET", "/v1/webrtc/get_key/", { sip: String(line.sip_username) });
       if (!res.ok) {

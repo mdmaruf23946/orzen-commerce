@@ -28,7 +28,7 @@ export function ZadarmaWebPhone({ lines }: { lines: any[] }) {
   async function start() {
     setState("loading"); setError("");
     try {
-      const r = await getFn({ data: { id: lineId, domain: window.location.hostname } });
+      const r = await getFn({ data: { id: lineId || undefined, domain: window.location.hostname } });
       if (!r.ok) { setError(r.error); setState("error"); return; }
       await loadScript(LIB);
       await loadScript(FN);
@@ -40,8 +40,6 @@ export function ZadarmaWebPhone({ lines }: { lines: any[] }) {
       setError(e?.message || "Something went wrong"); setState("error");
     }
   }
-
-  if (!lines.length) return <p className="mt-2 text-sm text-muted-foreground">Add your Zadarma SIP line in Setup first.</p>;
 
   return (
     <div className="mt-2 space-y-3 rounded-xl border p-4">
