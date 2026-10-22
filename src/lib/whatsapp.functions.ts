@@ -258,6 +258,15 @@ export const sendWhatsappTestMessage = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { storeId, token, phoneNumberId } = await credentials(context);
+    // Test only to a number that already messaged this store on WhatsApp.
+    {
+      const tail = data.to.replace(/\D/g, "").slice(-10);
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const { data: seen } = await (supabaseAdmin as any)
+        .from("whatsapp_jobs").select("id").eq("store_id", storeId).like("sender_id", `%${tail}`).limit(1);
+      if (tail.length < 10 || !seen?.length)
+        throw new Error("এই নম্বর থেকে আগে আপনার WhatsApp-এ মেসেজ আসতে হবে। আগে নিজের ফোন থেকে একটি মেসেজ পাঠান, তারপর test করুন।");
+    }
     const { sendWaText, friendlyWaError } = await import("@/lib/whatsapp-send.server");
     try {
       const res = await sendWaText(

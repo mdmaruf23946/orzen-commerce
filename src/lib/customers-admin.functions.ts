@@ -364,6 +364,10 @@ export const setCustomerBlocked = createServerFn({ method: "POST" })
     const s = await import("@/lib/customers-admin.server");
     const storeId = await s.ownerStoreId(context.supabase, context.userId);
     if (!storeId) throw new Error("No store");
+    // Blocking a customer is an owner-only decision, not for delegated staff.
+    const { data: owned } = await context.supabase
+      .from("stores").select("id").eq("id", storeId).eq("owner_user_id", context.userId).maybeSingle();
+    if (!owned) throw new Error("শুধু store-এর মালিক customer block/unblock করতে পারবেন।");
     const { error } = await context.supabase
       .from("store_customers")
       .update({ is_active: !data.blocked })

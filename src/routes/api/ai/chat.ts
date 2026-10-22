@@ -95,6 +95,15 @@ export const Route = createFileRoute("/api/ai/chat")({
           await sb.from("ai_conversations").update({ web_client: client, ...(customerId ? { web_customer_id: customerId } : {}) } as any).eq("id", convId);
         }
 
+        // Abuse guard: a single chat may send at most 40 messages per hour.
+        {
+          const since = new Date(Date.now() - 3600_000).toISOString();
+          const { count } = await sb.from("ai_messages").select("id", { count: "exact", head: true })
+            .eq("conversation_id", convId).eq("role", "user").gte("created_at", since);
+          if ((count ?? 0) >= 40)
+            return Response.json({ error: "অনেক বেশি মেসেজ পাঠানো হয়েছে। একটু পরে আবার চেষ্টা করুন।" }, { status: 429 });
+        }
+
         // Persist the newest user message (last item in UIMessages).
         const lastUser = [...body.messages].reverse().find((m) => m.role === "user");
         if (lastUser) {

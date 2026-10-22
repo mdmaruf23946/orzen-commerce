@@ -179,7 +179,9 @@ export const getAccessOverview = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     const sb = await admin();
     const uid = context.userId;
-    const email = String((context.claims as any)?.email ?? "").toLowerCase();
+    // Pending invites are shown only to a verified email owner.
+    const { data: au } = await sb.auth.admin.getUserById(uid);
+    const email = au?.user?.email_confirmed_at ? String(au.user.email ?? "").toLowerCase() : "";
     const { data: own } = await sb.from("stores").select("id,name").eq("owner_user_id", uid).maybeSingle();
 
     const [people, sent, incoming, mine] = await Promise.all([

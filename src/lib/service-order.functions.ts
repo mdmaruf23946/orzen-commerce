@@ -152,10 +152,21 @@ export const submitServiceReview = createServerFn({ method: "POST" })
 
     let screenshotPath: string | null = null;
     if (data.screenshot) {
-      const path = `${order.store_id}/${order.id}/reviews/${Date.now()}-${safeName(data.screenshot.name)}`;
-      const bytes = decodeB64(data.screenshot.data);
+      const bytes = decodeB64(data.screenshot.data) as Uint8Array;
+      // Accept real images only (checked from the file's own bytes, not its name).
+      const b = bytes;
+      const kind =
+        b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff ? { ext: "jpg", type: "image/jpeg" }
+        : b[0] === 0x89 && b[1] === 0x50 && b[2] === 0x4e && b[3] === 0x47 ? { ext: "png", type: "image/png" }
+        : b[0] === 0x47 && b[1] === 0x49 && b[2] === 0x46 ? { ext: "gif", type: "image/gif" }
+        : b[0] === 0x52 && b[1] === 0x49 && b[2] === 0x46 && b[3] === 0x46 && b[8] === 0x57 && b[9] === 0x45 && b[10] === 0x42 && b[11] === 0x50 ? { ext: "webp", type: "image/webp" }
+        : null;
+      if (!kind) throw new Error("শুধু ছবি (JPG, PNG, WEBP, GIF) আপলোড করা যাবে।");
+      if (bytes.length > 5 * 1024 * 1024) throw new Error("ছবির সাইজ ৫MB-এর কম হতে হবে।");
+      const base = safeName(data.screenshot.name).replace(/\.[^.]*$/, "").slice(0, 80) || "screenshot";
+      const path = `${order.store_id}/${order.id}/reviews/${Date.now()}-${base}.${kind.ext}`;
       const { error } = await sb.storage.from(DELIVERABLE_BUCKET).upload(path, bytes, {
-        contentType: "image/*",
+        contentType: kind.type,
         upsert: false,
       });
       if (!error) screenshotPath = path;

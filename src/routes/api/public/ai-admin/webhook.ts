@@ -39,11 +39,10 @@ export const Route = createFileRoute("/api/public/ai-admin/webhook")({
         const creds = readCreds(conn);
         if (!conn || !creds?.access_token) return new Response("Not configured", { status: 200 });
 
-        // 1. Signature verification (when an app secret is stored).
-        if (creds.app_secret) {
-          const ok = verifySignature(raw, request.headers.get("x-hub-signature-256"), creds.app_secret);
-          if (!ok) return new Response("Invalid signature", { status: 401 });
-        }
+        // 1. Signature verification is mandatory — unsigned calls are rejected.
+        if (!creds.app_secret) return new Response("App secret required", { status: 401 });
+        if (!verifySignature(raw, request.headers.get("x-hub-signature-256"), creds.app_secret))
+          return new Response("Invalid signature", { status: 401 });
 
         let payload: any = {};
         try {

@@ -328,6 +328,14 @@ export const sendEpbxTestCall = createServerFn({ method: "POST" })
     ]);
     const creds = (conn as any)?.status === "connected" ? openToken((conn as any).encrypted_token ?? null) : null;
     if (!creds) return { ok: false, message: "ePBX is not connected." };
+    // Test calls ring only the store's own phone (Settings) — never a stranger.
+    {
+      const { data: own } = await supabaseAdmin.from("stores").select("phone").eq("id", storeId).maybeSingle();
+      const tail = (v: string) => v.replace(/\D/g, "").slice(-10);
+      const storePhone = tail(String((own as any)?.phone ?? ""));
+      if (!storePhone || storePhone !== tail(data.phone))
+        return { ok: false, message: "Test call শুধু আপনার store-এর ফোন নম্বরে (Settings-এ দেওয়া) যাবে।" };
+    }
     const s: any = st ?? {};
     const vars = { customer_name: "Test Customer", store_name: (store as any)?.name ?? "", amount: String(data.amount), order_id: "TEST-1001" };
     const msgs: Record<string, string> = { ...DEFAULT_VOICE_MESSAGES, ...(s.messages ?? {}) };

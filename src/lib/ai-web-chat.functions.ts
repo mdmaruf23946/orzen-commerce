@@ -121,7 +121,7 @@ export const escalateWebChat = createServerFn({ method: "POST" })
       .maybeSingle();
     const { canAccessWebConv, customerIdFromToken } = await import("@/lib/web-chat-access.server");
     const customerId = await customerIdFromToken(sb, storeId, data.customerToken);
-    if (!(await canAccessWebConv(conv as any, storeId, data.chatKey, customerId))) throw new Error("Conversation not found");
+    if (!conv || !(await canAccessWebConv(conv as any, storeId, data.chatKey, customerId))) throw new Error("Conversation not found");
     await sb.from("ai_conversations").update({
       handoff_mode: "human",
       handoff_reason: data.reason,

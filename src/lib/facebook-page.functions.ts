@@ -510,6 +510,10 @@ export const replyFacebookComment = createServerFn({ method: "POST" })
     const { loadPageContext, requireCapability, graphPost } = await import("@/lib/facebook-page.server");
     const { row, token } = await loadPageContext(context.supabase, storeId);
     requireCapability(row, "reply_comment");
+    // Only comments that arrived on this store's own Page can be answered.
+    const { data: known } = await context.supabase
+      .from("facebook_comments").select("comment_id").eq("store_id", storeId).eq("comment_id", data.comment_id).maybeSingle();
+    if (!known) throw new Error("Comment not found for this Page");
     await withFbError(() =>
       graphPost(`/${encodeURIComponent(data.comment_id)}/comments`, token!, { message: data.message }),
     );
