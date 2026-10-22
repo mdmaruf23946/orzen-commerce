@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { getInvite, respondInvite, switchStore } from "@/lib/delegated-access.functions";
 import { setActiveStoreId } from "@/lib/active-store";
+import { VerifyEmailDialog } from "@/components/admin/VerifyEmailDialog";
 
 export const Route = createFileRoute("/access/invite/$token")({
   ssr: false,
@@ -32,11 +33,14 @@ function InvitePage() {
   const [state, setState] = useState<"loading" | "signin" | "ready">("loading");
   const [inv, setInv] = useState<any>(null);
   const [busy, setBusy] = useState(false);
+  const [verifyOpen, setVerifyOpen] = useState(false);
+  const [myEmail, setMyEmail] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
       const { data } = await supabase.auth.getUser();
       if (!data.user) return setState("signin");
+      setMyEmail(data.user.email ?? null);
       try {
         setInv(await fetchInvite({ data: { token } }));
       } catch {
@@ -60,7 +64,13 @@ function InvitePage() {
       toast.success("Invitation declined");
       setInv({ ...inv, status: "declined" });
     } catch (e) {
-      toast.error((e as Error).message);
+      const msg = (e as Error).message;
+      if (msg.includes("EMAIL_CODE_REQUIRED")) {
+        toast.info("আপনার ইমেইলে একটি কোড পাঠানো হবে — কোডটি দিয়ে যাচাই করে আবার Accept চাপুন।");
+        setVerifyOpen(true);
+      } else {
+        toast.error(msg);
+      }
     }
     setBusy(false);
   }
@@ -115,6 +125,7 @@ function InvitePage() {
           )
         )}
       </div>
+      <VerifyEmailDialog open={verifyOpen} onOpenChange={setVerifyOpen} email={myEmail} />
     </main>
   );
 }
