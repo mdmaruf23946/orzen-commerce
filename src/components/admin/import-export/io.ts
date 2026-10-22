@@ -1,4 +1,5 @@
 import * as XLSX from "xlsx";
+import { csvCell } from "@/lib/csv-safe";
 import { IMPORT_COLUMNS, EXPORT_COLUMNS, SAMPLE_ROWS, coerceRow } from "./schema";
 
 // ---------- File parsing ----------
@@ -78,10 +79,7 @@ export function validateRows(raw: Record<string, any>[]): ValidatedRow[] {
 
 export function downloadSampleCsv() {
   const header = IMPORT_COLUMNS.map((c) => c.key);
-  const esc = (v: any) => {
-    const s = v == null ? "" : String(v);
-    return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
-  };
+  const esc = (v: any) => csvCell(v);
   const lines = [header.join(",")];
   for (const r of SAMPLE_ROWS) lines.push(header.map((h) => esc((r as any)[h])).join(","));
   const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8" });

@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { csvCell } from "@/lib/csv-safe";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Download, RefreshCw } from "lucide-react";
@@ -23,8 +24,8 @@ function AiUsagePage() {
     if (!data) return;
     const lines = [
       "scope,name,requests,tokens,cost_usd",
-      ...data.byStore.map((g) => `store,"${g.name}",${g.requests},${g.tokens},${g.cost.toFixed(4)}`),
-      ...data.byModel.map((g) => `model,"${g.key}",${g.requests},${g.tokens},${g.cost.toFixed(4)}`),
+      ...data.byStore.map((g) => `store,${csvCell(g.name)},${g.requests},${g.tokens},${g.cost.toFixed(4)}`),
+      ...data.byModel.map((g) => `model,${csvCell(g.key)},${g.requests},${g.tokens},${g.cost.toFixed(4)}`),
     ].join("\n");
     const url = URL.createObjectURL(new Blob([lines], { type: "text/csv" }));
     const a = document.createElement("a");
