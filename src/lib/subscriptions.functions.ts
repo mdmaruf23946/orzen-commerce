@@ -27,9 +27,32 @@ export const getPublicSubscriptionSettings = createServerFn({ method: "GET" })
 
 /** Success page / order details: the subscription created by an order. */
 export const getSubscriptionForOrder = createServerFn({ method: "GET" })
-  .inputValidator((d) => z.object({ orderId: z.string().uuid() }).parse(d))
+  .inputValidator((d) =>
+    z
+      .object({
+        orderId: z.string().uuid(),
+        storeId: z.string().uuid().optional(),
+        token: z.string().min(16).max(128).optional(),
+        contact: z.string().trim().max(200).optional(),
+      })
+      .parse(d),
+  )
   .handler(async ({ data }) => {
     const { supabaseAdmin: sb } = await import("@/integrations/supabase/client.server");
+    // Ownership proof required: customer session token or the order's phone/email.
+    const { data: order } = await sb
+      .from("orders")
+      .select("id,store_id,customer_id,phone,email")
+      .eq("id", data.orderId)
+      .maybeSingle();
+    if (!order) return null;
+    const { ownsOrderRecord } = await import("@/lib/order-ownership.server");
+    const ok = await ownsOrderRecord(sb, order as any, {
+      storeId: data.storeId,
+      token: data.token,
+      contact: data.contact,
+    });
+    if (!ok) return null;
     const { data: row } = await sb.rpc("get_public_subscription_order", {
       _order_id: data.orderId,
     } as any);
