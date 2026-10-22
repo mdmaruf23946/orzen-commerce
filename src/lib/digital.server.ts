@@ -202,10 +202,11 @@ export async function issueDownloadUrl(
     const file = files[opts.fileIndex];
     if (!file?.path) throw new Error("File unavailable");
     filePath = file.path;
-    const minutes = Number(dg.download?.link_minutes ?? 10);
+    // Links are issued per click and used immediately; keep them short-lived
+    // so revoking access takes effect within ~2 minutes.
     const { data: signed, error } = await sb.storage
       .from(BUCKET)
-      .createSignedUrl(file.path, Math.max(1, Math.min(minutes, 60)) * 60, { download: file.name });
+      .createSignedUrl(file.path, 120, { download: file.name });
     if (error || !signed?.signedUrl) throw new Error(error?.message ?? "Could not create download link");
     url = signed.signedUrl;
   }
