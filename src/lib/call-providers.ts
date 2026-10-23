@@ -16,7 +16,7 @@ export type ProviderConfig = {
   extraNumbers?: string[];
   connectedAt: string;
 };
-export type CallLog = { id: string; at: string; number: string; providerId: string; durationSec: number; status: "completed" | "missed" | "failed" | "busy"; recordingUrl?: string };
+export type CallLog = { id: string; at: string; number: string; providerId: string; durationSec: number; status: "completed" | "missed" | "failed" | "busy"; recordingUrl?: string; recordingPath?: string };
 export type CallSettings = { record: boolean; hoursOn: boolean; start: string; end: string; days: number[] };
 
 export const PROVIDERS = [
@@ -42,6 +42,13 @@ export const saveConfig = (c: ProviderConfig) => write(K.cfg, { ...getConfigs(),
 export const removeConfig = (id: string) => { const all = getConfigs(); delete all[id]; write(K.cfg, all); };
 export const getHistory = () => read<CallLog[]>(K.log, []);
 export const addHistory = (l: CallLog) => write(K.log, [l, ...getHistory()].slice(0, 500));
+export const patchHistory = (id: string, p: Partial<CallLog>) => write(K.log, getHistory().map((h) => (h.id === id ? { ...h, ...p } : h)));
+/** True when calls are allowed now under the business-hours setting. */
+export function withinHours(s: CallSettings, d = new Date()) {
+  if (!s.hoursOn) return true;
+  const hm = `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+  return s.days.includes(d.getDay()) && hm >= s.start && hm <= s.end;
+}
 export const DEFAULT_SETTINGS: CallSettings = { record: true, hoursOn: false, start: "10:00", end: "20:00", days: [0, 1, 2, 3, 4, 6] };
 export const getSettings = () => ({ ...DEFAULT_SETTINGS, ...read<Partial<CallSettings>>(K.set, {}) });
 export const saveSettings = (s: CallSettings) => write(K.set, s);
