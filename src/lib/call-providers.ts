@@ -12,6 +12,7 @@ export type ProviderConfig = {
   transport: Transport;
   stun?: string;
   wsUrl?: string;
+  outboundProxy?: string;
   prefix?: string;
   extraNumbers?: string[];
   connectedAt: string;
