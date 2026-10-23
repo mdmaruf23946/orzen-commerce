@@ -11,7 +11,24 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { addHistory, providerName, removeConfig, saveConfig, saveSettings, type CallSettings, type ProviderConfig } from "@/lib/call-providers";
+import { addHistory, patchHistory, getSettings, withinHours, providerName, removeConfig, saveConfig, saveSettings, type CallLog, type CallSettings, type ProviderConfig } from "@/lib/call-providers";
+import { supabase } from "@/integrations/supabase/client";
+import { listManualLines } from "@/lib/manual-call.functions";
+
+function Recording({ row }: { row: CallLog }) {
+  const [src, setSrc] = useState<string | null>(null);
+  if (src) return <audio src={src} controls autoPlay className="h-8 w-48" />;
+  if (!row.recordingPath && !row.recordingUrl) return <span className="text-xs text-muted-foreground">—</span>;
+  return (
+    <Button size="sm" variant="outline" onClick={async () => {
+      if (row.recordingPath) {
+        const { data } = await supabase.storage.from("voice-audio").createSignedUrl(row.recordingPath, 600);
+        if (data?.signedUrl) return setSrc(data.signedUrl);
+      }
+      if (row.recordingUrl) setSrc(row.recordingUrl); else toast.error("Could not load the recording");
+    }}><Play className="mr-1 h-4 w-4" />Play</Button>
+  );
+}
 import { useCallStore } from "@/components/admin/calls/useCallStore";
 import { ConnectProviderDialog } from "@/components/admin/calls/ConnectProviderDialog";
 
@@ -87,14 +104,31 @@ function Dialer({ list, record }: { list: ProviderConfig[]; record: boolean }) {
   const cfg = list.find((c) => c.providerId === pid) ?? list[0];
   const busy = state !== "idle";
 
+  const callId = useRef("");
   const log = (status: "completed" | "missed" | "failed" | "busy") => {
-    addHistory({ id: crypto.randomUUID(), at: new Date().toISOString(), number: num, providerId: cfg.providerId, durationSec: t0.current ? Math.round((Date.now() - t0.current) / 1000) : 0, status });
+    addHistory({ id: callId.current || crypto.randomUUID(), at: new Date().toISOString(), number: num, providerId: cfg.providerId, durationSec: t0.current ? Math.round((Date.now() - t0.current) / 1000) : 0, status });
     t0.current = 0; setState("idle"); setMuted(false); setHeld(false);
   };
+
+  async function saveRecording(id: string, blob: Blob) {
+    // Instant local playback, then permanent upload to the store's private folder.
+    patchHistory(id, { recordingUrl: URL.createObjectURL(blob) });
+    try {
+      const { storeId } = await listManualLines();
+      const path = `manual/${storeId}/${id}.webm`;
+      const { error } = await supabase.storage.from("voice-audio").upload(path, blob, { contentType: "audio/webm", upsert: true });
+      if (error) throw error;
+      patchHistory(id, { recordingPath: path });
+      toast.success("Call recording saved");
+    } catch { toast.error("Recording could not be uploaded — it is playable on this browser only."); }
+  }
 
   async function call() {
     if (num.replace(/\D/g, "").length < 3) return toast.error("Enter a phone number");
     if (cfg.transport !== "WSS") return toast.error("Browser calling needs WSS transport. Change it in Setup.");
+    if (!withinHours(getSettings())) return toast.error("Outside business hours. Change it in Settings.");
+    const id = crypto.randomUUID();
+    callId.current = id;
     setState("connecting"); setSecs(0);
     try {
       const { placeCall } = await import("@/lib/manual-call-phone");
@@ -108,6 +142,7 @@ function Dialer({ list, record }: { list: ProviderConfig[]; record: boolean }) {
             if (s === "ended") log(t0.current ? "completed" : "missed");
             if (s === "failed") { if (info) toast.error(`Call ended: ${info}`); log(/busy/i.test(info ?? "") ? "busy" : "failed"); }
           },
+          onRecording: (blob) => { void saveRecording(id, blob); },
         },
       );
     } catch (e: any) { toast.error(e.message ?? "Could not start the call"); log("failed"); }
@@ -169,7 +204,7 @@ function HistoryTab({ rows }: { rows: ReturnType<typeof useCallStore>["history"]
                 <TableCell>{providerName(r.providerId)}</TableCell>
                 <TableCell className="tabular-nums">{fmt(r.durationSec)}</TableCell>
                 <TableCell><Badge variant="secondary" className={TONE[r.status]}>{r.status}</Badge></TableCell>
-                <TableCell>{r.recordingUrl ? <audio src={r.recordingUrl} controls className="h-8 w-48" /> : <span className="text-xs text-muted-foreground">—</span>}</TableCell>
+                <TableCell><Recording row={r} /></TableCell>
               </TableRow>
             )) : <TableRow><TableCell colSpan={6} className="py-8 text-center text-sm text-muted-foreground">No calls yet.</TableCell></TableRow>}
           </TableBody>
