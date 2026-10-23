@@ -429,6 +429,10 @@ function CheckoutPage() {
 
   return (
     <form onSubmit={submit} className="grid gap-6 sm:grid-cols-5">
+      <div className="flex flex-wrap items-center gap-4 pt-3 text-sm font-medium sm:col-span-5">
+        <Link to="/store/$slug/cart" params={{ slug }} className="text-muted-foreground hover:text-foreground">{"\u2190 "}{t("checkout.backToCart")}</Link>
+        <Link to="/store/$slug" params={{ slug }} className="text-muted-foreground hover:text-foreground">{t("cart.continueShopping")}</Link>
+      </div>
       <div className="sm:col-span-3">
         <h1 className="text-xl font-semibold">Checkout</h1>
         {cartNotices.length > 0 && (

@@ -190,7 +190,7 @@ function CartPage() {
               {gItems.map((i) => {
                 const on = selected.includes(i.productId);
                 return (
-                  <li key={i.productId + (i.variantId ?? "")} className="sf-animate-fade-in flex gap-3 p-3 transition-colors hover:bg-sf-surface/60">
+                  <li key={i.productId + (i.variantId ?? "")} className={`sf-animate-fade-in flex cursor-pointer gap-3 border-l-4 p-3 transition-colors ${on ? "border-primary bg-primary/5" : "border-transparent hover:bg-sf-surface/60"}`} onClick={(e) => { if ((e.target as HTMLElement).closest("button")) return; toggleItem(i.productId); }}>
                     <Box checked={on} onClick={() => toggleItem(i.productId)} className="mt-6" />
                     <div className="h-16 w-16 shrink-0 overflow-hidden rounded-md bg-muted">
                       {i.image && <img src={i.image} alt="" className="h-full w-full object-cover transition-transform duration-500 hover:scale-110" />}
@@ -273,11 +273,11 @@ function Box({
       role="checkbox"
       aria-checked={checked}
       onClick={onClick}
-      className={`sf-press grid h-5 w-5 shrink-0 place-items-center rounded border ${
-        checked ? "border-primary bg-primary text-primary-foreground" : "border-input bg-background"
+      className={`sf-press grid h-6 w-6 shrink-0 place-items-center rounded-md border-2 ${
+        checked ? "border-primary bg-primary text-primary-foreground" : "border-primary/60 bg-background"
       } ${className}`}
     >
-      {checked && <Check className="h-3.5 w-3.5" />}
+      {checked && <Check className="h-4 w-4" />}
     </button>
   );
 }
