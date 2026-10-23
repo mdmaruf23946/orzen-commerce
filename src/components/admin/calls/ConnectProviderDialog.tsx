@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react";
-import { Eye, EyeOff, Info, Loader2 } from "lucide-react";
+import { Eye, EyeOff, Info, Loader2, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { KIND_LABEL, getConfigs, getProfile, saveConfig, validateConfig, type FieldKey, type ProviderConfig } from "@/lib/call-providers";
+import { KIND_LABEL, getConfigs, getProfile, saveConfig, validateConfig, type CallExtension, type FieldKey, type ProviderConfig } from "@/lib/call-providers";
 
 const BASE_LABEL: Record<FieldKey, string> = {
   host: "SIP Server / Domain", username: "SIP Username", password: "SIP Password / Secret", callerId: "Caller ID",
@@ -14,7 +14,8 @@ const BASE_LABEL: Record<FieldKey, string> = {
 };
 const ADVANCED: FieldKey[] = ["outboundProxy", "stun", "prefix"];
 
-export function ConnectProviderDialog({ providerId, onClose }: { providerId: string | null; onClose: () => void }) {
+/** Opens for a new line of `providerId`, or edits line `lineId` when given. */
+export function ConnectProviderDialog({ providerId, lineId, onClose }: { providerId: string | null; lineId?: string | null; onClose: () => void }) {
   const p = getProfile(providerId ?? undefined);
   const [f, setF] = useState<Partial<ProviderConfig>>({});
   const [show, setShow] = useState(false);
@@ -25,10 +26,22 @@ export function ConnectProviderDialog({ providerId, onClose }: { providerId: str
   useEffect(() => {
     if (!providerId) return;
     const prof = getProfile(providerId);
-    const ex = getConfigs()[providerId];
-    setF(ex ?? { providerId, mode: "byoc", transport: "WSS", host: prof?.kind === "webrtc" ? "" : prof?.host ?? "", username: "", password: "", callerId: "" });
+    const ex = lineId ? getConfigs()[lineId] : undefined;
+    setF(ex ?? { id: crypto.randomUUID(), extensions: [], providerId, mode: "byoc", transport: "WSS", host: prof?.kind === "webrtc" ? "" : prof?.host ?? "", username: "", password: "", callerId: "" });
     setAdv(!!(ex?.stun || ex?.outboundProxy || ex?.prefix)); setTest(null); setShow(false);
-  }, [providerId]);
+    setNe({ ext: "", password: "", name: "" });
+  }, [providerId, lineId]);
+  const [ne, setNe] = useState<CallExtension>({ ext: "", password: "", name: "" });
+  const exts = f.extensions ?? [];
+  const setExts = (list: CallExtension[]) => { setF((x) => ({ ...x, extensions: list })); setTest(null); };
+  function addExt() {
+    const ext = ne.ext.trim();
+    if (!/^[0-9A-Za-z_.-]{2,20}$/.test(ext)) return toast.error("Extension লিখুন (যেমন 101)");
+    if (exts.some((e) => e.ext === ext)) return toast.error("এই Extension আগেই আছে");
+    if (exts.length >= 50) return toast.error("সর্বোচ্চ ৫০টি Extension");
+    setExts([...exts, { ext, ...(ne.password ? { password: ne.password } : {}), ...(ne.name?.trim() ? { name: ne.name.trim() } : {}) }]);
+    setNe({ ext: "", password: "", name: "" });
+  }
 
   const set = (k: keyof ProviderConfig, v: string) => { setF((x) => ({ ...x, [k]: v })); setTest(null); };
 
@@ -42,7 +55,7 @@ export function ConnectProviderDialog({ providerId, onClose }: { providerId: str
   function save() {
     const err = validateConfig(f);
     if (err) return toast.error(err);
-    saveConfig({ ...(f as ProviderConfig), transport: "WSS", connectedAt: new Date().toISOString() });
+    saveConfig({ ...(f as ProviderConfig), extension: undefined, transport: "WSS", connectedAt: new Date().toISOString() });
     toast.success(`${p?.name} connected`);
     onClose();
   }
@@ -71,7 +84,7 @@ export function ConnectProviderDialog({ providerId, onClose }: { providerId: str
     <Dialog open={!!providerId} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Connect {p.name}</DialogTitle>
+          <DialogTitle>{lineId ? "Edit" : "Connect"} {p.name}{lineId ? "" : " number"}</DialogTitle>
           <DialogDescription>{KIND_LABEL[p.kind]} · {p.tagline}</DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
@@ -79,7 +92,26 @@ export function ConnectProviderDialog({ providerId, onClose }: { providerId: str
             <div className="mb-1 flex items-center gap-1.5 font-medium"><Info className="h-4 w-4" />কীভাবে তথ্য পাবেন</div>
             <ol className="list-decimal space-y-1 pl-5 text-muted-foreground">{p.guide.map((g) => <li key={g}>{g}</li>)}</ol>
           </div>
+          <div className="space-y-1"><Label>Line name (ঐচ্ছিক)</Label><Input value={f.label ?? ""} onChange={(e) => set("label", e.target.value)} placeholder="যেমন Sales / Support" maxLength={40} /></div>
           {main.map(field)}
+          <div className="space-y-2 rounded-lg border p-3">
+            <div>
+              <Label>Extensions {p.kind !== "ip_trunk" && "*"}</Label>
+              <p className="text-xs text-muted-foreground">প্রতিটি Extension একসাথে আলাদা একটি কল চালাতে পারে — ৫টি Extension থাকলে একসাথে ৫ জন কল করতে পারবেন। Password খালি রাখলে উপরের SIP Password ব্যবহার হবে।</p>
+            </div>
+            {exts.map((e) => (
+              <div key={e.ext} className="flex items-center justify-between rounded-md bg-muted/50 px-3 py-1.5 text-sm">
+                <span><span className="font-mono">{e.ext}</span>{e.name && <span className="ml-2 text-xs text-muted-foreground">{e.name}</span>}{e.password && <span className="ml-2 text-xs text-muted-foreground">• password set</span>}</span>
+                <Button type="button" size="icon" variant="ghost" aria-label={`Remove ${e.ext}`} onClick={() => setExts(exts.filter((x) => x.ext !== e.ext))}><Trash2 className="h-4 w-4" /></Button>
+              </div>
+            ))}
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-[1fr_1fr_1fr_auto]">
+              <Input value={ne.ext} onChange={(e) => setNe({ ...ne, ext: e.target.value })} placeholder="Ext (101)" autoComplete="off" />
+              <Input type="password" value={ne.password ?? ""} onChange={(e) => setNe({ ...ne, password: e.target.value })} placeholder="Password" autoComplete="new-password" />
+              <Input value={ne.name ?? ""} onChange={(e) => setNe({ ...ne, name: e.target.value })} placeholder="Agent name" autoComplete="off" />
+              <Button type="button" variant="outline" onClick={addExt}><Plus className="mr-1 h-4 w-4" />Add</Button>
+            </div>
+          </div>
           {extra.length > 0 && (
             <>
               <label className="flex items-center justify-between rounded-lg border p-3 text-sm font-medium">Advanced Settings<Switch checked={adv} onCheckedChange={setAdv} /></label>

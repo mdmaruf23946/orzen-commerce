@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { addHistory, patchHistory, getSettings, withinHours, providerName, removeConfig, saveConfig, saveSettings, type CallLog, type CallSettings, type ProviderConfig , sipUser } from "@/lib/call-providers";
+import { addHistory, patchHistory, getSettings, withinHours, providerName, removeConfig, saveConfig, saveSettings, type CallLog, type CallSettings, type ProviderConfig , sipLogin, lineName } from "@/lib/call-providers";
 import { supabase } from "@/integrations/supabase/client";
 import { listManualLines, listManualCalls, saveCallLog } from "@/lib/manual-call.functions";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -86,6 +86,7 @@ function NoProvider() {
 
 function Dialer({ list, record }: { list: ProviderConfig[]; record: boolean }) {
   const [pid, setPid] = useState("");
+  const [extSel, setExtSel] = useState("");
   const [num, setNum] = useState("");
   const [state, setState] = useState<"idle" | "connecting" | "ringing" | "answered">("idle");
   const [muted, setMuted] = useState(false);
@@ -94,7 +95,7 @@ function Dialer({ list, record }: { list: ProviderConfig[]; record: boolean }) {
   const phone = useRef<any>(null);
   const t0 = useRef(0);
 
-  useEffect(() => { if (!list.find((c) => c.providerId === pid) && list[0]) setPid(list[0].providerId); }, [list, pid]);
+  useEffect(() => { if (!list.find((c) => c.id === pid) && list[0]) setPid(list[0].id); }, [list, pid]);
   useEffect(() => {
     if (state !== "answered") return;
     const t = setInterval(() => setSecs(Math.round((Date.now() - t0.current) / 1000)), 1000);
@@ -102,7 +103,9 @@ function Dialer({ list, record }: { list: ProviderConfig[]; record: boolean }) {
   }, [state]);
 
   if (!list.length) return <NoProvider />;
-  const cfg = list.find((c) => c.providerId === pid) ?? list[0];
+  const cfg = list.find((c) => c.id === pid) ?? list[0];
+  const exts = cfg.extensions ?? [];
+  const ext = exts.find((e) => e.ext === extSel) ?? exts[0];
   const busy = state !== "idle";
 
   const callId = useRef("");
@@ -141,7 +144,7 @@ function Dialer({ list, record }: { list: ProviderConfig[]; record: boolean }) {
     try {
       const { placeCall } = await import("@/lib/manual-call-phone");
       phone.current = await placeCall(
-        { wss_url: cfg.wsUrl || `wss://${cfg.host}`, sip_domain: cfg.host, username: sipUser(cfg), password: cfg.password, caller_number: cfg.callerId, record },
+        { wss_url: cfg.wsUrl || `wss://${cfg.host}`, sip_domain: cfg.host, ...sipLogin(cfg, ext), caller_number: cfg.callerId, record },
         `${cfg.prefix ?? ""}${num}`,
         {
           onState: (s, info) => {
@@ -161,12 +164,22 @@ function Dialer({ list, record }: { list: ProviderConfig[]; record: boolean }) {
     <div className="mt-2 grid gap-4 lg:grid-cols-2">
       <div className="space-y-3 rounded-xl border bg-card p-4">
         <div className="space-y-1">
-          <Label>Provider</Label>
-          <Select value={cfg.providerId} onValueChange={setPid} disabled={busy}>
+          <Label>Number / Line</Label>
+          <Select value={cfg.id} onValueChange={(v) => { setPid(v); setExtSel(""); }} disabled={busy}>
             <SelectTrigger><SelectValue /></SelectTrigger>
-            <SelectContent>{list.map((c) => <SelectItem key={c.providerId} value={c.providerId}>{providerName(c.providerId)} ({c.callerId})</SelectItem>)}</SelectContent>
+            <SelectContent>{list.map((c) => <SelectItem key={c.id} value={c.id}>{lineName(c)} ({c.callerId})</SelectItem>)}</SelectContent>
           </Select>
         </div>
+        {exts.length > 0 && (
+          <div className="space-y-1">
+            <Label>Extension</Label>
+            <Select value={ext?.ext} onValueChange={setExtSel} disabled={busy}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>{exts.map((e) => <SelectItem key={e.ext} value={e.ext}>{e.ext}{e.name ? ` · ${e.name}` : ""}</SelectItem>)}</SelectContent>
+            </Select>
+            <p className="text-[11px] text-muted-foreground">একসাথে একাধিক কল করতে প্রতিটি কম্পিউটার/ব্রাউজারে আলাদা Extension বেছে নিন।</p>
+          </div>
+        )}
         <div className="flex gap-2">
           <Input value={num} onChange={(e) => setNum(e.target.value)} placeholder="01XXXXXXXXX" inputMode="tel" className="h-12 text-lg tracking-wider" disabled={busy} />
           <Button variant="ghost" size="icon" className="h-12 w-12" aria-label="Delete digit" onClick={() => setNum((n) => n.slice(0, -1))} disabled={busy}><Delete className="h-4 w-4" /></Button>
@@ -189,7 +202,7 @@ function Dialer({ list, record }: { list: ProviderConfig[]; record: boolean }) {
         <div className="text-xl font-semibold">{num || "Ready"}</div>
         <Badge variant="secondary">{state === "idle" ? "Idle" : state === "connecting" ? "Connecting…" : state === "ringing" ? "Ringing…" : held ? "On hold" : "In call"}</Badge>
         {state === "answered" && <div className="text-3xl font-semibold tabular-nums">{fmt(secs)}</div>}
-        <div className="text-xs text-muted-foreground">Via {providerName(cfg.providerId)} · {cfg.callerId}{cfg.extension ? ` · ext ${cfg.extension}` : ""}</div>
+        <div className="text-xs text-muted-foreground">Via {lineName(cfg)} · {cfg.callerId}{ext ? ` · ext ${ext.ext}` : ""}</div>
       </div>
     </div>
   );
@@ -230,42 +243,30 @@ function HistoryTab() {
 }
 
 function SetupTab({ list }: { list: ProviderConfig[] }) {
-  const [edit, setEdit] = useState<string | null>(null);
-  const [extra, setExtra] = useState<Record<string, string>>({});
+  const [edit, setEdit] = useState<ProviderConfig | null>(null);
   if (!list.length) return <NoProvider />;
   return (
     <div className="mt-2 space-y-3">
+      <div className="flex justify-end"><Button asChild size="sm" variant="outline"><Link to="/admin/manual-call/apps"><Plus className="mr-1 h-4 w-4" />Add number</Link></Button></div>
       {list.map((c) => (
-        <div key={c.providerId} className="space-y-3 rounded-xl border bg-card p-4">
+        <div key={c.id} className="space-y-3 rounded-xl border bg-card p-4">
           <div className="flex flex-wrap items-center gap-3">
             <PhoneCall className="h-5 w-5 text-primary" />
             <div className="min-w-0 flex-1">
-              <div className="font-medium">{providerName(c.providerId)} <Badge variant="secondary">{c.mode === "byoc" ? "BYOC" : "Rented"}</Badge></div>
-              <div className="text-xs text-muted-foreground">{c.host} · {c.username} · {c.transport}{c.extension ? ` · ext ${c.extension}` : ""}</div>
+              <div className="font-medium">{lineName(c)} <Badge variant="secondary">{c.callerId}</Badge></div>
+              <div className="text-xs text-muted-foreground">{c.host} · {(c.extensions?.length ?? 0)} extension = একসাথে {Math.max(1, c.extensions?.length ?? 0)}টি কল</div>
             </div>
-            <Button size="sm" variant="outline" onClick={() => setEdit(c.providerId)}><Pencil className="mr-1 h-4 w-4" />Edit</Button>
-            <Button size="icon" variant="ghost" aria-label="Disconnect" onClick={() => { removeConfig(c.providerId); toast.success("Disconnected"); }}><Trash2 className="h-4 w-4" /></Button>
+            <Button size="sm" variant="outline" onClick={() => setEdit(c)}><Pencil className="mr-1 h-4 w-4" />Edit / Extensions</Button>
+            <Button size="icon" variant="ghost" aria-label="Disconnect" onClick={() => { removeConfig(c.id); toast.success("Disconnected"); }}><Trash2 className="h-4 w-4" /></Button>
           </div>
-          <div className="space-y-2">
-            <Label className="text-xs">Number pool / extensions</Label>
+          {!!c.extensions?.length && (
             <div className="flex flex-wrap gap-2">
-              {(c.extraNumbers ?? []).map((n) => (
-                <Badge key={n} variant="outline" className="gap-1">{n}
-                  <button aria-label={`Remove ${n}`} onClick={() => saveConfig({ ...c, extraNumbers: c.extraNumbers!.filter((x) => x !== n) })}>×</button>
-                </Badge>
-              ))}
+              {c.extensions.map((e) => <Badge key={e.ext} variant="outline" className="font-mono">{e.ext}{e.name ? ` · ${e.name}` : ""}</Badge>)}
             </div>
-            <div className="flex gap-2">
-              <Input value={extra[c.providerId] ?? ""} onChange={(e) => setExtra({ ...extra, [c.providerId]: e.target.value })} placeholder="Number or extension" className="sm:max-w-xs" />
-              <Button size="sm" variant="outline" onClick={() => {
-                const v = (extra[c.providerId] ?? "").trim(); if (!v) return;
-                saveConfig({ ...c, extraNumbers: Array.from(new Set([...(c.extraNumbers ?? []), v])) }); setExtra({ ...extra, [c.providerId]: "" });
-              }}><Plus className="mr-1 h-4 w-4" />Add</Button>
-            </div>
-          </div>
+          )}
         </div>
       ))}
-      <ConnectProviderDialog providerId={edit} onClose={() => setEdit(null)} />
+      <ConnectProviderDialog providerId={edit?.providerId ?? null} lineId={edit?.id ?? null} onClose={() => setEdit(null)} />
     </div>
   );
 }

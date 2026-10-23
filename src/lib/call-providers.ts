@@ -1,7 +1,13 @@
 // Manual Call (beta) provider configs, history and settings — stored in the
 // browser for now (UI ready for SIP integration; no backend yet).
 export type Transport = "WSS" | "UDP" | "TCP" | "TLS";
+/** One SIP extension (agent phone) under a number — each can hold its own call at the same time. */
+export type CallExtension = { ext: string; password?: string; name?: string };
 export type ProviderConfig = {
+  /** Line id — a merchant can connect several numbers from the same provider. */
+  id: string;
+  label?: string;
+  extensions?: CallExtension[];
   providerId: string;
   mode: "byoc" | "rented";
   host: string;
@@ -30,8 +36,8 @@ export type ProviderProfile = {
 };
 
 const TRUNK: FieldKey[] = ["host", "outboundProxy", "username", "password", "callerId", "wsUrl", "prefix"];
-const PBX: FieldKey[] = ["host", "extension", "username", "password", "callerId", "wsUrl", "stun"];
-const WEB: FieldKey[] = ["wsUrl", "host", "extension", "username", "password", "callerId", "stun"];
+const PBX: FieldKey[] = ["host", "username", "password", "callerId", "wsUrl", "stun"];
+const WEB: FieldKey[] = ["wsUrl", "host", "username", "password", "callerId", "stun"];
 
 export const PROVIDERS: ProviderProfile[] = [
   { id: "brilliant", name: "Brilliant Connect", host: "sip.brilliant.com.bd", kind: "ip_trunk", numberPrefix: "09638",
@@ -47,7 +53,7 @@ export const PROVIDERS: ProviderProfile[] = [
   { id: "amberit", name: "Amber IT", host: "sip.amberit.com.bd", kind: "cloud_pbx", numberPrefix: "09611",
     tagline: "09611 · Cloud PBX extension",
     guide: ["Amber IT Cloud PBX panel থেকে একটি extension (যেমন 101) তৈরি করুন।", "Extension number, password ও PBX domain কপি করুন।", "ব্রাউজার কলের জন্য WebRTC/WSS চালু রাখতে বলুন।"],
-    fields: PBX, required: ["host", "extension", "password", "callerId"],
+    fields: PBX, required: ["host", "callerId"],
     labels: { host: "PBX Domain / Realm", username: "Auth ID (না থাকলে খালি রাখুন)", callerId: "09611 Caller ID" }, placeholders: { callerId: "09611XXXXXX" } },
   { id: "link3", name: "Link3", host: "sip.link3.net", kind: "ip_trunk", numberPrefix: "09678",
     tagline: "09678 · SIP Trunk with Registrar/Proxy",
@@ -62,15 +68,15 @@ export const PROVIDERS: ProviderProfile[] = [
   { id: "ummah", name: "Ummah Host", host: "sip.ummahhost.com", kind: "cloud_pbx",
     tagline: "Hosted Cloud PBX",
     guide: ["Ummah Host PBX panel থেকে extension তৈরি করুন।", "Extension, secret, domain ও WSS URL কপি করুন।"],
-    fields: PBX, required: ["host", "extension", "password", "callerId"] },
+    fields: PBX, required: ["host", "callerId"] },
   { id: "mytel", name: "MyTel", host: "sip.mytel.com.bd", kind: "cloud_pbx",
     tagline: "Business PBX extension",
     guide: ["MyTel business PBX/SIP account থেকে extension ও password নিন।", "Domain ও WSS URL provider থেকে নিশ্চিত করুন।"],
-    fields: PBX, required: ["host", "extension", "password", "callerId"] },
+    fields: PBX, required: ["host", "callerId"] },
   { id: "custom", name: "Custom WebRTC / PBX", host: "pbx.example.com", kind: "webrtc",
     tagline: "Asterisk, FreePBX, FusionPBX ইত্যাদি",
     guide: ["নিজের PBX-এ WebRTC চালু করা extension দরকার।", "WSS URL (wss://...:8089/ws), domain, extension ও secret লিখুন।"],
-    fields: WEB, required: ["wsUrl", "host", "extension", "password"] },
+    fields: WEB, required: ["wsUrl", "host"] },
 ];
 
 export const KIND_LABEL: Record<ConnectKind, string> = { ip_trunk: "SIP Trunk", cloud_pbx: "Cloud PBX", webrtc: "WebRTC" };
@@ -82,8 +88,20 @@ const read = <T,>(k: string, d: T): T => {
 };
 const write = (k: string, v: unknown) => { localStorage.setItem(k, JSON.stringify(v)); window.dispatchEvent(new Event("orzen-call-store")); };
 
-export const getConfigs = () => read<Record<string, ProviderConfig>>(K.cfg, {});
-export const saveConfig = (c: ProviderConfig) => write(K.cfg, { ...getConfigs(), [c.providerId]: c });
+/** Lines keyed by line id; older single-line saves (keyed by provider) are upgraded on read. */
+export const getConfigs = () => {
+  const raw = read<Record<string, ProviderConfig>>(K.cfg, {});
+  const out: Record<string, ProviderConfig> = {};
+  for (const [key, c] of Object.entries(raw)) {
+    const id = c.id || key;
+    const extensions = c.extensions ?? (c.extension ? [{ ext: c.extension }] : []);
+    out[id] = { ...c, id, extensions };
+  }
+  return out;
+};
+export const linesFor = (providerId: string) => Object.values(getConfigs()).filter((c) => c.providerId === providerId);
+export const lineName = (c: ProviderConfig) => `${providerName(c.providerId)}${c.label ? ` · ${c.label}` : ""}`;
+export const saveConfig = (c: ProviderConfig) => write(K.cfg, { ...getConfigs(), [c.id]: c });
 export const removeConfig = (id: string) => { const all = getConfigs(); delete all[id]; write(K.cfg, all); };
 export const getHistory = () => read<CallLog[]>(K.log, []);
 export const addHistory = (l: CallLog) => write(K.log, [l, ...getHistory()].slice(0, 500));
@@ -103,10 +121,20 @@ const FIELD_NAME: Record<FieldKey, string> = { host: "Server / Domain", username
 export const getProfile = (id?: string) => PROVIDERS.find((p) => p.id === id);
 /** SIP login user: explicit username, else the PBX extension. */
 export const sipUser = (c: Pick<ProviderConfig, "username" | "extension">) => c.username?.trim() || c.extension?.trim() || "";
+/** SIP login for a chosen extension: the extension registers itself (own secret, else the line password). */
+export function sipLogin(c: ProviderConfig, ext?: CallExtension) {
+  if (ext?.ext) return { username: ext.ext.trim(), password: ext.password || c.password };
+  return { username: sipUser(c), password: c.password };
+}
 
 export function validateConfig(c: Partial<ProviderConfig>): string | null {
   const prof = getProfile(c.providerId);
   const req: FieldKey[] = prof?.required ?? ["host", "username", "password", "callerId"];
+  const exts = c.extensions ?? [];
+  if (prof?.kind !== "ip_trunk" && !exts.length) return "অন্তত একটি Extension যোগ করুন";
+  if (!exts.length && !String(c.password ?? "").trim()) return "Password is required";
+  if (exts.some((e) => !e.password?.trim()) && !String(c.password ?? "").trim()) return "প্রতিটি Extension-এর password দিন (বা একটি সাধারণ password)";
+  if (new Set(exts.map((e) => e.ext)).size !== exts.length) return "একই Extension দুইবার দেওয়া হয়েছে";
   for (const k of req) if (!String((c as any)[k] ?? "").trim()) return `${prof?.labels?.[k] ?? FIELD_NAME[k]} is required`;
   if (c.host && !/^[a-z0-9.-]+(:\d+)?$/i.test(c.host.trim())) return "Server / Domain looks invalid";
   if (c.wsUrl && !/^wss:\/\//.test(c.wsUrl)) return "WebSocket URL must start with wss://";

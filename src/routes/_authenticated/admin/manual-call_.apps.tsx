@@ -27,20 +27,23 @@ const ICONS: Record<string, any> = { brilliant: Radio, amberit: Wifi, link3: Net
 function CallAppsPage() {
   const { configs } = useCallStore();
   const [open, setOpen] = useState<string | null>(null);
-  const connected = Object.keys(configs).length;
+  const all = Object.values(configs);
+  const connected = all.length;
   return (
     <div className="space-y-4">
       <AdminPageHeader title="Call Apps" description="Connect your Bangladeshi VoIP provider. Every connected provider works together in the single Calls Hub." />
       {connected > 0 && (
         <div className="flex items-center justify-between rounded-xl border bg-card p-3 text-sm">
-          <span>{connected} provider{connected > 1 ? "s" : ""} connected</span>
+          <span>{connected} number{connected > 1 ? "s" : ""} connected</span>
           <Button asChild size="sm"><Link to="/admin/manual-call" search={{ tab: undefined }}>Open Calls Hub</Link></Button>
         </div>
       )}
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {PROVIDERS.map((p) => {
           const Icon = ICONS[p.id];
-          const on = !!configs[p.id];
+          const mine = all.filter((c) => c.providerId === p.id);
+          const on = mine.length > 0;
+          const extCount = mine.reduce((n, c) => n + (c.extensions?.length ?? 0), 0);
           return (
             <div key={p.id} className="flex flex-col rounded-xl border bg-card p-5 transition-shadow hover:shadow-md">
               <div className="flex items-start justify-between">
@@ -50,11 +53,14 @@ function CallAppsPage() {
                 </span>
               </div>
               <div className="mt-3 font-semibold">{p.name}</div>
-              <div className="text-xs text-muted-foreground">{on ? `${configs[p.id].callerId} · ${configs[p.id].host}` : p.tagline}</div>
+              <div className="text-xs text-muted-foreground">{on ? `${mine.length} number · ${extCount} extension` : p.tagline}</div>
               <span className="mt-2 w-fit rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium">{KIND_LABEL[p.kind]}</span>
-              <Button className="mt-4" size="sm" variant={on ? "outline" : "default"} onClick={() => setOpen(p.id)}>
-                {on ? <><Pencil className="mr-1 h-4 w-4" />Edit</> : <><Plug className="mr-1 h-4 w-4" />Connect</>}
-              </Button>
+              <div className="mt-4 flex gap-2">
+                <Button className="flex-1" size="sm" variant={on ? "outline" : "default"} onClick={() => setOpen(p.id)}>
+                  {on ? <><Plug className="mr-1 h-4 w-4" />Add number</> : <><Plug className="mr-1 h-4 w-4" />Connect</>}
+                </Button>
+                {on && <Button asChild size="sm" variant="outline"><Link to="/admin/manual-call" search={{ tab: "setup" }}><Pencil className="mr-1 h-4 w-4" />Manage</Link></Button>}
+              </div>
             </div>
           );
         })}
