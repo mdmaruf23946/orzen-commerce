@@ -1,3 +1,4 @@
+import DOMPurify from "isomorphic-dompurify";
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -48,7 +49,7 @@ function Detail() {
         {c.body_html && (
           <details className="mt-4">
             <summary className="cursor-pointer text-sm font-medium">Preview email body</summary>
-            <div className="mt-2 rounded-md border bg-background p-3" dangerouslySetInnerHTML={{ __html: c.body_html }} />
+            <div className="mt-2 rounded-md border bg-background p-3" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(String(c.body_html), { FORBID_TAGS: ["script","style","iframe","object","embed","form","input","button"], FORBID_ATTR: ["style"] }) }} />
           </details>
         )}
       </div>
