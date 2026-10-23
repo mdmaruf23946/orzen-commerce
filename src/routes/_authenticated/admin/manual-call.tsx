@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { addHistory, patchHistory, getSettings, withinHours, providerName, removeConfig, saveConfig, saveSettings, type CallLog, type CallSettings, type ProviderConfig } from "@/lib/call-providers";
+import { addHistory, patchHistory, getSettings, withinHours, providerName, removeConfig, saveConfig, saveSettings, type CallLog, type CallSettings, type ProviderConfig , sipUser } from "@/lib/call-providers";
 import { supabase } from "@/integrations/supabase/client";
 import { listManualLines, listManualCalls, saveCallLog } from "@/lib/manual-call.functions";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -141,7 +141,7 @@ function Dialer({ list, record }: { list: ProviderConfig[]; record: boolean }) {
     try {
       const { placeCall } = await import("@/lib/manual-call-phone");
       phone.current = await placeCall(
-        { wss_url: cfg.wsUrl || `wss://${cfg.host}`, sip_domain: cfg.host, username: cfg.username, password: cfg.password, caller_number: cfg.callerId, record },
+        { wss_url: cfg.wsUrl || `wss://${cfg.host}`, sip_domain: cfg.host, username: sipUser(cfg), password: cfg.password, caller_number: cfg.callerId, record },
         `${cfg.prefix ?? ""}${num}`,
         {
           onState: (s, info) => {
