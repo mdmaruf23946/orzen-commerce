@@ -117,13 +117,18 @@ function CartPage() {
     persist(allOn ? [] : gIds);
   }
 
-  // Drop selected ids that are no longer in the cart.
+  // Drop selected ids that are no longer in the cart; when nothing is
+  // selected, auto-select the first product type so checkout is ready.
   useEffect(() => {
-    if (!selected.length) return;
     const live = selected.filter((id) => ids.includes(id));
-    if (live.length !== selected.length) persist(live);
+    if (live.length) {
+      if (live.length !== selected.length) persist(live);
+      return;
+    }
+    if (!groups.length || !(products as any[]).length) return;
+    persist(groups[0].items.map((i) => i.productId));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ids.join(",")]);
+  }, [ids.join(","), groups.length, (products as any[]).length]);
 
   const selectedItems = items.filter((i) => selected.includes(i.productId));
   const total = selectedItems.reduce((a, i) => a + i.qty * i.price, 0);
@@ -145,6 +150,13 @@ function CartPage() {
 
   return (
     <div className="space-y-4 pb-28">
+      <Link
+        to="/store/$slug"
+        params={{ slug }}
+        className="inline-flex items-center gap-1 pt-3 text-sm font-medium text-muted-foreground hover:text-foreground"
+      >
+        {"\u2190 "}{t("cart.continueShopping")}
+      </Link>
       <div>
         <h1 className="text-xl font-semibold">{t("cart.title")}</h1>
         <p className="mt-1 text-xs text-muted-foreground">
