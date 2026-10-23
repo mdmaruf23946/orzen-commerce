@@ -13,7 +13,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { addHistory, patchHistory, getSettings, withinHours, providerName, removeConfig, saveConfig, saveSettings, type CallLog, type CallSettings, type ProviderConfig } from "@/lib/call-providers";
 import { supabase } from "@/integrations/supabase/client";
-import { listManualLines } from "@/lib/manual-call.functions";
+import { listManualLines, listManualCalls, saveCallLog } from "@/lib/manual-call.functions";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 function Recording({ row }: { row: CallLog }) {
   const [src, setSrc] = useState<string | null>(null);
@@ -66,7 +67,7 @@ function CallsHub() {
           <TabsTrigger value="settings"><Settings2 className="mr-1 h-4 w-4" />Settings</TabsTrigger>
         </TabsList>
         <TabsContent value="dialer"><Dialer list={list} record={store.settings.record} /></TabsContent>
-        <TabsContent value="history"><HistoryTab rows={store.history} /></TabsContent>
+        <TabsContent value="history"><HistoryTab /></TabsContent>
         <TabsContent value="setup"><SetupTab list={list} /></TabsContent>
         <TabsContent value="settings"><SettingsTab s={store.settings} /></TabsContent>
       </Tabs>
@@ -105,8 +106,13 @@ function Dialer({ list, record }: { list: ProviderConfig[]; record: boolean }) {
   const busy = state !== "idle";
 
   const callId = useRef("");
+  const qc = useQueryClient();
   const log = (status: "completed" | "missed" | "failed" | "busy") => {
-    addHistory({ id: callId.current || crypto.randomUUID(), at: new Date().toISOString(), number: num, providerId: cfg.providerId, durationSec: t0.current ? Math.round((Date.now() - t0.current) / 1000) : 0, status });
+    const entry = { id: callId.current || crypto.randomUUID(), at: new Date().toISOString(), number: num, providerId: cfg.providerId, durationSec: t0.current ? Math.round((Date.now() - t0.current) / 1000) : 0, status };
+    addHistory(entry);
+    saveCallLog({ data: { id: entry.id, phone: entry.number, provider_id: entry.providerId, status, duration_sec: entry.durationSec } })
+      .then(() => qc.invalidateQueries({ queryKey: ["manual-calls"] }))
+      .catch(() => toast.error("Call history could not be saved to your account"));
     t0.current = 0; setState("idle"); setMuted(false); setHeld(false);
   };
 
@@ -119,6 +125,8 @@ function Dialer({ list, record }: { list: ProviderConfig[]; record: boolean }) {
       const { error } = await supabase.storage.from("voice-audio").upload(path, blob, { contentType: "audio/webm", upsert: true });
       if (error) throw error;
       patchHistory(id, { recordingPath: path });
+      await saveCallLog({ data: { id, phone: num, provider_id: cfg.providerId, recording_path: path } });
+      qc.invalidateQueries({ queryKey: ["manual-calls"] });
       toast.success("Call recording saved");
     } catch { toast.error("Recording could not be uploaded — it is playable on this browser only."); }
   }
@@ -187,8 +195,15 @@ function Dialer({ list, record }: { list: ProviderConfig[]; record: boolean }) {
   );
 }
 
-function HistoryTab({ rows }: { rows: ReturnType<typeof useCallStore>["history"] }) {
+function HistoryTab() {
   const [q, setQ] = useState("");
+  const { data, isLoading } = useQuery({ queryKey: ["manual-calls"], queryFn: () => listManualCalls({ data: {} }) });
+  const rows: CallLog[] = (data?.calls ?? []).map((c: any) => ({
+    id: c.id, at: c.started_at, number: c.phone,
+    providerId: String(c.notes ?? "").startsWith("provider:") ? String(c.notes).slice(9) : "custom",
+    durationSec: c.duration_sec ?? 0, status: c.status, recordingPath: c.recording_path ?? undefined,
+  }));
+  if (isLoading) return <div className="mt-2 p-8 text-center text-sm text-muted-foreground">Loading…</div>;
   const shown = rows.filter((r) => r.number.includes(q.trim()));
   return (
     <div className="mt-2 space-y-3">
