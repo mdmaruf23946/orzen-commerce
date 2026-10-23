@@ -226,3 +226,42 @@ export const manualRecordingUrl = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { url: s.signedUrl };
   });
+
+/** Save/merge a browser-dialed call (provider configs live in the browser) so
+ *  history follows the account across browsers/devices. Store-scoped. */
+export const saveCallLog = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z.object({
+      id: z.string().uuid(),
+      phone: z.string().trim().max(30).optional(),
+      provider_id: z.string().trim().max(40).optional(),
+      status: z.enum(["completed", "missed", "failed", "busy"]).optional(),
+      duration_sec: z.number().int().min(0).max(86400).optional(),
+      started_at: z.string().max(40).optional(),
+      recording_path: z.string().max(300).optional(),
+    }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const sb = context.supabase;
+    const storeId = await storeIdFor(sb, context.userId);
+    if (data.recording_path && !data.recording_path.startsWith(`manual/${storeId}/`)) throw new Error("Invalid recording");
+    const { data: existing } = await sb.from("manual_calls").select("id").eq("id", data.id).eq("store_id", storeId).maybeSingle();
+    const patch: any = {};
+    if (data.status) { patch.status = data.status; patch.ended_at = new Date().toISOString(); }
+    if (data.duration_sec !== undefined) patch.duration_sec = data.duration_sec;
+    if (data.recording_path) patch.recording_path = data.recording_path;
+    if (data.provider_id) patch.notes = `provider:${data.provider_id}`;
+    if (existing) {
+      const { error } = await sb.from("manual_calls").update(patch).eq("id", data.id).eq("store_id", storeId);
+      if (error) throw new Error(error.message);
+    } else {
+      const { error } = await sb.from("manual_calls").insert({
+        ...patch, id: data.id, store_id: storeId, user_id: context.userId,
+        phone: data.phone || "unknown", status: data.status || "completed",
+        started_at: data.started_at || new Date().toISOString(),
+      });
+      if (error) throw new Error(error.message);
+    }
+    return { ok: true };
+  });
