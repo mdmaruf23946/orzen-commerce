@@ -98,12 +98,18 @@ export const getSettings = () => ({ ...DEFAULT_SETTINGS, ...read<Partial<CallSet
 export const saveSettings = (s: CallSettings) => write(K.set, s);
 export const providerName = (id: string) => PROVIDERS.find((p) => p.id === id)?.name ?? id;
 
+const FIELD_NAME: Record<FieldKey, string> = { host: "Server / Domain", username: "Username", password: "Password", callerId: "Caller ID", extension: "Extension", wsUrl: "WebSocket (WSS) URL", outboundProxy: "Outbound Proxy", stun: "STUN", prefix: "Prefix" };
+export const getProfile = (id?: string) => PROVIDERS.find((p) => p.id === id);
+/** SIP login user: explicit username, else the PBX extension. */
+export const sipUser = (c: Pick<ProviderConfig, "username" | "extension">) => c.username?.trim() || c.extension?.trim() || "";
+
 export function validateConfig(c: Partial<ProviderConfig>): string | null {
-  if (!c.host?.trim()) return "SIP Domain / Host is required";
-  if (!/^[a-z0-9.-]+(:\d+)?$/i.test(c.host.trim())) return "SIP host looks invalid";
-  if (!c.username?.trim()) return "SIP Username / DID is required";
-  if (!c.password?.trim()) return "SIP Password is required";
-  if (!c.callerId?.trim()) return "Caller ID is required";
+  const prof = getProfile(c.providerId);
+  const req: FieldKey[] = prof?.required ?? ["host", "username", "password", "callerId"];
+  for (const k of req) if (!String((c as any)[k] ?? "").trim()) return `${prof?.labels?.[k] ?? FIELD_NAME[k]} is required`;
+  if (c.host && !/^[a-z0-9.-]+(:\d+)?$/i.test(c.host.trim())) return "Server / Domain looks invalid";
   if (c.wsUrl && !/^wss:\/\//.test(c.wsUrl)) return "WebSocket URL must start with wss://";
+  const digits = (c.callerId ?? "").replace(/\D/g, "").replace(/^880/, "0");
+  if (prof?.numberPrefix && digits && !digits.startsWith(prof.numberPrefix)) return `${prof.name} caller ID should start with ${prof.numberPrefix}`;
   return null;
 }

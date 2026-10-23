@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Radio, Wifi, Network, Globe, Building2, Server, Smartphone, Settings2, Pencil, Plug } from "lucide-react";
 import { AdminPageHeader } from "@/components/admin/page/AdminPageHeader";
 import { Button } from "@/components/ui/button";
-import { PROVIDERS } from "@/lib/call-providers";
+import { PROVIDERS, KIND_LABEL } from "@/lib/call-providers";
 import { ConnectProviderDialog } from "@/components/admin/calls/ConnectProviderDialog";
 import { useCallStore } from "@/components/admin/calls/useCallStore";
 
@@ -50,7 +50,8 @@ function CallAppsPage() {
                 </span>
               </div>
               <div className="mt-3 font-semibold">{p.name}</div>
-              <div className="text-xs text-muted-foreground">{on ? `${configs[p.id].username} · ${configs[p.id].transport}` : "SIP / VoIP calling"}</div>
+              <div className="text-xs text-muted-foreground">{on ? `${configs[p.id].callerId} · ${configs[p.id].host}` : p.tagline}</div>
+              <span className="mt-2 w-fit rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium">{KIND_LABEL[p.kind]}</span>
               <Button className="mt-4" size="sm" variant={on ? "outline" : "default"} onClick={() => setOpen(p.id)}>
                 {on ? <><Pencil className="mr-1 h-4 w-4" />Edit</> : <><Plug className="mr-1 h-4 w-4" />Connect</>}
               </Button>
