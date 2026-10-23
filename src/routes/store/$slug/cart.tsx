@@ -117,13 +117,18 @@ function CartPage() {
     persist(allOn ? [] : gIds);
   }
 
-  // Drop selected ids that are no longer in the cart.
+  // Drop selected ids that are no longer in the cart; when nothing is
+  // selected, auto-select the first product type so checkout is ready.
   useEffect(() => {
-    if (!selected.length) return;
     const live = selected.filter((id) => ids.includes(id));
-    if (live.length !== selected.length) persist(live);
+    if (live.length) {
+      if (live.length !== selected.length) persist(live);
+      return;
+    }
+    if (!groups.length || !(products as any[]).length) return;
+    persist(groups[0].items.map((i) => i.productId));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ids.join(",")]);
+  }, [ids.join(","), groups.length, (products as any[]).length]);
 
   const selectedItems = items.filter((i) => selected.includes(i.productId));
   const total = selectedItems.reduce((a, i) => a + i.qty * i.price, 0);
@@ -145,6 +150,13 @@ function CartPage() {
 
   return (
     <div className="space-y-4 pb-28">
+      <Link
+        to="/store/$slug"
+        params={{ slug }}
+        className="inline-flex items-center gap-1 pt-3 text-sm font-medium text-muted-foreground hover:text-foreground"
+      >
+        {"\u2190 "}{t("cart.continueShopping")}
+      </Link>
       <div>
         <h1 className="text-xl font-semibold">{t("cart.title")}</h1>
         <p className="mt-1 text-xs text-muted-foreground">
@@ -178,7 +190,7 @@ function CartPage() {
               {gItems.map((i) => {
                 const on = selected.includes(i.productId);
                 return (
-                  <li key={i.productId + (i.variantId ?? "")} className="sf-animate-fade-in flex gap-3 p-3 transition-colors hover:bg-sf-surface/60">
+                  <li key={i.productId + (i.variantId ?? "")} className={`sf-animate-fade-in flex cursor-pointer gap-3 border-l-4 p-3 transition-colors ${on ? "border-primary bg-primary/5" : "border-transparent hover:bg-sf-surface/60"}`} onClick={(e) => { if ((e.target as HTMLElement).closest("button")) return; toggleItem(i.productId); }}>
                     <Box checked={on} onClick={() => toggleItem(i.productId)} className="mt-6" />
                     <div className="h-16 w-16 shrink-0 overflow-hidden rounded-md bg-muted">
                       {i.image && <img src={i.image} alt="" className="h-full w-full object-cover transition-transform duration-500 hover:scale-110" />}
@@ -261,11 +273,11 @@ function Box({
       role="checkbox"
       aria-checked={checked}
       onClick={onClick}
-      className={`sf-press grid h-5 w-5 shrink-0 place-items-center rounded border ${
-        checked ? "border-primary bg-primary text-primary-foreground" : "border-input bg-background"
+      className={`sf-press grid h-6 w-6 shrink-0 place-items-center rounded-md border-2 ${
+        checked ? "border-primary bg-primary text-primary-foreground" : "border-primary/60 bg-background"
       } ${className}`}
     >
-      {checked && <Check className="h-3.5 w-3.5" />}
+      {checked && <Check className="h-4 w-4" />}
     </button>
   );
 }
