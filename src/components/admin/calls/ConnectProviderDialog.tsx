@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { ProviderLogo } from "./ProviderLogo";
 import { Eye, EyeOff, Info, Loader2, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
@@ -84,8 +85,13 @@ export function ConnectProviderDialog({ providerId, lineId, onClose }: { provide
     <Dialog open={!!providerId} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>{lineId ? "Edit" : "Connect"} {p.name}{lineId ? "" : " number"}</DialogTitle>
-          <DialogDescription>{KIND_LABEL[p.kind]} · {p.tagline}</DialogDescription>
+          <div className="flex items-center gap-3">
+            <ProviderLogo id={p.id} name={p.name} className="h-12 w-12" />
+            <div className="text-left">
+              <DialogTitle>{lineId ? "Edit" : "Connect"} {p.name}{lineId ? "" : " number"}</DialogTitle>
+              <DialogDescription>{KIND_LABEL[p.kind]} · {p.tagline}</DialogDescription>
+            </div>
+          </div>
         </DialogHeader>
         <div className="space-y-4">
           <div className="rounded-lg border bg-muted/40 p-3 text-sm">

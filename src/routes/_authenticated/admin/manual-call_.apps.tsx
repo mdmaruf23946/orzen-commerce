@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
-import { Radio, Wifi, Network, Globe, Building2, Server, Smartphone, Settings2, Pencil, Plug } from "lucide-react";
+import { Pencil, Plug } from "lucide-react";
+import { ProviderLogo } from "@/components/admin/calls/ProviderLogo";
 import { AdminPageHeader } from "@/components/admin/page/AdminPageHeader";
 import { Button } from "@/components/ui/button";
 import { PROVIDERS, KIND_LABEL } from "@/lib/call-providers";
@@ -22,7 +23,6 @@ export const Route = createFileRoute("/_authenticated/admin/manual-call_/apps")(
   }),
 });
 
-const ICONS: Record<string, any> = { brilliant: Radio, amberit: Wifi, link3: Network, bdcom: Globe, btcl: Building2, ummah: Server, mytel: Smartphone, custom: Settings2 };
 
 function CallAppsPage() {
   const { configs } = useCallStore();
@@ -40,14 +40,13 @@ function CallAppsPage() {
       )}
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {PROVIDERS.map((p) => {
-          const Icon = ICONS[p.id];
           const mine = all.filter((c) => c.providerId === p.id);
           const on = mine.length > 0;
           const extCount = mine.reduce((n, c) => n + (c.extensions?.length ?? 0), 0);
           return (
             <div key={p.id} className="flex flex-col rounded-xl border bg-card p-5 transition-shadow hover:shadow-md">
               <div className="flex items-start justify-between">
-                <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-primary/10 text-primary"><Icon className="h-5 w-5" /></div>
+                <ProviderLogo id={p.id} name={p.name} className="h-12 w-12" />
                 <span className="flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-xs">
                   <span className={`h-2 w-2 rounded-full ${on ? "bg-primary" : "bg-destructive"}`} />{on ? "Connected" : "Disconnected"}
                 </span>
