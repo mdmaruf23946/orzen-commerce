@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { ProviderLogo } from "./ProviderLogo";
 import { Eye, EyeOff, Info, Loader2, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
