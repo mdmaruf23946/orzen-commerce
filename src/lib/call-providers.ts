@@ -19,16 +19,60 @@ export type ProviderConfig = {
 export type CallLog = { id: string; at: string; number: string; providerId: string; durationSec: number; status: "completed" | "missed" | "failed" | "busy"; recordingUrl?: string; recordingPath?: string };
 export type CallSettings = { record: boolean; hoursOn: boolean; start: string; end: string; days: number[] };
 
-export const PROVIDERS = [
-  { id: "brilliant", name: "Brilliant Connect", host: "sip.brilliant.com.bd" },
-  { id: "amberit", name: "Amber IT", host: "sip.amberit.com.bd" },
-  { id: "link3", name: "Link3", host: "sip.link3.net" },
-  { id: "bdcom", name: "BDCOM Online", host: "sip.bdcom.com" },
-  { id: "btcl", name: "BTCL Alaap", host: "alaap.btcl.com.bd" },
-  { id: "ummah", name: "Ummah Host", host: "sip.ummahhost.com" },
-  { id: "mytel", name: "MyTel", host: "sip.mytel.com.bd" },
-  { id: "custom", name: "Custom SIP", host: "sip.example.com" },
-] as const;
+/** How a provider hands out credentials — decides which form the merchant sees. */
+export type ConnectKind = "ip_trunk" | "cloud_pbx" | "webrtc";
+export type FieldKey = "host" | "username" | "password" | "callerId" | "extension" | "wsUrl" | "outboundProxy" | "stun" | "prefix";
+export type ProviderProfile = {
+  id: string; name: string; host: string; kind: ConnectKind; numberPrefix?: string;
+  tagline: string; guide: string[]; fields: FieldKey[]; required: FieldKey[];
+  labels?: Partial<Record<FieldKey, string>>; placeholders?: Partial<Record<FieldKey, string>>;
+};
+
+const TRUNK: FieldKey[] = ["host", "outboundProxy", "username", "password", "callerId", "wsUrl", "prefix"];
+const PBX: FieldKey[] = ["host", "extension", "username", "password", "callerId", "wsUrl", "stun"];
+const WEB: FieldKey[] = ["wsUrl", "host", "extension", "username", "password", "callerId", "stun"];
+
+export const PROVIDERS: ProviderProfile[] = [
+  { id: "brilliant", name: "Brilliant Connect", host: "sip.brilliant.com.bd", kind: "ip_trunk", numberPrefix: "09638",
+    tagline: "09638 IP Telephony · Business SIP Trunk",
+    guide: ["মোবাইল অ্যাপের OTP login দিয়ে হবে না — Brilliant থেকে Business/Corporate SIP account নিন।", "তারা 09638 pilot number, SIP user ও password দেবে।", "ওয়েবসাইট থেকে কল করতে তাদের কাছে WebRTC (WSS) access চাইতে হবে।"],
+    fields: TRUNK, required: ["host", "username", "password", "callerId"],
+    labels: { username: "SIP Auth User / Pilot Number", callerId: "09638 Pilot Number" }, placeholders: { username: "09638XXXXXX", callerId: "09638XXXXXX" } },
+  { id: "btcl", name: "BTCL Alaap", host: "alaap.btcl.com.bd", kind: "ip_trunk", numberPrefix: "09666",
+    tagline: "09666 · Corporate IP PABX",
+    guide: ["Alaap অ্যাপের ব্যক্তিগত account এখানে চলবে না।", "BTCL অফিস থেকে Corporate IP Telephony/PABX চালু করুন — 09666 number ও SIP password দেবে।", "WebRTC (WSS) সুবিধা আছে কিনা BTCL-কে জিজ্ঞেস করুন।"],
+    fields: TRUNK, required: ["host", "username", "password", "callerId"],
+    labels: { host: "PABX Server IP / Domain", username: "Pilot Number", callerId: "09666 Display Number" }, placeholders: { username: "09666XXXXXX", callerId: "09666XXXXXX" } },
+  { id: "amberit", name: "Amber IT", host: "sip.amberit.com.bd", kind: "cloud_pbx", numberPrefix: "09611",
+    tagline: "09611 · Cloud PBX extension",
+    guide: ["Amber IT Cloud PBX panel থেকে একটি extension (যেমন 101) তৈরি করুন।", "Extension number, password ও PBX domain কপি করুন।", "ব্রাউজার কলের জন্য WebRTC/WSS চালু রাখতে বলুন।"],
+    fields: PBX, required: ["host", "extension", "password", "callerId"],
+    labels: { host: "PBX Domain / Realm", username: "Auth ID (না থাকলে খালি রাখুন)", callerId: "09611 Caller ID" }, placeholders: { callerId: "09611XXXXXX" } },
+  { id: "link3", name: "Link3", host: "sip.link3.net", kind: "ip_trunk", numberPrefix: "09678",
+    tagline: "09678 · SIP Trunk with Registrar/Proxy",
+    guide: ["Link3 IP Telephony service থেকে SIP Trunk নিন।", "Registrar host, Outbound proxy (যদি দেয়), auth user ও secret লিখুন।", "ব্রাউজার কলের জন্য WSS URL লাগবে।"],
+    fields: TRUNK, required: ["host", "username", "password", "callerId"],
+    labels: { host: "Registrar Host", password: "Auth Secret", callerId: "09678 Caller ID" }, placeholders: { callerId: "09678XXXXXX" } },
+  { id: "bdcom", name: "BDCOM Online", host: "sip.bdcom.com", kind: "ip_trunk", numberPrefix: "09669",
+    tagline: "09669 · IP Telephony gateway",
+    guide: ["BDCOM থেকে Business IP Telephony account নিন।", "Gateway domain, account ID ও password লিখুন।", "WSS সুবিধা নিশ্চিত করুন।"],
+    fields: TRUNK, required: ["host", "username", "password", "callerId"],
+    labels: { host: "Gateway Domain", username: "Account ID", callerId: "09669 Caller ID" }, placeholders: { callerId: "09669XXXXXX" } },
+  { id: "ummah", name: "Ummah Host", host: "sip.ummahhost.com", kind: "cloud_pbx",
+    tagline: "Hosted Cloud PBX",
+    guide: ["Ummah Host PBX panel থেকে extension তৈরি করুন।", "Extension, secret, domain ও WSS URL কপি করুন।"],
+    fields: PBX, required: ["host", "extension", "password", "callerId"] },
+  { id: "mytel", name: "MyTel", host: "sip.mytel.com.bd", kind: "cloud_pbx",
+    tagline: "Business PBX extension",
+    guide: ["MyTel business PBX/SIP account থেকে extension ও password নিন।", "Domain ও WSS URL provider থেকে নিশ্চিত করুন।"],
+    fields: PBX, required: ["host", "extension", "password", "callerId"] },
+  { id: "custom", name: "Custom WebRTC / PBX", host: "pbx.example.com", kind: "webrtc",
+    tagline: "Asterisk, FreePBX, FusionPBX ইত্যাদি",
+    guide: ["নিজের PBX-এ WebRTC চালু করা extension দরকার।", "WSS URL (wss://...:8089/ws), domain, extension ও secret লিখুন।"],
+    fields: WEB, required: ["wsUrl", "host", "extension", "password"] },
+];
+
+export const KIND_LABEL: Record<ConnectKind, string> = { ip_trunk: "SIP Trunk", cloud_pbx: "Cloud PBX", webrtc: "WebRTC" };
 
 const K = { cfg: "orzen.call.providers", log: "orzen.call.history", set: "orzen.call.settings" };
 const read = <T,>(k: string, d: T): T => {
