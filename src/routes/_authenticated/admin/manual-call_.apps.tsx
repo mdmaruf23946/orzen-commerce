@@ -1,20 +1,20 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
-import { useServerFn } from "@tanstack/react-start";
-import { PhoneCall, CheckCircle2, Plug } from "lucide-react";
+import { useState } from "react";
+import { Radio, Wifi, Network, Globe, Building2, Server, Smartphone, Settings2, Pencil, Plug } from "lucide-react";
 import { AdminPageHeader } from "@/components/admin/page/AdminPageHeader";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { listManualLines } from "@/lib/manual-call.functions";
+import { PROVIDERS } from "@/lib/call-providers";
+import { ConnectProviderDialog } from "@/components/admin/calls/ConnectProviderDialog";
+import { useCallStore } from "@/components/admin/calls/useCallStore";
 
 export const Route = createFileRoute("/_authenticated/admin/manual-call_/apps")({
   component: CallAppsPage,
   head: () => ({
     meta: [
       { title: "Call Apps — ORZEN Merchant Panel" },
-      { name: "description", content: "Connect one or more call providers; all calls appear in one Calls Hub." },
+      { name: "description", content: "Connect Bangladeshi VoIP providers; all calls appear in one Calls Hub." },
       { property: "og:title", content: "Call Apps — ORZEN Merchant Panel" },
-      { property: "og:description", content: "Connect one or more call providers; all calls appear in one Calls Hub." },
+      { property: "og:description", content: "Connect Bangladeshi VoIP providers; all calls appear in one Calls Hub." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "robots", content: "noindex" },
@@ -22,52 +22,43 @@ export const Route = createFileRoute("/_authenticated/admin/manual-call_/apps")(
   }),
 });
 
+const ICONS: Record<string, any> = { brilliant: Radio, amberit: Wifi, link3: Network, bdcom: Globe, btcl: Building2, ummah: Server, mytel: Smartphone, custom: Settings2 };
+
 function CallAppsPage() {
-  const fn = useServerFn(listManualLines);
-  const q = useQuery({ queryKey: ["manual-lines"], queryFn: () => fn() });
-  const gateways: any[] = (q.data as any)?.gateways ?? [];
-  const lines: any[] = (q.data as any)?.lines ?? [];
+  const { configs } = useCallStore();
+  const [open, setOpen] = useState<string | null>(null);
+  const connected = Object.keys(configs).length;
   return (
     <div className="space-y-4">
-      <AdminPageHeader title="Call Apps" description="Connect your call providers here. Every connected provider works together in the single Calls Hub." />
-      {q.isLoading ? (
-        <p className="text-sm text-muted-foreground">Loading…</p>
-      ) : !gateways.length ? (
-        <p className="rounded-xl border bg-card p-6 text-sm text-muted-foreground">No call provider is available yet.</p>
-      ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {gateways.map((g) => {
-            const count = lines.filter((l) => l.gateway_id === g.id).length;
-            return (
-              <div key={g.id} className="flex flex-col rounded-xl border bg-card p-5">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-11 w-11 items-center justify-center rounded-full bg-primary/10 text-primary">
-                    <PhoneCall className="h-5 w-5" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="truncate font-semibold">{g.name}</div>
-                    <div className="text-xs text-muted-foreground">Manual calling</div>
-                  </div>
-                  {count > 0 && (
-                    <Badge className="gap-1"><CheckCircle2 className="h-3 w-3" />{count} line{count > 1 ? "s" : ""}</Badge>
-                  )}
-                </div>
-                {g.help_text && <p className="mt-3 line-clamp-3 text-sm text-muted-foreground">{g.help_text}</p>}
-                <div className="mt-4 flex gap-2 pt-1">
-                  <Button asChild size="sm" variant={count ? "outline" : "default"}>
-                    <Link to="/admin/manual-call" search={{ tab: "setup" }}><Plug className="mr-1 h-4 w-4" />{count ? "Manage" : "Connect"}</Link>
-                  </Button>
-                  {count > 0 && (
-                    <Button asChild size="sm">
-                      <Link to="/admin/manual-call" search={{ tab: "dialer" }}>Open Calls Hub</Link>
-                    </Button>
-                  )}
-                </div>
-              </div>
-            );
-          })}
+      <AdminPageHeader title="Call Apps" description="Connect your Bangladeshi VoIP provider. Every connected provider works together in the single Calls Hub." />
+      {connected > 0 && (
+        <div className="flex items-center justify-between rounded-xl border bg-card p-3 text-sm">
+          <span>{connected} provider{connected > 1 ? "s" : ""} connected</span>
+          <Button asChild size="sm"><Link to="/admin/manual-call">Open Calls Hub</Link></Button>
         </div>
       )}
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {PROVIDERS.map((p) => {
+          const Icon = ICONS[p.id];
+          const on = !!configs[p.id];
+          return (
+            <div key={p.id} className="flex flex-col rounded-xl border bg-card p-5 transition-shadow hover:shadow-md">
+              <div className="flex items-start justify-between">
+                <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-primary/10 text-primary"><Icon className="h-5 w-5" /></div>
+                <span className="flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-xs">
+                  <span className={`h-2 w-2 rounded-full ${on ? "bg-success" : "bg-destructive"}`} />{on ? "Connected" : "Disconnected"}
+                </span>
+              </div>
+              <div className="mt-3 font-semibold">{p.name}</div>
+              <div className="text-xs text-muted-foreground">{on ? `${configs[p.id].username} · ${configs[p.id].transport}` : "SIP / VoIP calling"}</div>
+              <Button className="mt-4" size="sm" variant={on ? "outline" : "default"} onClick={() => setOpen(p.id)}>
+                {on ? <><Pencil className="mr-1 h-4 w-4" />Edit</> : <><Plug className="mr-1 h-4 w-4" />Connect</>}
+              </Button>
+            </div>
+          );
+        })}
+      </div>
+      <ConnectProviderDialog providerId={open} onClose={() => setOpen(null)} />
     </div>
   );
 }
