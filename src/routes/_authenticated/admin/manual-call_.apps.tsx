@@ -34,7 +34,7 @@ function CallAppsPage() {
       {connected > 0 && (
         <div className="flex items-center justify-between rounded-xl border bg-card p-3 text-sm">
           <span>{connected} provider{connected > 1 ? "s" : ""} connected</span>
-          <Button asChild size="sm"><Link to="/admin/manual-call">Open Calls Hub</Link></Button>
+          <Button asChild size="sm"><Link to="/admin/manual-call" search={{ tab: undefined }}>Open Calls Hub</Link></Button>
         </div>
       )}
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
