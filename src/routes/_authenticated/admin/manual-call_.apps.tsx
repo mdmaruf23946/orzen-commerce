@@ -46,7 +46,7 @@ function CallAppsPage() {
               <div className="flex items-start justify-between">
                 <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-primary/10 text-primary"><Icon className="h-5 w-5" /></div>
                 <span className="flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-xs">
-                  <span className={`h-2 w-2 rounded-full ${on ? "bg-success" : "bg-destructive"}`} />{on ? "Connected" : "Disconnected"}
+                  <span className={`h-2 w-2 rounded-full ${on ? "bg-primary" : "bg-destructive"}`} />{on ? "Connected" : "Disconnected"}
                 </span>
               </div>
               <div className="mt-3 font-semibold">{p.name}</div>
