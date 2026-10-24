@@ -158,61 +158,14 @@ function Detail() {
         </TabsContent>
 
         <TabsContent value="config" className="space-y-4 pt-4">
+          <IntegrationKeysGuide
+            webhookUrl={webhookUrl} apiUrl={apiUrl} embedUrl={embedUrl} storeUrl={base}
+            newSecret={newSecret} newKey={newKey}
+            hasSecret={!!data.credentials?.has_webhook_secret}
+            keyLast4={data.credentials?.api_key_last4 ?? null}
+            onRotateSecret={rotateSecret} onRotateKey={rotateKey}
+          />
           <SyncSettingsCard id={id} conn={conn} />
-          <div className="rounded-xl border bg-card p-4">
-            <div className="mb-3 text-sm font-semibold">Endpoints</div>
-            <div className="space-y-2">
-              {shownRows.map((row) => (
-                <div key={row.label}>
-                  <Label className="text-xs">{row.label}</Label>
-                  <div className="flex gap-2">
-                    <Input readOnly value={row.value} className="font-mono text-xs" />
-                    <Button variant="outline" size="icon" onClick={() => copy(row.value)}><Copy className="h-4 w-4" /></Button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="rounded-xl border bg-card p-4">
-            <div className="mb-3 flex items-center justify-between">
-              <div className="text-sm font-semibold">Webhook secret</div>
-              <Button variant="outline" size="sm" onClick={rotateSecret}><RefreshCw className="mr-1 h-3 w-3" /> Regenerate</Button>
-            </div>
-            <div className="text-xs text-muted-foreground">
-              {data.credentials?.has_webhook_secret ? "A secret is on file. It is never shown again after creation." : "No secret set — regenerate to create one."}
-            </div>
-            {newSecret && (
-              <div className="mt-3">
-                <Label className="text-xs">New webhook secret (copy now)</Label>
-                <div className="flex gap-2">
-                  <Input readOnly value={newSecret} className="font-mono text-xs" />
-                  <Button variant="outline" size="icon" onClick={() => copy(newSecret)}><Copy className="h-4 w-4" /></Button>
-                </div>
-              </div>
-            )}
-          </div>
-
-          <div className="rounded-xl border bg-card p-4">
-            <div className="mb-3 flex items-center justify-between">
-              <div>
-                <div className="text-sm font-semibold">API key</div>
-                <div className="text-xs text-muted-foreground">
-                  {data.credentials?.api_key_last4 ? `Ending in ${data.credentials.api_key_last4}` : "No key set"}
-                </div>
-              </div>
-              <Button variant="outline" size="sm" onClick={rotateKey}><RefreshCw className="mr-1 h-3 w-3" /> Regenerate</Button>
-            </div>
-            {newKey && (
-              <div className="mt-3">
-                <Label className="text-xs">New API key (copy now)</Label>
-                <div className="flex gap-2">
-                  <Input readOnly value={newKey} className="font-mono text-xs" />
-                  <Button variant="outline" size="icon" onClick={() => copy(newKey)}><Copy className="h-4 w-4" /></Button>
-                </div>
-              </div>
-            )}
-          </div>
         </TabsContent>
 
         <TabsContent value="logs" className="pt-4">
