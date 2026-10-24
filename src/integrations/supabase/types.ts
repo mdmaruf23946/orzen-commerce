@@ -3637,6 +3637,189 @@ export type Database = {
           },
         ]
       }
+      external_site_categories: {
+        Row: {
+          connection_id: string
+          external_id: string
+          id: string
+          image_url: string | null
+          name: string
+          parent_external_id: string | null
+          store_id: string
+          updated_at: string
+        }
+        Insert: {
+          connection_id: string
+          external_id: string
+          id?: string
+          image_url?: string | null
+          name: string
+          parent_external_id?: string | null
+          store_id: string
+          updated_at?: string
+        }
+        Update: {
+          connection_id?: string
+          external_id?: string
+          id?: string
+          image_url?: string | null
+          name?: string
+          parent_external_id?: string | null
+          store_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "external_site_categories_connection_id_fkey"
+            columns: ["connection_id"]
+            isOneToOne: false
+            referencedRelation: "landing_page_connections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "external_site_categories_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      external_site_products: {
+        Row: {
+          category_external_id: string | null
+          connection_id: string
+          description: string | null
+          external_id: string
+          id: string
+          image_url: string | null
+          name: string
+          price: number
+          product_url: string | null
+          sale_price: number | null
+          sku: string | null
+          status: string
+          stock: number | null
+          store_id: string
+          updated_at: string
+          variants: Json
+        }
+        Insert: {
+          category_external_id?: string | null
+          connection_id: string
+          description?: string | null
+          external_id: string
+          id?: string
+          image_url?: string | null
+          name: string
+          price?: number
+          product_url?: string | null
+          sale_price?: number | null
+          sku?: string | null
+          status?: string
+          stock?: number | null
+          store_id: string
+          updated_at?: string
+          variants?: Json
+        }
+        Update: {
+          category_external_id?: string | null
+          connection_id?: string
+          description?: string | null
+          external_id?: string
+          id?: string
+          image_url?: string | null
+          name?: string
+          price?: number
+          product_url?: string | null
+          sale_price?: number | null
+          sku?: string | null
+          status?: string
+          stock?: number | null
+          store_id?: string
+          updated_at?: string
+          variants?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "external_site_products_connection_id_fkey"
+            columns: ["connection_id"]
+            isOneToOne: false
+            referencedRelation: "landing_page_connections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "external_site_products_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      external_site_sync_outbox: {
+        Row: {
+          attempts: number
+          connection_id: string
+          created_at: string
+          event: string
+          id: string
+          last_error: string | null
+          order_id: string
+          payload: Json
+          response_status: number | null
+          run_at: string
+          sent_at: string | null
+          status: string
+          store_id: string
+        }
+        Insert: {
+          attempts?: number
+          connection_id: string
+          created_at?: string
+          event: string
+          id?: string
+          last_error?: string | null
+          order_id: string
+          payload: Json
+          response_status?: number | null
+          run_at?: string
+          sent_at?: string | null
+          status?: string
+          store_id: string
+        }
+        Update: {
+          attempts?: number
+          connection_id?: string
+          created_at?: string
+          event?: string
+          id?: string
+          last_error?: string | null
+          order_id?: string
+          payload?: Json
+          response_status?: number | null
+          run_at?: string
+          sent_at?: string | null
+          status?: string
+          store_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "external_site_sync_outbox_connection_id_fkey"
+            columns: ["connection_id"]
+            isOneToOne: false
+            referencedRelation: "landing_page_connections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "external_site_sync_outbox_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       facebook_ai_settings: {
         Row: {
           allow_keywords: string[]
@@ -4303,13 +4486,17 @@ export type Database = {
           failed_count: number
           id: string
           landing_page_name: string | null
+          last_catalog_sync_at: string | null
           last_error: string | null
           last_error_at: string | null
           last_order_at: string | null
           method: string
           name: string
           orders_received: number
+          outbound_webhook_url: string | null
           platform: string
+          site_info: Json
+          site_type: string
           status: string
           store_id: string
           updated_at: string
@@ -4322,13 +4509,17 @@ export type Database = {
           failed_count?: number
           id?: string
           landing_page_name?: string | null
+          last_catalog_sync_at?: string | null
           last_error?: string | null
           last_error_at?: string | null
           last_order_at?: string | null
           method?: string
           name: string
           orders_received?: number
+          outbound_webhook_url?: string | null
           platform?: string
+          site_info?: Json
+          site_type?: string
           status?: string
           store_id: string
           updated_at?: string
@@ -4341,13 +4532,17 @@ export type Database = {
           failed_count?: number
           id?: string
           landing_page_name?: string | null
+          last_catalog_sync_at?: string | null
           last_error?: string | null
           last_error_at?: string | null
           last_order_at?: string | null
           method?: string
           name?: string
           orders_received?: number
+          outbound_webhook_url?: string | null
           platform?: string
+          site_info?: Json
+          site_type?: string
           status?: string
           store_id?: string
           updated_at?: string
