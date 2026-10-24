@@ -25,7 +25,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 export const Route = createFileRoute("/_authenticated/admin/landing-pages/")({
   head: () => ({
     meta: [
-      { title: "Landing Page Integrations — ORZEN Merchant Panel" },
+      { title: "Landing Page & Website Integrations — ORZEN Merchant Panel" },
       { name: "description", content: "Connect external landing pages and receive orders automatically." },
       { property: "og:title", content: "Landing Page Integrations — ORZEN Merchant Panel" },
       { property: "og:description", content: "Connect external landing pages and receive orders automatically." },
@@ -209,6 +209,7 @@ function ConnectWizard({
   const [description, setDescription] = useState("");
   const [platform, setPlatform] = useState<(typeof PLATFORMS)[number]>("custom");
   const [method, setMethod] = useState<"webhook" | "api" | "embed">("webhook");
+  const [siteType, setSiteType] = useState<"landing_page" | "website">("landing_page");
   const [saving, setSaving] = useState(false);
 
   async function submit() {
@@ -216,7 +217,7 @@ function ConnectWizard({
     setSaving(true);
     try {
       const r = await create({
-        data: { name: name.trim(), url: url.trim() || undefined, description: description.trim() || undefined, platform, method },
+        data: { name: name.trim(), url: url.trim() || undefined, description: description.trim() || undefined, platform, method, site_type: siteType },
       });
       onOpenChange(false);
       setName(""); setUrl(""); setDescription(""); setPlatform("custom"); setMethod("webhook");
@@ -230,16 +231,25 @@ function ConnectWizard({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle>Connect landing page</DialogTitle>
+          <DialogTitle>Connect landing page or website</DialogTitle>
           <DialogDescription>Give the connection a name and pick a platform and method.</DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
+          <div className="grid grid-cols-2 gap-2">
+            {([["landing_page", "Landing page", "One or few products"], ["website", "E-commerce website", "Many categories & products"]] as const).map(([v, t, d]) => (
+              <button key={v} type="button" onClick={() => setSiteType(v)}
+                className={`rounded-lg border p-3 text-left text-sm ${siteType === v ? "border-primary ring-2 ring-primary/30" : ""}`}>
+                <div className="font-semibold">{t}</div>
+                <div className="text-xs text-muted-foreground">{d}</div>
+              </button>
+            ))}
+          </div>
           <div>
             <Label>Integration name</Label>
             <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. HY300 Projector Landing Page" />
           </div>
           <div>
-            <Label>Landing page URL</Label>
+            <Label>{siteType === "website" ? "Website URL" : "Landing page URL"}</Label>
             <Input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://example.com/hy300" />
           </div>
           <div>

@@ -245,7 +245,7 @@ const menuGroups: NavGroupDef[] = [
         badgeKey: "landing_pages",
         children: [
           { to: "/admin/landing-builder", label: "Landing Page Builder", icon: LayoutTemplate },
-          { to: "/admin/landing-pages", label: "Landing Page Integrations", icon: Globe, badgeKey: "landing_pages" },
+          { to: "/admin/landing-pages", label: "Connected Websites & Pages", icon: Globe, badgeKey: "landing_pages" },
         ],
       },
       {
