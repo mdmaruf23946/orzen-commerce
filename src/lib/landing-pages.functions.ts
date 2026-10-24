@@ -6,6 +6,7 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 const idSchema = z.string().uuid();
+import { assertSafeOutboundUrl } from "@/lib/external-sites";
 
 async function assertOwnedConnection(
   supabase: any,
@@ -123,6 +124,8 @@ export const createLandingPageConnection = createServerFn({ method: "POST" })
           .default("custom"),
         method: z.enum(["webhook", "api", "embed"]).default("webhook"),
         default_product_id: idSchema.optional().nullable(),
+        site_type: z.enum(["landing_page", "website"]).default("landing_page"),
+        outbound_webhook_url: z.string().trim().max(500).nullable().optional(),
       })
       .parse(d),
   )
@@ -142,6 +145,8 @@ export const createLandingPageConnection = createServerFn({ method: "POST" })
         platform: data.platform,
         method: data.method,
         default_product_id: data.default_product_id ?? null,
+        site_type: data.site_type,
+        outbound_webhook_url: data.outbound_webhook_url ? assertSafeOutboundUrl(data.outbound_webhook_url) : null,
         status: "active",
       })
       .select("id")
@@ -179,12 +184,17 @@ export const updateLandingPageConnection = createServerFn({ method: "POST" })
         default_product_id: idSchema.nullable().optional(),
         status: z.enum(["active", "paused"]).optional(),
         method: z.enum(["webhook", "api", "embed"]).optional(),
+        site_type: z.enum(["landing_page", "website"]).optional(),
+        outbound_webhook_url: z.string().trim().max(500).nullable().optional(),
       })
       .parse(d),
   )
   .handler(async ({ data, context }) => {
     await assertOwnedConnection(context.supabase, data.id);
     const { id, ...rest } = data;
+    if (rest.outbound_webhook_url !== undefined) {
+      rest.outbound_webhook_url = rest.outbound_webhook_url ? assertSafeOutboundUrl(rest.outbound_webhook_url) : null;
+    }
     const { error } = await context.supabase
       .from("landing_page_connections")
       .update(rest)
