@@ -463,7 +463,7 @@ function BillingPage() {
                     { key: "call", label: "AI Call Center", on: any("call_center", "ai_call_center") },
                     { key: "builder", label: "AI Product Builder", on: any("ai_product_builder") },
                     { key: "lp_create", label: "Landing Page Create", on: any("landing_page_create") || (f.landing_page_create === undefined && !!f.landing_pages) },
-                    { key: "lp_connect", label: "Landing Page Integration", on: any("landing_page_connect") || (f.landing_page_connect === undefined && !!f.landing_pages) },
+                    { key: "lp_connect", label: "Website Integration", on: any("landing_page_connect") || (f.landing_page_connect === undefined && !!f.landing_pages) },
                     { key: "courier", label: "Courier Integration", on: any("courier") },
                     { key: "fraud", label: "Fraud Checker & Duplicate Protection", on: any("fraud_checker", "duplicate_protection") },
                     { key: "pixel", label: "Facebook Pixel & Tracking", on: any("pixel") },
