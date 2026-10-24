@@ -283,6 +283,11 @@ export async function intakeLandingPageOrder(input: IntakeInput): Promise<Intake
     }
   }
 
+  // 5a. Multi-product website orders: { items: [{ product_id|external_product_id|sku, qty, price?, name?, variant? }] }
+  if (Array.isArray(parsed.items) && parsed.items.length) {
+    return intakeMultiItemOrder(sb, conn, input, parsed, canonical, rHash, started);
+  }
+
   // 5. Resolve product: explicit map row → default_product_id → fail
   let productId: string | null = null;
   let productName: string | null = null;
