@@ -101,7 +101,8 @@ export function downloadSampleXlsx() {
 
 export function writeCsv(header: string[], rows: Record<string, any>[], fileName: string) {
   const esc = (v: any) => {
-    const s = v == null ? "" : String(v);
+    let s = v == null ? "" : String(v);
+    if (/^[=+\-@\t\r]/.test(s)) s = "'" + s;
     return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
   };
   const lines = [header.join(",")];
@@ -111,7 +112,8 @@ export function writeCsv(header: string[], rows: Record<string, any>[], fileName
 }
 
 export function writeXlsx(header: string[], rows: Record<string, any>[], fileName: string) {
-  const aoa = [header, ...rows.map((r) => header.map((h) => r[h] ?? ""))];
+  const safe = (v: any) => (typeof v === "string" && /^[=+\-@\t\r]/.test(v) ? "'" + v : v ?? "");
+  const aoa = [header, ...rows.map((r) => header.map((h) => safe(r[h])))];
   const ws = XLSX.utils.aoa_to_sheet(aoa);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "Products");
