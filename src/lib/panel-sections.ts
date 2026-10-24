@@ -62,7 +62,7 @@ export const PANEL_SECTIONS: PanelSection[] = [
   { key: "couriers", label: "Courier Apps", group: "Orders & Delivery", paths: ["/admin/couriers"], feature: "courier" },
   { key: "parcels", label: "Courier Parcels", group: "Orders & Delivery", paths: ["/admin/parcels"], feature: "courier" },
   { key: "landing_builder", label: "Landing Page Builder", group: "Marketing & Sales", paths: ["/admin/landing-builder"], feature: "landing_page_create" },
-  { key: "landing_pages", label: "Landing Page Integrations", group: "Marketing & Sales", paths: ["/admin/landing-pages"], feature: "landing_page_connect" },
+  { key: "landing_pages", label: "Website Integration", group: "Marketing & Sales", paths: ["/admin/landing-pages"], feature: "landing_page_connect" },
 
   
   { key: "pages", label: "Pages & Legal Content", group: "Online Storefront", paths: ["/admin/pages", "/admin/legal"], feature: "custom_pages" },

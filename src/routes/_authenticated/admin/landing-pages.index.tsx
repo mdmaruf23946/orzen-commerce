@@ -25,9 +25,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 export const Route = createFileRoute("/_authenticated/admin/landing-pages/")({
   head: () => ({
     meta: [
-      { title: "Landing Page & Website Integrations — ORZEN Merchant Panel" },
+      { title: "Website Integration — ORZEN Merchant Panel" },
       { name: "description", content: "Connect external landing pages and receive orders automatically." },
-      { property: "og:title", content: "Landing Page Integrations — ORZEN Merchant Panel" },
+      { property: "og:title", content: "Website Integration — ORZEN Merchant Panel" },
       { property: "og:description", content: "Connect external landing pages and receive orders automatically." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -114,7 +114,7 @@ function LandingPagesIndex() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold">Landing Page Integrations</h1>
+          <h1 className="text-2xl font-semibold">Website Integration</h1>
           <p className="text-sm text-muted-foreground">
             Connect external landing pages and automatically receive their orders in your Merchant Panel.
           </p>
