@@ -1,0 +1,1 @@
+GRANT EXECUTE ON FUNCTION public.tg_external_site_order_sync() TO service_role;
