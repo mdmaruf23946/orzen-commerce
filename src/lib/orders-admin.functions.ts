@@ -30,6 +30,7 @@ export type AdminOrderRow = {
   payment_status: string;
   payment_gateway_name: string | null;
   source: string;
+  source_site?: { name: string; site_type: string } | null;
   notes: string | null;
   created_at: string;
   allow_duplicate: boolean;
@@ -83,11 +84,12 @@ export const listAdminOrders = createServerFn({ method: "GET" })
     const { supabase, userId } = context;
     const sid = await getOwnedStoreId(supabase, userId);
     if (!sid) return [];
+    const connsP = supabase.from("landing_page_connections").select("id,name,site_type").eq("store_id", sid);
 
     let ordersQ = supabase
       .from("orders")
       .select(
-        "id,invoice_no,customer_name,phone,email,address,area,status,payment_method,payment_status,payment_gateway_name,source,notes,created_at,allow_duplicate,subtotal,delivery_amount,discount_amount,courier_name,courier_code,courier_status,courier_tracking_id,order_type,confirmation_status,confirmed_at,fulfillment_meta,voice_verification,followup_status",
+        "id,invoice_no,customer_name,phone,email,address,area,status,payment_method,payment_status,payment_gateway_name,source,notes,created_at,allow_duplicate,subtotal,delivery_amount,discount_amount,courier_name,courier_code,courier_status,courier_tracking_id,order_type,confirmation_status,confirmed_at,fulfillment_meta,voice_verification,followup_status,landing_page_connection_id",
       )
       .eq("store_id", sid);
     if (input?.product_type) {
@@ -174,6 +176,7 @@ export const listAdminOrders = createServerFn({ method: "GET" })
     const phoneCount: Record<string, number> = {};
     for (const o of list) phoneCount[(o as any).phone] = (phoneCount[(o as any).phone] ?? 0) + 1;
 
+    const connMap = new Map<string, { name: string; site_type: string }>(((await connsP).data ?? []).map((c: any) => [c.id, c]));
     return list.map((raw: any) => {
       const its = byOrder[raw.id] ?? [];
       const subtotal = Number(raw.subtotal ?? 0);
@@ -208,6 +211,7 @@ export const listAdminOrders = createServerFn({ method: "GET" })
         payment_status: raw.payment_status,
         payment_gateway_name: raw.payment_gateway_name,
         source: raw.source,
+        source_site: raw.landing_page_connection_id ? connMap.get(raw.landing_page_connection_id) ?? null : null,
         notes: raw.notes,
         created_at: raw.created_at,
         allow_duplicate: !!raw.allow_duplicate,

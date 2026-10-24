@@ -13,6 +13,7 @@ import { COURIERS } from "@/components/admin/couriers/providers";
 import { STATUS_LABEL, STATUS_TONE, type ParcelStatus } from "@/lib/couriers/status";
 import type { AdminOrderRow } from "@/lib/orders-admin.functions";
 import { getCachedFraudCheck } from "@/lib/fraud.functions";
+import { orderSourceInfo } from "@/lib/external-sites";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
   DropdownMenuLabel,
@@ -99,6 +100,15 @@ export function PaymentBadge({ order }: { order: AdminOrderRow }) {
       ? "bg-emerald-500/12 text-emerald-700 dark:text-emerald-400"
       : "bg-amber-500/12 text-amber-700 dark:text-amber-400";
   return <span className={`rounded-md px-2 py-0.5 text-[10px] font-semibold uppercase ${tone}`}>{label}</span>;
+}
+
+export function SourceBadge({ order }: { order: AdminOrderRow }) {
+  const info = orderSourceInfo(order.source, order.source_site?.site_type, order.source_site?.name);
+  return (
+    <span title={`Order from ${info.label}`} className={`max-w-[160px] truncate rounded-md px-2 py-0.5 text-[10px] font-semibold ${info.tone}`}>
+      {info.label}
+    </span>
+  );
 }
 
 export function CourierBadge({ order }: { order: AdminOrderRow }) {
@@ -306,6 +316,7 @@ export function OrderCard({ order, onView, onFraud, onStatus, selected, onSelect
             <ParcelBadge status={order.parcel?.status} />
           </div>
           <PaymentBadge order={order} />
+          <SourceBadge order={order} />
         </div>
 
         <div className="text-right">
@@ -411,6 +422,7 @@ export function OrderCard({ order, onView, onFraud, onStatus, selected, onSelect
             </div>
           )}
           <PaymentBadge order={order} />
+          <SourceBadge order={order} />
           <StatusBadge status={order.status} />
           {order.followup_status && (
             <span className="rounded-md bg-amber-500/12 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700 dark:text-amber-400">{ORDER_LABEL[order.followup_status]}</span>
