@@ -659,7 +659,7 @@ function AdminLayout() {
               <StoreBrandMark iconOnly />
             )}
             {(!collapsed || open) && storeName && (
-              <div className="ml-auto shrink-0">
+              <div className="ml-auto hidden shrink-0 md:block">
                 <StoreSwitcher
                   compact
                   currentStoreId={access.storeId ?? (myStore as any)?.id ?? null}
@@ -672,17 +672,17 @@ function AdminLayout() {
             )}
             <button
               onClick={toggleDark}
-              className="grid h-9 w-9 shrink-0 place-items-center rounded-full border hover:bg-muted md:hidden"
+              className="ml-auto grid h-9 w-9 shrink-0 place-items-center rounded-full border hover:bg-muted md:ml-0 md:hidden"
               aria-label="Toggle theme"
             >
               {dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </button>
           </div>
 
-          {/* Search */}
+          {/* Search (+ store switcher beside it on mobile) */}
           {(!collapsed || open) && (
-            <div className="border-b p-3">
-              <div className="relative">
+            <div className="flex items-center gap-2 border-b p-3">
+              <div className="relative min-w-0 flex-1">
                 <SearchIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <input
                   value={search}
@@ -691,6 +691,18 @@ function AdminLayout() {
                   className="w-full rounded-lg border bg-background py-2 pl-9 pr-3 text-sm outline-none placeholder:text-muted-foreground focus:border-primary/50 focus:ring-2 focus:ring-primary/20"
                 />
               </div>
+              {storeName && (
+                <div className="shrink-0 md:hidden">
+                  <StoreSwitcher
+                    compact
+                    currentStoreId={access.storeId ?? (myStore as any)?.id ?? null}
+                    storeName={storeName}
+                    storeIcon={storeIcon}
+                    color={(myStore as any)?.primary_color}
+                    roleLabel={access.isOwner ? "Owner" : (DELEGATE_ROLES.find((r) => r.value === access.staff?.role)?.label ?? access.staff?.role ?? "Team member")}
+                  />
+                </div>
+              )}
             </div>
           )}
 
