@@ -615,7 +615,7 @@ function AdminLayout() {
 
   return (
     <UpgradeProvider>
-    <ProductTypeScopeProvider>
+    <ProductTypeScopeProvider physicalOnly={!betaTester}>
     <div className="min-h-screen bg-muted/40">
       {/* Mobile top bar */}
       <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b bg-background/95 px-4 backdrop-blur md:hidden">
