@@ -1,5 +1,5 @@
 // Product-type aware order list for the customer account.
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -132,6 +132,11 @@ export function OrdersPanel({ slug, token }: { slug: string; token: string }) {
   });
 
   const rows = useMemo(() => (data ?? []) as any[], [data]);
+  // Type filter only appears when this customer actually has non-physical orders.
+  const [hasOtherTypes, setHasOtherTypes] = useState(false);
+  useEffect(() => {
+    if (rows.some((o) => o.order_type && o.order_type !== "physical")) setHasOtherTypes(true);
+  }, [rows]);
 
   async function doCancel() {
     if (!cancelId) return;
@@ -152,6 +157,7 @@ export function OrdersPanel({ slug, token }: { slug: string; token: string }) {
     <div className="space-y-3">
       <OrderTracker slug={slug} compact showDetailLink />
 
+      {hasOtherTypes && (
       <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1">
         {TYPE_TABS.map((t) => (
           <button
@@ -168,6 +174,7 @@ export function OrdersPanel({ slug, token }: { slug: string; token: string }) {
           </button>
         ))}
       </div>
+      )}
 
       <div className="flex flex-wrap items-center gap-2">
         <div className="relative min-w-[180px] flex-1">

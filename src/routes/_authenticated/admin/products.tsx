@@ -38,9 +38,9 @@ export const Route = createFileRoute("/_authenticated/admin/products")({
   head: () => ({
     meta: [
       { title: "Products — ORZEN Merchant Panel" },
-      { name: "description", content: "Manage physical, digital, service and subscription products in one place." },
+      { name: "description", content: "Manage your store products in one place." },
       { property: "og:title", content: "Products — ORZEN Merchant Panel" },
-      { property: "og:description", content: "Manage physical, digital, service and subscription products in one place." },
+      { property: "og:description", content: "Manage your store products in one place." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "robots", content: "noindex" },
@@ -72,7 +72,7 @@ function ProductsPage() {
   const catsFn = useServerFn(listMyCategories);
   const countsFn = useServerFn(typeScopeCounts);
   const qc = useQueryClient();
-  const { scope, setScope, filter, activeType: scopeType } = useProductTypeScope();
+  const { scope, setScope, filter, activeType: scopeType, physicalOnly } = useProductTypeScope();
   const tab = scope;
   const { data: products } = useQuery({
     queryKey: ["admin", "products", filter ?? "all"],
@@ -250,7 +250,7 @@ function ProductsPage() {
     <div className="space-y-4">
       <AdminPageHeader
         title="Products"
-        description={`Current type: ${TYPE_LABEL[activeType]}${tab === "all" ? " (showing all products)" : ""}`}
+        description={physicalOnly ? "Manage your products" : `Current type: ${TYPE_LABEL[activeType]}${tab === "all" ? " (showing all products)" : ""}`}
         action={addButton}
       />
 
