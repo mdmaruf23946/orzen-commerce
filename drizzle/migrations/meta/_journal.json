@@ -134,6 +134,13 @@
       "when": 1792671885110,
       "tag": "0018_webchat_browser_isolation",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1792819926990,
+      "tag": "0019_external_site_integrations",
+      "breakpoints": true
     }
   ]
 }
