@@ -27,6 +27,19 @@ export const Route = createFileRoute("/api/public/fb-capi/track")({
   server: {
     handlers: {
       POST: async ({ request }) => {
+        // Real storefront pages post same-origin from a browser. Requests from
+        // scripts/other sites (no or foreign Origin/Referer) are dropped quietly.
+        const host = new URL(request.url).host;
+        const fwdHost = request.headers.get("x-forwarded-host");
+        const src = request.headers.get("origin") || request.headers.get("referer");
+        let srcHost = "";
+        try { srcHost = src ? new URL(src).host : ""; } catch { srcHost = ""; }
+        if (!srcHost || (srcHost !== host && srcHost !== fwdHost)) {
+          return Response.json({ ok: true, skipped: true });
+        }
+        const { checkRateLimit, clientIp } = await import("@/lib/rate-limit.server");
+        const rl = await checkRateLimit("platform_meta", `fbcapi:${clientIp(request)}`);
+        if (!rl.allowed) return Response.json({ ok: true, skipped: true });
         let payload: z.infer<typeof bodySchema>;
         try {
           payload = bodySchema.parse(await request.json());
