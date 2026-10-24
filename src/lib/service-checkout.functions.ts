@@ -194,6 +194,13 @@ export const uploadServiceFile = createServerFn({ method: "POST" })
       throw new Error(`File is larger than ${s.upload_max_mb} MB`);
     }
 
+    const { count: attached } = await sb
+      .from("service_order_files")
+      .select("id", { count: "exact", head: true })
+      .eq("upload_token", data.uploadToken)
+      .not("order_id", "is", null);
+    if ((attached ?? 0) > 0) throw new Error("This booking is already placed; files can no longer be added.");
+
     const { count } = await sb
       .from("service_order_files")
       .select("id", { count: "exact", head: true })
