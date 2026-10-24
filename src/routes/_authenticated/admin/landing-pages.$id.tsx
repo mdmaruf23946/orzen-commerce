@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { SiteSummary, CategoriesPanel, ProductsPanel, OrdersPanel, SyncSettingsCard, CatalogDocs } from "@/components/admin/landing/ExternalSitePanels";
 
 export const Route = createFileRoute("/_authenticated/admin/landing-pages/$id")({
   head: () => ({ meta: [
@@ -56,6 +57,8 @@ function Detail() {
 
   const [newSecret, setNewSecret] = useState<string | null>(null);
   const [newKey, setNewKey] = useState<string | null>(null);
+  const [tab, setTab] = useState("overview");
+  const [cat, setCat] = useState("");
 
   if (isLoading || !data) return <div className="p-10 text-sm text-muted-foreground">Loading…</div>;
 
@@ -107,7 +110,7 @@ function Detail() {
         <div className="min-w-0">
           <h1 className="truncate text-xl font-semibold">{conn.name}</h1>
           <div className="text-xs text-muted-foreground">
-            {conn.platform} · {conn.method} · {conn.status}
+            {conn.site_type === "website" ? "E-commerce website" : "Landing page"} · {conn.platform} · {conn.method} · {conn.status}
           </div>
         </div>
         <div className="ml-auto flex gap-2">
@@ -118,9 +121,12 @@ function Detail() {
         </div>
       </div>
 
-      <Tabs defaultValue="overview">
-        <TabsList>
+      <Tabs value={tab} onValueChange={setTab}>
+        <TabsList className="flex h-auto flex-wrap justify-start">
           <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="categories">Categories</TabsTrigger>
+          <TabsTrigger value="products">Products</TabsTrigger>
+          <TabsTrigger value="orders">Orders</TabsTrigger>
           <TabsTrigger value="config">Configuration</TabsTrigger>
           <TabsTrigger value="logs">Logs</TabsTrigger>
           <TabsTrigger value="docs">Documentation</TabsTrigger>
@@ -133,6 +139,7 @@ function Detail() {
             <Stat label="Last order" value={conn.last_order_at ? new Date(conn.last_order_at).toLocaleString() : "—"} />
             <Stat label="Created" value={new Date(conn.created_at).toLocaleDateString()} />
           </div>
+          <SiteSummary id={id} conn={conn} />
           {conn.last_error && (
             <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-xs text-red-800 dark:border-red-900 dark:bg-red-950/40 dark:text-red-200">
               Last error: {conn.last_error}
@@ -140,7 +147,18 @@ function Detail() {
           )}
         </TabsContent>
 
+        <TabsContent value="categories" className="pt-4">
+          <CategoriesPanel id={id} onOpen={(c) => { setCat(c); setTab("products"); }} />
+        </TabsContent>
+        <TabsContent value="products" className="pt-4">
+          <ProductsPanel id={id} category={cat} setCategory={setCat} />
+        </TabsContent>
+        <TabsContent value="orders" className="pt-4">
+          <OrdersPanel id={id} />
+        </TabsContent>
+
         <TabsContent value="config" className="space-y-4 pt-4">
+          <SyncSettingsCard id={id} conn={conn} />
           <div className="rounded-xl border bg-card p-4">
             <div className="mb-3 text-sm font-semibold">Endpoints</div>
             <div className="space-y-2">
@@ -222,6 +240,7 @@ function Detail() {
         </TabsContent>
 
         <TabsContent value="docs" className="space-y-4 pt-4 text-sm">
+          <CatalogDocs base={base} id={id} />
           <div className="rounded-xl border bg-card p-4">
             <div className="font-semibold">Webhook (HMAC)</div>
             <p className="mt-2 text-xs text-muted-foreground">
