@@ -36,18 +36,28 @@ type Ctx = {
   activeType: ProductTypeOnly;
   /** Undefined when scope is "all" — pass straight into server fns. */
   filter: ProductTypeOnly | undefined;
+  /** True for regular merchants: only physical products exist for them. */
+  physicalOnly: boolean;
 };
 
 const ProductTypeScopeContext = createContext<Ctx | null>(null);
 
-export function ProductTypeScopeProvider({ children }: { children: React.ReactNode }) {
-  const [scope, setScopeState] = useState<ProductTypeScope>("all");
+export function ProductTypeScopeProvider({
+  children,
+  physicalOnly = false,
+}: {
+  children: React.ReactNode;
+  physicalOnly?: boolean;
+}) {
+  const [rawScope, setScopeState] = useState<ProductTypeScope>("all");
+  const scope: ProductTypeScope = physicalOnly ? "physical" : rawScope;
 
   useEffect(() => {
     setScopeState(readInitial());
   }, []);
 
   const setScope = useCallback((s: ProductTypeScope) => {
+    if (physicalOnly) return;
     setScopeState(s);
     if (typeof window === "undefined") return;
     try {
@@ -57,7 +67,7 @@ export function ProductTypeScopeProvider({ children }: { children: React.ReactNo
       else url.searchParams.set("ptype", s);
       window.history.replaceState(window.history.state, "", url.toString());
     } catch {}
-  }, []);
+  }, [physicalOnly]);
 
   const value = useMemo<Ctx>(
     () => ({
@@ -65,8 +75,9 @@ export function ProductTypeScopeProvider({ children }: { children: React.ReactNo
       setScope,
       activeType: scope === "all" ? "physical" : scope,
       filter: scope === "all" ? undefined : scope,
+      physicalOnly,
     }),
-    [scope, setScope],
+    [scope, setScope, physicalOnly],
   );
 
   return <ProductTypeScopeContext.Provider value={value}>{children}</ProductTypeScopeContext.Provider>;
@@ -76,7 +87,7 @@ export function useProductTypeScope(): Ctx {
   const ctx = useContext(ProductTypeScopeContext);
   if (ctx) return ctx;
   // Safe fallback (e.g. rendered outside the admin layout).
-  return { scope: "all", setScope: () => {}, activeType: "physical", filter: undefined };
+  return { scope: "all", setScope: () => {}, activeType: "physical", filter: undefined, physicalOnly: false };
 }
 
 /** Builds the shared tab list with counts. */

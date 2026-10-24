@@ -1,4 +1,7 @@
 import { cn } from "@/lib/utils";
+import { useProductTypeScope } from "@/lib/product-type-scope";
+
+const HIDDEN_FOR_PHYSICAL_ONLY = ["digital", "service", "subscription"];
 
 export function TypeFilterTabs<T extends string>({
   tabs,
@@ -11,6 +14,17 @@ export function TypeFilterTabs<T extends string>({
   onChange: (key: T) => void;
   className?: string;
 }) {
+  const { physicalOnly } = useProductTypeScope();
+  if (physicalOnly) {
+    const keys = tabs.map((t) => String(t.key));
+    const typeTabs = keys.some((k) => HIDDEN_FOR_PHYSICAL_ONLY.includes(k));
+    if (typeTabs) {
+      const rest = tabs.filter((t) => !HIDDEN_FOR_PHYSICAL_ONLY.includes(String(t.key)));
+      // Only "all"/"physical" left → the type filter is meaningless; hide it.
+      if (rest.every((t) => t.key === "all" || t.key === "physical")) return null;
+      tabs = rest;
+    }
+  }
   return (
     <div
       className={cn(
