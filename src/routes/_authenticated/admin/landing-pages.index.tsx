@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { FeatureGate } from "@/components/admin/FeatureGate";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -71,7 +71,7 @@ function LandingPagesIndex() {
   });
 
   const [wizOpen, setWizOpen] = useState(false);
-  const [credsShown, setCredsShown] = useState<null | { id: string; api_key: string; webhook_secret: string }>(null);
+  const navigate = useNavigate();
 
   function refresh() {
     qc.invalidateQueries({ queryKey: ["landing-pages"] });
@@ -186,12 +186,11 @@ function LandingPagesIndex() {
         open={wizOpen}
         onOpenChange={setWizOpen}
         onCreated={(res) => {
-          setCredsShown(res);
+          try { sessionStorage.setItem(`lp-new-${res.id}`, JSON.stringify(res)); } catch { /* ignore */ }
           refresh();
+          navigate({ to: "/admin/landing-pages/$id", params: { id: res.id } });
         }}
       />
-
-      <CredentialsDialog open={!!credsShown} data={credsShown} onClose={() => setCredsShown(null)} />
     </div>
   );
 }

@@ -2,7 +2,8 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { FeatureGate } from "@/components/admin/FeatureGate";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { IntegrationKeysGuide } from "@/components/admin/landing/IntegrationKeysGuide";
 import { toast } from "sonner";
 import { ArrowLeft, Copy, RefreshCw, Send } from "lucide-react";
 import {
@@ -59,6 +60,18 @@ function Detail() {
   const [newKey, setNewKey] = useState<string | null>(null);
   const [tab, setTab] = useState("overview");
   const [cat, setCat] = useState("");
+
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem(`lp-new-${id}`);
+      if (!raw) return;
+      sessionStorage.removeItem(`lp-new-${id}`);
+      const v = JSON.parse(raw);
+      setNewSecret(v.webhook_secret ?? null);
+      setNewKey(v.api_key ?? null);
+      setTab("config");
+    } catch { /* ignore */ }
+  }, [id]);
 
   if (isLoading || !data) return <div className="p-10 text-sm text-muted-foreground">Loading…</div>;
 
