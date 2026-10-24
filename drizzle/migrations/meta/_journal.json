@@ -141,6 +141,13 @@
       "when": 1792819926990,
       "tag": "0019_external_site_integrations",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1792823147634,
+      "tag": "0020_order_confirm_skip_external_items",
+      "breakpoints": true
     }
   ]
 }
