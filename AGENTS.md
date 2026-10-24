@@ -28,6 +28,7 @@
 - `deploy-production.sh` guards `_runtime.mjs`'s `createRequire(import.meta.url)` (undefined → SSR 500s); never remove the patch.
 - Delegated access = `store_staff` rows (access_type=delegated); active store comes from the `x-orzen-store` header, re-verified server-side; invites/revokes use only the caller's owned store — no re-sharing or cross-store leaks.
 - Subdirectories have their own AGENTS.md; read it before changing files there.
+- Shared PostgREST search sanitization preserves dots, underscores and colons in values while stripping filter delimiters; it serves both partial searches and exact identifiers, so punctuation must not be rewritten to spaces.
 
 - Global phrasebook (src/lib/global-phrasebook*.ts) learns only phrase→intent (no customer data, hashed stores, 3+ stores and 90% agreement) and answers from the current store's fresh data — cross-store learning without leaks or invented facts.
 - Manual Call (beta) calls from the browser via JsSIP to a Winner-Admin gateway (`manual_call_gateways`, wss + SIP domain); merchant lines/calls are store-scoped and recordings are uploaded to `voice-audio/manual/<store>/` — no server media relay needed.
