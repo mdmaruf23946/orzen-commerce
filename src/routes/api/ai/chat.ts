@@ -157,6 +157,13 @@ export const Route = createFileRoute("/api/ai/chat")({
         if (convRow?.handoff_mode === "human") {
           return Response.json({ conversationId: convId, handedOff: true }, { status: 200 });
         }
+        // Spam / abusive / repeatedly off-topic: pause AI for this chat only.
+        {
+          const { guardConversation } = await import("@/lib/conversation-guard.server");
+          if (await guardConversation(sb, convId!)) {
+            return Response.json({ conversationId: convId, handedOff: true }, { status: 200 });
+          }
+        }
 
         try {
           const { store: s, agent, settings } = await loadAiContext(store.id);

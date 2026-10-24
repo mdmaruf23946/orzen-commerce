@@ -34,5 +34,33 @@ export function detectAbuse(samples: InboundSample[], now = Date.now()): AbuseVe
 
   const flood = samples.filter((s) => ageSec(s) <= ABUSE_RULES.floodWindowSec);
   if (flood.length >= ABUSE_RULES.floodMax) return { abusive: true, reason: "flood" };
+
+  // Abusive language: 2 such messages in 10 min. Clearly off-topic requests
+  // (coding, homework, politics, jokes…): 3 in 10 min. Conservative on purpose
+  // so a normal shopper is never silenced by one odd message.
+  let abuse = 0;
+  let off = 0;
+  for (const s of recent) {
+    const k = classifyMessage(s.content);
+    if (k === "abusive") abuse++;
+    else if (k === "off_topic") off++;
+  }
+  if (abuse >= 2) return { abusive: true, reason: "abusive" };
+  if (off >= 3) return { abusive: true, reason: "off_topic" };
   return { abusive: false };
+}
+
+const ABUSIVE_RE =
+  /(চুদ|চোদ|মাগি|মাগী|খানকি|খানকী|শুয়োর|শুওর|কুত্তার বাচ্চা|হারামজাদা|হারামি|বাল ছাল|\bchod|\bchud|\bmagi\b|khanki|harami|haramjada|kuttar bacha|\bfuck|\bshit\b|bitch|bastard|asshole|motherfucker)/i;
+
+const OFF_TOPIC_RE =
+  /(write (me )?(a |an )?(code|program|essay|poem|story)|python|javascript|html code|sql query|homework|assignment|solve this|math problem|translate this|কোড লিখে|প্রোগ্রাম লিখে|রচনা লিখ|কবিতা লিখ|গল্প লিখ|হোমওয়ার্ক|অ্যাসাইনমেন্ট|অংক কর|জোকস|কৌতুক বল|\bjoke\b|politic|রাজনীতি|নির্বাচন|election|prime minister|প্রধানমন্ত্রী|who are you made by|chatgpt|gemini|তুমি কি ai|are you (a )?(bot|ai|robot))/i;
+
+/** Pure, cheap message classifier (no AI). */
+export function classifyMessage(text: string | null): "abusive" | "off_topic" | "ok" {
+  const t = String(text ?? "");
+  if (!t.trim()) return "ok";
+  if (ABUSIVE_RE.test(t)) return "abusive";
+  if (OFF_TOPIC_RE.test(t)) return "off_topic";
+  return "ok";
 }
