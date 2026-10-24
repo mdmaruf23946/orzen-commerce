@@ -248,6 +248,7 @@ import { Route as ApiPublicCronNotifyOrdersRouteImport } from './routes/api/publ
 import { Route as ApiPublicCronProductImageEmbeddingsRouteImport } from './routes/api/public/cron/product-image-embeddings'
 import { Route as ApiPublicCronSubscriptionRenewalsRouteImport } from './routes/api/public/cron/subscription-renewals'
 import { Route as ApiPublicCronSyncParcelsRouteImport } from './routes/api/public/cron/sync-parcels'
+import { Route as ApiPublicExternalSitesDispatchRouteImport } from './routes/api/public/external-sites/dispatch'
 import { Route as ApiPublicFacebookWebhookRouteImport } from './routes/api/public/facebook/webhook'
 import { Route as ApiPublicFbCapiTrackRouteImport } from './routes/api/public/fb-capi/track'
 import { Route as ApiPublicGa4TrackRouteImport } from './routes/api/public/ga4/track'
@@ -279,6 +280,7 @@ import { Route as StoreSlugProductProductIdRouteImport } from './routes/store/$s
 import { Route as AuthenticatedAdminBillingCheckoutPackageIdRouteImport } from './routes/_authenticated/admin/billing.checkout.$packageId'
 import { Route as AuthenticatedOwnerCommunicationHistoryIdRouteImport } from './routes/_authenticated/owner/communication.history.$id'
 import { Route as ApiCallSyncOrdersIdStatusRouteImport } from './routes/api/call-sync/orders.$id.status'
+import { Route as ApiPublicExternalSitesConnectionIdCatalogRouteImport } from './routes/api/public/external-sites/$connectionId/catalog'
 import { Route as ApiPublicLandingPagesConnectionIdOrdersRouteImport } from './routes/api/public/landing-pages/$connectionId/orders'
 import { Route as ApiPublicSubscriptionPayWebhookProviderRouteImport } from './routes/api/public/subscription-pay/webhook.$provider'
 import { Route as ApiPublicLandingPagesConnectionIdApiOrdersRouteImport } from './routes/api/public/landing-pages/$connectionId/api.orders'
@@ -1648,6 +1650,12 @@ const ApiPublicCronSyncParcelsRoute =
     path: '/api/public/cron/sync-parcels',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicExternalSitesDispatchRoute =
+  ApiPublicExternalSitesDispatchRouteImport.update({
+    id: '/api/public/external-sites/dispatch',
+    path: '/api/public/external-sites/dispatch',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicFacebookWebhookRoute =
   ApiPublicFacebookWebhookRouteImport.update({
     id: '/api/public/facebook/webhook',
@@ -1817,6 +1825,12 @@ const ApiCallSyncOrdersIdStatusRoute =
     id: '/status',
     path: '/status',
     getParentRoute: () => ApiCallSyncOrdersIdRoute,
+  } as any)
+const ApiPublicExternalSitesConnectionIdCatalogRoute =
+  ApiPublicExternalSitesConnectionIdCatalogRouteImport.update({
+    id: '/api/public/external-sites/$connectionId/catalog',
+    path: '/api/public/external-sites/$connectionId/catalog',
+    getParentRoute: () => rootRouteImport,
   } as any)
 const ApiPublicLandingPagesConnectionIdOrdersRoute =
   ApiPublicLandingPagesConnectionIdOrdersRouteImport.update({
@@ -2081,6 +2095,7 @@ export interface FileRoutesByFullPath {
   '/api/public/cron/product-image-embeddings': typeof ApiPublicCronProductImageEmbeddingsRoute
   '/api/public/cron/subscription-renewals': typeof ApiPublicCronSubscriptionRenewalsRoute
   '/api/public/cron/sync-parcels': typeof ApiPublicCronSyncParcelsRoute
+  '/api/public/external-sites/dispatch': typeof ApiPublicExternalSitesDispatchRoute
   '/api/public/facebook/webhook': typeof ApiPublicFacebookWebhookRoute
   '/api/public/fb-capi/track': typeof ApiPublicFbCapiTrackRoute
   '/api/public/ga4/track': typeof ApiPublicGa4TrackRoute
@@ -2125,6 +2140,7 @@ export interface FileRoutesByFullPath {
   '/admin/billing/checkout/$packageId': typeof AuthenticatedAdminBillingCheckoutPackageIdRoute
   '/owner/communication/history/$id': typeof AuthenticatedOwnerCommunicationHistoryIdRoute
   '/api/call-sync/orders/$id/status': typeof ApiCallSyncOrdersIdStatusRoute
+  '/api/public/external-sites/$connectionId/catalog': typeof ApiPublicExternalSitesConnectionIdCatalogRoute
   '/api/public/landing-pages/$connectionId/orders': typeof ApiPublicLandingPagesConnectionIdOrdersRoute
   '/api/public/subscription-pay/webhook/$provider': typeof ApiPublicSubscriptionPayWebhookProviderRoute
   '/api/public/landing-pages/$connectionId/api/orders': typeof ApiPublicLandingPagesConnectionIdApiOrdersRoute
@@ -2345,6 +2361,7 @@ export interface FileRoutesByTo {
   '/api/public/cron/product-image-embeddings': typeof ApiPublicCronProductImageEmbeddingsRoute
   '/api/public/cron/subscription-renewals': typeof ApiPublicCronSubscriptionRenewalsRoute
   '/api/public/cron/sync-parcels': typeof ApiPublicCronSyncParcelsRoute
+  '/api/public/external-sites/dispatch': typeof ApiPublicExternalSitesDispatchRoute
   '/api/public/facebook/webhook': typeof ApiPublicFacebookWebhookRoute
   '/api/public/fb-capi/track': typeof ApiPublicFbCapiTrackRoute
   '/api/public/ga4/track': typeof ApiPublicGa4TrackRoute
@@ -2389,6 +2406,7 @@ export interface FileRoutesByTo {
   '/admin/billing/checkout/$packageId': typeof AuthenticatedAdminBillingCheckoutPackageIdRoute
   '/owner/communication/history/$id': typeof AuthenticatedOwnerCommunicationHistoryIdRoute
   '/api/call-sync/orders/$id/status': typeof ApiCallSyncOrdersIdStatusRoute
+  '/api/public/external-sites/$connectionId/catalog': typeof ApiPublicExternalSitesConnectionIdCatalogRoute
   '/api/public/landing-pages/$connectionId/orders': typeof ApiPublicLandingPagesConnectionIdOrdersRoute
   '/api/public/subscription-pay/webhook/$provider': typeof ApiPublicSubscriptionPayWebhookProviderRoute
   '/api/public/landing-pages/$connectionId/api/orders': typeof ApiPublicLandingPagesConnectionIdApiOrdersRoute
@@ -2624,6 +2642,7 @@ export interface FileRoutesById {
   '/api/public/cron/product-image-embeddings': typeof ApiPublicCronProductImageEmbeddingsRoute
   '/api/public/cron/subscription-renewals': typeof ApiPublicCronSubscriptionRenewalsRoute
   '/api/public/cron/sync-parcels': typeof ApiPublicCronSyncParcelsRoute
+  '/api/public/external-sites/dispatch': typeof ApiPublicExternalSitesDispatchRoute
   '/api/public/facebook/webhook': typeof ApiPublicFacebookWebhookRoute
   '/api/public/fb-capi/track': typeof ApiPublicFbCapiTrackRoute
   '/api/public/ga4/track': typeof ApiPublicGa4TrackRoute
@@ -2668,6 +2687,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/billing/checkout/$packageId': typeof AuthenticatedAdminBillingCheckoutPackageIdRoute
   '/_authenticated/owner/communication/history/$id': typeof AuthenticatedOwnerCommunicationHistoryIdRoute
   '/api/call-sync/orders/$id/status': typeof ApiCallSyncOrdersIdStatusRoute
+  '/api/public/external-sites/$connectionId/catalog': typeof ApiPublicExternalSitesConnectionIdCatalogRoute
   '/api/public/landing-pages/$connectionId/orders': typeof ApiPublicLandingPagesConnectionIdOrdersRoute
   '/api/public/subscription-pay/webhook/$provider': typeof ApiPublicSubscriptionPayWebhookProviderRoute
   '/api/public/landing-pages/$connectionId/api/orders': typeof ApiPublicLandingPagesConnectionIdApiOrdersRoute
@@ -2903,6 +2923,7 @@ export interface FileRouteTypes {
     | '/api/public/cron/product-image-embeddings'
     | '/api/public/cron/subscription-renewals'
     | '/api/public/cron/sync-parcels'
+    | '/api/public/external-sites/dispatch'
     | '/api/public/facebook/webhook'
     | '/api/public/fb-capi/track'
     | '/api/public/ga4/track'
@@ -2947,6 +2968,7 @@ export interface FileRouteTypes {
     | '/admin/billing/checkout/$packageId'
     | '/owner/communication/history/$id'
     | '/api/call-sync/orders/$id/status'
+    | '/api/public/external-sites/$connectionId/catalog'
     | '/api/public/landing-pages/$connectionId/orders'
     | '/api/public/subscription-pay/webhook/$provider'
     | '/api/public/landing-pages/$connectionId/api/orders'
@@ -3167,6 +3189,7 @@ export interface FileRouteTypes {
     | '/api/public/cron/product-image-embeddings'
     | '/api/public/cron/subscription-renewals'
     | '/api/public/cron/sync-parcels'
+    | '/api/public/external-sites/dispatch'
     | '/api/public/facebook/webhook'
     | '/api/public/fb-capi/track'
     | '/api/public/ga4/track'
@@ -3211,6 +3234,7 @@ export interface FileRouteTypes {
     | '/admin/billing/checkout/$packageId'
     | '/owner/communication/history/$id'
     | '/api/call-sync/orders/$id/status'
+    | '/api/public/external-sites/$connectionId/catalog'
     | '/api/public/landing-pages/$connectionId/orders'
     | '/api/public/subscription-pay/webhook/$provider'
     | '/api/public/landing-pages/$connectionId/api/orders'
@@ -3445,6 +3469,7 @@ export interface FileRouteTypes {
     | '/api/public/cron/product-image-embeddings'
     | '/api/public/cron/subscription-renewals'
     | '/api/public/cron/sync-parcels'
+    | '/api/public/external-sites/dispatch'
     | '/api/public/facebook/webhook'
     | '/api/public/fb-capi/track'
     | '/api/public/ga4/track'
@@ -3489,6 +3514,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/billing/checkout/$packageId'
     | '/_authenticated/owner/communication/history/$id'
     | '/api/call-sync/orders/$id/status'
+    | '/api/public/external-sites/$connectionId/catalog'
     | '/api/public/landing-pages/$connectionId/orders'
     | '/api/public/subscription-pay/webhook/$provider'
     | '/api/public/landing-pages/$connectionId/api/orders'
@@ -3543,6 +3569,7 @@ export interface RootRouteChildren {
   ApiPublicCronProductImageEmbeddingsRoute: typeof ApiPublicCronProductImageEmbeddingsRoute
   ApiPublicCronSubscriptionRenewalsRoute: typeof ApiPublicCronSubscriptionRenewalsRoute
   ApiPublicCronSyncParcelsRoute: typeof ApiPublicCronSyncParcelsRoute
+  ApiPublicExternalSitesDispatchRoute: typeof ApiPublicExternalSitesDispatchRoute
   ApiPublicFacebookWebhookRoute: typeof ApiPublicFacebookWebhookRoute
   ApiPublicFbCapiTrackRoute: typeof ApiPublicFbCapiTrackRoute
   ApiPublicGa4TrackRoute: typeof ApiPublicGa4TrackRoute
@@ -3565,6 +3592,7 @@ export interface RootRouteChildren {
   ApiPublicWhatsappProcessRoute: typeof ApiPublicWhatsappProcessRoute
   ApiPublicWhatsappWebhookRoute: typeof ApiPublicWhatsappWebhookRoute
   LovableEmailQueueProcessRoute: typeof LovableEmailQueueProcessRoute
+  ApiPublicExternalSitesConnectionIdCatalogRoute: typeof ApiPublicExternalSitesConnectionIdCatalogRoute
   ApiPublicLandingPagesConnectionIdOrdersRoute: typeof ApiPublicLandingPagesConnectionIdOrdersRoute
   ApiPublicSubscriptionPayWebhookProviderRoute: typeof ApiPublicSubscriptionPayWebhookProviderRoute
   ApiPublicLandingPagesConnectionIdApiOrdersRoute: typeof ApiPublicLandingPagesConnectionIdApiOrdersRoute
@@ -5248,6 +5276,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicCronSyncParcelsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/external-sites/dispatch': {
+      id: '/api/public/external-sites/dispatch'
+      path: '/api/public/external-sites/dispatch'
+      fullPath: '/api/public/external-sites/dispatch'
+      preLoaderRoute: typeof ApiPublicExternalSitesDispatchRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/facebook/webhook': {
       id: '/api/public/facebook/webhook'
       path: '/api/public/facebook/webhook'
@@ -5464,6 +5499,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/api/call-sync/orders/$id/status'
       preLoaderRoute: typeof ApiCallSyncOrdersIdStatusRouteImport
       parentRoute: typeof ApiCallSyncOrdersIdRoute
+    }
+    '/api/public/external-sites/$connectionId/catalog': {
+      id: '/api/public/external-sites/$connectionId/catalog'
+      path: '/api/public/external-sites/$connectionId/catalog'
+      fullPath: '/api/public/external-sites/$connectionId/catalog'
+      preLoaderRoute: typeof ApiPublicExternalSitesConnectionIdCatalogRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/api/public/landing-pages/$connectionId/orders': {
       id: '/api/public/landing-pages/$connectionId/orders'
@@ -6234,6 +6276,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicCronSubscriptionRenewalsRoute:
     ApiPublicCronSubscriptionRenewalsRoute,
   ApiPublicCronSyncParcelsRoute: ApiPublicCronSyncParcelsRoute,
+  ApiPublicExternalSitesDispatchRoute: ApiPublicExternalSitesDispatchRoute,
   ApiPublicFacebookWebhookRoute: ApiPublicFacebookWebhookRoute,
   ApiPublicFbCapiTrackRoute: ApiPublicFbCapiTrackRoute,
   ApiPublicGa4TrackRoute: ApiPublicGa4TrackRoute,
@@ -6256,6 +6299,8 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicWhatsappProcessRoute: ApiPublicWhatsappProcessRoute,
   ApiPublicWhatsappWebhookRoute: ApiPublicWhatsappWebhookRoute,
   LovableEmailQueueProcessRoute: LovableEmailQueueProcessRoute,
+  ApiPublicExternalSitesConnectionIdCatalogRoute:
+    ApiPublicExternalSitesConnectionIdCatalogRoute,
   ApiPublicLandingPagesConnectionIdOrdersRoute:
     ApiPublicLandingPagesConnectionIdOrdersRoute,
   ApiPublicSubscriptionPayWebhookProviderRoute:
