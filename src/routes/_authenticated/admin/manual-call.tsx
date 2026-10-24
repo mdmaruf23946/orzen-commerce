@@ -102,14 +102,14 @@ function Dialer({ list, record }: { list: ProviderConfig[]; record: boolean }) {
     return () => clearInterval(t);
   }, [state]);
 
+  const callId = useRef("");
+  const qc = useQueryClient();
   if (!list.length) return <NoProvider />;
   const cfg = list.find((c) => c.id === pid) ?? list[0];
   const exts = cfg.extensions ?? [];
   const ext = exts.find((e) => e.ext === extSel) ?? exts[0];
   const busy = state !== "idle";
 
-  const callId = useRef("");
-  const qc = useQueryClient();
   const log = (status: "completed" | "missed" | "failed" | "busy") => {
     const entry = { id: callId.current || crypto.randomUUID(), at: new Date().toISOString(), number: num, providerId: cfg.providerId, durationSec: t0.current ? Math.round((Date.now() - t0.current) / 1000) : 0, status };
     addHistory(entry);
