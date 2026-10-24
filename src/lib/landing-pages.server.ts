@@ -453,3 +453,105 @@ export async function intakeLandingPageOrder(input: IntakeInput): Promise<Intake
     },
   };
 }
+
+/** Website orders with several products. Prices come from the store or the synced website catalog. */
+async function intakeMultiItemOrder(
+  sb: any,
+  conn: { id: string; store_id: string },
+  input: IntakeInput,
+  parsed: any,
+  canonical: ReturnType<typeof normalizePayload>,
+  rHash: string,
+  started: number,
+): Promise<IntakeResult> {
+  const trusted = input.method !== "embed";
+  const raw = (parsed.items as any[]).slice(0, 50);
+  const lines: { product_id: string | null; name: string; price: number; qty: number }[] = [];
+  for (const it of raw) {
+    const key = String(it?.external_product_id ?? it?.sku ?? it?.product_id ?? it?.id ?? "").trim().slice(0, 120);
+    const qty = Math.max(1, Math.min(999, Math.floor(Number(it?.qty ?? it?.quantity ?? 1) || 1)));
+    const variant = it?.variant ? String(it.variant).slice(0, 120) : "";
+    let line: { product_id: string | null; name: string; price: number } | null = null;
+    if (key) {
+      const { data: map } = await sb.from("landing_page_product_map")
+        .select("store_product_id").eq("connection_id", conn.id)
+        .or(`external_id.eq.${key.replace(/[,()]/g, "")},external_sku.eq.${key.replace(/[,()]/g, "")}`).maybeSingle();
+      if (map?.store_product_id) {
+        const { data: p } = await sb.from("products").select("id,name,price")
+          .eq("id", map.store_product_id).eq("store_id", conn.store_id).maybeSingle();
+        if (p) line = { product_id: p.id, name: p.name, price: Number(p.price) || 0 };
+      }
+      if (!line) {
+        const { data: ext } = await sb.from("external_site_products").select("name,price,sale_price")
+          .eq("connection_id", conn.id).eq("external_id", key).maybeSingle();
+        const e2 = ext ?? (await sb.from("external_site_products").select("name,price,sale_price")
+          .eq("connection_id", conn.id).eq("sku", key).limit(1).maybeSingle()).data;
+        if (e2) {
+          const price = trusted && it?.price != null && Number.isFinite(Number(it.price)) ? Number(it.price) : Number(e2.sale_price ?? e2.price) || 0;
+          line = { product_id: null, name: e2.name, price };
+        }
+      }
+    }
+    if (!line && trusted && it?.name && Number.isFinite(Number(it?.price))) {
+      line = { product_id: null, name: String(it.name).slice(0, 300), price: Number(it.price) };
+    }
+    if (!line) {
+      await writeLog(sb, conn.store_id, conn.id, "invalid", {
+        request_hash: rHash, ip: input.ip, ua: input.ua, request_snippet: input.rawBody,
+        error: `Unknown product "${key || "?"}" — sync the catalog or send name + price`,
+      });
+      return { status: 422, body: { ok: false, error: `Unknown product: ${key || "missing id"}` } };
+    }
+    lines.push({ ...line, name: variant ? `${line.name} (${variant})` : line.name, qty });
+  }
+
+  const itemsTotal = lines.reduce((s, l) => s + l.price * l.qty, 0);
+  const delivery = trusted ? Math.max(0, Number(parsed.delivery_charge ?? parsed.shipping ?? 0) || 0) : 0;
+  const discount = trusted ? Math.max(0, Number(parsed.discount ?? 0) || 0) : 0;
+  const paymentMethod = ["cod", "bkash", "nagad", "rocket", "bank"].includes(canonical.payment_method) ? canonical.payment_method : "cod";
+  const noteText = [input.isTest ? "TEST ORDER" : null, canonical.note ? String(canonical.note).slice(0, 400) : null].filter(Boolean).join(" · ") || null;
+
+  const { data: order, error: oErr } = await sb.from("orders").insert({
+    store_id: conn.store_id,
+    customer_name: canonical.customer_name.slice(0, 120),
+    phone: canonical.phone.slice(0, 40),
+    address: canonical.address.slice(0, 500),
+    area: canonical.area ? String(canonical.area).slice(0, 120) : null,
+    payment_method: paymentMethod,
+    txn_id: canonical.txn_id ? String(canonical.txn_id).slice(0, 120) : null,
+    notes: noteText,
+    subtotal: Math.max(0, itemsTotal + delivery - discount), // grand total by convention
+    delivery_amount: delivery,
+    discount_amount: discount,
+    status: "pending",
+    source: "landing_page",
+    landing_page_connection_id: conn.id,
+    external_order_id: canonical.external_order_id ? String(canonical.external_order_id).slice(0, 120) : null,
+    landing_page_url: canonical.landing_page_url ? String(canonical.landing_page_url).slice(0, 500) : null,
+    utm: canonical.utm,
+    attribution_platform: utmPlatform(canonical.utm),
+    is_test: !!input.isTest,
+  }).select("id,invoice_no").single();
+  if (oErr || !order) {
+    await writeLog(sb, conn.store_id, conn.id, "failed", { request_hash: rHash, ip: input.ip, ua: input.ua, error: oErr?.message ?? "Insert failed" });
+    return { status: 500, body: { ok: false, error: "Could not create order" } };
+  }
+  const { error: iErr } = await sb.from("order_items").insert(lines.map((l) => ({
+    order_id: order.id, product_id: l.product_id, name_snapshot: l.name, price_snapshot: l.price, qty: l.qty,
+  })));
+  if (iErr) {
+    await sb.from("order_timeline").delete().eq("order_id", order.id);
+    await sb.from("orders").delete().eq("id", order.id);
+    await writeLog(sb, conn.store_id, conn.id, "failed", { request_hash: rHash, ip: input.ip, ua: input.ua, error: iErr.message });
+    return { status: /out_of_stock/.test(iErr.message) ? 409 : 500, body: { ok: false, error: /out_of_stock/.test(iErr.message) ? "Sorry, an item just sold out." : "Order items failed" } };
+  }
+  const { data: cur } = await sb.from("landing_page_connections").select("orders_received").eq("id", conn.id).maybeSingle();
+  await sb.from("landing_page_connections").update({
+    orders_received: (cur?.orders_received ?? 0) + 1, last_order_at: new Date().toISOString(), last_error: null, last_error_at: null,
+  }).eq("id", conn.id);
+  await writeLog(sb, conn.store_id, conn.id, input.isTest ? "test" : "success", {
+    external_order_id: canonical.external_order_id, order_id: order.id, request_hash: rHash, ip: input.ip, ua: input.ua,
+    processing_ms: Date.now() - started,
+  });
+  return { status: 200, body: { ok: true, order_id: order.id, invoice_no: order.invoice_no ?? null, items: lines.length, test: !!input.isTest } };
+}
