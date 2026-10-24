@@ -1,3 +1,4 @@
+import { pgSafe } from "@/lib/pg-filter";
 // Real actions the Merchant AI can run. Every handler receives the storeId
 // from the server-side context — the model can never choose a store.
 import { safeSearchTerm, type Db } from "./core.server";
@@ -23,7 +24,7 @@ const productSearch: ActionHandler = async ({ db, storeId }, input) => {
     .select("id, name, price, old_price, stock, status, sku, product_type")
     .eq("store_id", storeId)
     .limit(8);
-  if (q) sel = sel.or(`name.ilike.%${q}%,sku.ilike.%${q}%,product_code.ilike.%${q}%`);
+  if (q) sel = sel.or(`name.ilike.%${pgSafe(q)}%,sku.ilike.%${pgSafe(q)}%,product_code.ilike.%${pgSafe(q)}%`);
   const { data, error } = await sel;
   if (error) throw new Error(error.message);
   return { products: data ?? [] };
@@ -184,7 +185,7 @@ const customerSearch: ActionHandler = async ({ db, storeId }, input) => {
     .select("id, full_name, phone, email, created_at")
     .eq("store_id", storeId)
     .limit(8);
-  if (q) sel = sel.or(`full_name.ilike.%${q}%,phone.ilike.%${q}%,email.ilike.%${q}%`);
+  if (q) sel = sel.or(`full_name.ilike.%${pgSafe(q)}%,phone.ilike.%${pgSafe(q)}%,email.ilike.%${pgSafe(q)}%`);
   const { data, error } = await sel;
   if (error) throw new Error(error.message);
   return { customers: data ?? [] };

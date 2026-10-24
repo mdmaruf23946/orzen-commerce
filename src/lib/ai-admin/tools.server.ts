@@ -1,3 +1,4 @@
+import { pgSafe } from "@/lib/pg-filter";
 import { addCalendarMonths, daysToMonths } from "@/lib/plan-period";
 // Allow-listed action layer for the AI Admin Control agent.
 // The agent NEVER touches the database directly — every capability is one of
@@ -414,7 +415,7 @@ export const TOOLS: ToolDef[] = [
       const { data } = await sb
         .from("payments")
         .select("id, amount, status, method, txn_id, invoice_no, created_at, stores(name)")
-        .or(`txn_id.ilike.%${a.query}%,invoice_no.ilike.%${a.query}%`)
+        .or(`txn_id.ilike.%${pgSafe(a.query)}%,invoice_no.ilike.%${pgSafe(a.query)}%`)
         .limit(10);
       return { matches: data ?? [] };
     },
@@ -429,7 +430,7 @@ export const TOOLS: ToolDef[] = [
       const { data } = await sb
         .from("payments")
         .select("*, stores(name, slug)")
-        .or(`txn_id.eq.${a.query},invoice_no.eq.${a.query}`)
+        .or(`txn_id.eq.${pgSafe(a.query)},invoice_no.eq.${pgSafe(a.query)}`)
         .limit(1)
         .maybeSingle();
       if (!data) throw new Error(`No payment matched "${a.query}".`);
@@ -478,7 +479,7 @@ export const TOOLS: ToolDef[] = [
       const { data: pay } = await sb
         .from("payments")
         .select("id, store_id, amount, package_id, status")
-        .or(`txn_id.eq.${a.query},invoice_no.eq.${a.query}`)
+        .or(`txn_id.eq.${pgSafe(a.query)},invoice_no.eq.${pgSafe(a.query)}`)
         .limit(1)
         .maybeSingle();
       if (!pay) throw new Error(`No payment matched "${a.query}".`);
@@ -512,7 +513,7 @@ export const TOOLS: ToolDef[] = [
       const { data: pay } = await sb
         .from("payments")
         .select("id")
-        .or(`txn_id.eq.${a.query},invoice_no.eq.${a.query}`)
+        .or(`txn_id.eq.${pgSafe(a.query)},invoice_no.eq.${pgSafe(a.query)}`)
         .limit(1)
         .maybeSingle();
       if (!pay) throw new Error(`No payment matched "${a.query}".`);
@@ -530,7 +531,7 @@ export const TOOLS: ToolDef[] = [
       const { data: pay } = await sb
         .from("payments")
         .select("id, amount")
-        .or(`txn_id.eq.${a.query},invoice_no.eq.${a.query}`)
+        .or(`txn_id.eq.${pgSafe(a.query)},invoice_no.eq.${pgSafe(a.query)}`)
         .limit(1)
         .maybeSingle();
       if (!pay) throw new Error(`No payment matched "${a.query}".`);
@@ -550,7 +551,7 @@ export const TOOLS: ToolDef[] = [
       const { data } = await sb
         .from("orders")
         .select("id, invoice_no, customer_name, phone, status, subtotal, created_at, stores(name)")
-        .or(`invoice_no.ilike.%${a.query}%,phone.ilike.%${a.query}%,customer_name.ilike.%${a.query}%`)
+        .or(`invoice_no.ilike.%${pgSafe(a.query)}%,phone.ilike.%${pgSafe(a.query)}%,customer_name.ilike.%${pgSafe(a.query)}%`)
         .order("created_at", { ascending: false })
         .limit(10);
       return { matches: data ?? [] };
@@ -634,7 +635,7 @@ export const TOOLS: ToolDef[] = [
       const { data } = await sb
         .from("products")
         .select("id, name, sku, price, stock, status, stores(name)")
-        .or(`name.ilike.%${a.query}%,sku.ilike.%${a.query}%`)
+        .or(`name.ilike.%${pgSafe(a.query)}%,sku.ilike.%${pgSafe(a.query)}%`)
         .limit(10);
       return { matches: data ?? [] };
     },
@@ -649,7 +650,7 @@ export const TOOLS: ToolDef[] = [
       const { data } = await sb
         .from("products")
         .select("id, name, sku, price, old_price, cost_price, stock, status, total_sold, stores(name)")
-        .or(`name.ilike.%${a.query}%,sku.eq.${a.query}`)
+        .or(`name.ilike.%${pgSafe(a.query)}%,sku.eq.${pgSafe(a.query)}`)
         .limit(1)
         .maybeSingle();
       if (!data) throw new Error(`No product matched "${a.query}".`);
@@ -666,7 +667,7 @@ export const TOOLS: ToolDef[] = [
       const { data: p } = await sb
         .from("products")
         .select("id, name")
-        .or(`name.ilike.%${a.query}%,sku.eq.${a.query}`)
+        .or(`name.ilike.%${pgSafe(a.query)}%,sku.eq.${pgSafe(a.query)}`)
         .limit(1)
         .maybeSingle();
       if (!p) throw new Error(`No product matched "${a.query}".`);
@@ -685,7 +686,7 @@ export const TOOLS: ToolDef[] = [
       const { data: p } = await sb
         .from("products")
         .select("id, name")
-        .or(`name.ilike.%${a.query}%,sku.eq.${a.query}`)
+        .or(`name.ilike.%${pgSafe(a.query)}%,sku.eq.${pgSafe(a.query)}`)
         .limit(1)
         .maybeSingle();
       if (!p) throw new Error(`No product matched "${a.query}".`);
@@ -704,7 +705,7 @@ export const TOOLS: ToolDef[] = [
       const { data: p } = await sb
         .from("products")
         .select("id, name")
-        .or(`name.ilike.%${a.query}%,sku.eq.${a.query}`)
+        .or(`name.ilike.%${pgSafe(a.query)}%,sku.eq.${pgSafe(a.query)}`)
         .limit(1)
         .maybeSingle();
       if (!p) throw new Error(`No product matched "${a.query}".`);
@@ -723,7 +724,7 @@ export const TOOLS: ToolDef[] = [
       const { data: p } = await sb
         .from("products")
         .select("id, name")
-        .or(`name.ilike.%${a.query}%,sku.eq.${a.query}`)
+        .or(`name.ilike.%${pgSafe(a.query)}%,sku.eq.${pgSafe(a.query)}`)
         .limit(1)
         .maybeSingle();
       if (!p) throw new Error(`No product matched "${a.query}".`);

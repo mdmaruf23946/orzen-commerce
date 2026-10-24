@@ -1,3 +1,4 @@
+import { pgSafe } from "@/lib/pg-filter";
 // Omni Inbox: one store-scoped view over every chat channel (ai_conversations.channel).
 // Sending reuses each channel's own send function so delivery logic stays in one place.
 import { createServerFn } from "@tanstack/react-start";
@@ -71,7 +72,7 @@ export const listOmniConversations = createServerFn({ method: "POST" })
     if (data.folder === "new") q = q.gte("first_contact_at", new Date(Date.now() - 86400_000).toISOString());
     if (data.search) {
       const s = data.search.replace(/[%_,()]/g, "");
-      q = q.or(`customer_name.ilike.%${s}%,phone.ilike.%${s}%,last_message_preview.ilike.%${s}%`);
+      q = q.or(`customer_name.ilike.%${pgSafe(s)}%,phone.ilike.%${pgSafe(s)}%,last_message_preview.ilike.%${pgSafe(s)}%`);
     }
     const { data: rows, error } = await q;
     if (error) throw new Error(error.message);

@@ -1399,7 +1399,8 @@ export const placeOrder = createServerFn({ method: "POST" })
             .from("service_order_files")
             .update({ order_id: order.id } as any)
             .eq("upload_token", data.service.uploadToken)
-            .eq("store_id", data.storeId);
+            .eq("store_id", data.storeId)
+            .is("order_id", null);
         }
         if (serviceAutoConfirm) {
           await sb.from("orders").update({ status: "confirmed" } as any).eq("id", order.id);

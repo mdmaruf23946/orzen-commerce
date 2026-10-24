@@ -1,3 +1,4 @@
+import { pgSafe } from "@/lib/pg-filter";
 // Omni Inbox product picker: search the store's catalog and send one product
 // (optionally a chosen colour/size variant) to the customer on their own channel.
 import { createServerFn } from "@tanstack/react-start";
@@ -25,7 +26,7 @@ export const searchOmniProducts = createServerFn({ method: "POST" })
       .order("updated_at", { ascending: false })
       .limit(30);
     const term = data.q?.replace(/[%,()]/g, " ").trim();
-    if (term) q = q.or(`name.ilike.%${term}%,sku.ilike.%${term}%,product_code.ilike.%${term}%`);
+    if (term) q = q.or(`name.ilike.%${pgSafe(term)}%,sku.ilike.%${pgSafe(term)}%,product_code.ilike.%${pgSafe(term)}%`);
     const { data: rows, error } = await q;
     if (error) throw new Error(error.message);
     return { rows: rows ?? [] };

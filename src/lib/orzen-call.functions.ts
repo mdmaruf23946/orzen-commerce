@@ -1,3 +1,4 @@
+import { pgSafe } from "@/lib/pg-filter";
 // Orzen Call (own AI voice platform) settings. Store always comes from the
 // signed-in owner; the callback token is never returned except inside the
 // owner's own callback URL.
@@ -252,7 +253,7 @@ export const listOrzenCalls = createServerFn({ method: "GET" })
     else if (data.filter === "missed") q = q.in("status", MISSED);
     else if (data.filter === "failed") q = q.eq("status", "failed");
     const s = data.search.replace(/[%,()]/g, "");
-    if (s) q = q.or(`phone.ilike.%${s}%,customer_name.ilike.%${s}%`);
+    if (s) q = q.or(`phone.ilike.%${pgSafe(s)}%,customer_name.ilike.%${pgSafe(s)}%`);
     const { data: rows } = await q;
     // One card per order (or per phone when no order): latest call wins, older
     // calls stay attached as history so nothing is lost.

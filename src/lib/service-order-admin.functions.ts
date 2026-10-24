@@ -232,12 +232,23 @@ export const addServiceDeliverable = createServerFn({ method: "POST" })
     let size: number | null = null;
     if (data.file) {
       const bytes = decodeB64(data.file.data);
+      if (bytes.byteLength > 20 * 1024 * 1024) throw new Error("ফাইল সর্বোচ্চ 20MB হতে পারে।");
+      const ALLOWED: Record<string, string> = {
+        pdf: "application/pdf", zip: "application/zip", png: "image/png", jpg: "image/jpeg", jpeg: "image/jpeg",
+        webp: "image/webp", gif: "image/gif", mp4: "video/mp4", mp3: "audio/mpeg", txt: "text/plain",
+        csv: "text/csv", docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        pptx: "application/vnd.openxmlformats-officedocument.presentationml.presentation", epub: "application/epub+zip",
+      };
+      const ext = (data.file.name.split(".").pop() ?? "").toLowerCase();
+      const contentType = ALLOWED[ext];
+      if (!contentType) throw new Error("এই ধরনের ফাইল অনুমোদিত নয়।");
       fileName = safeName(data.file.name);
       size = bytes.byteLength;
       path = `${order.store_id}/${order.id}/${Date.now()}-${fileName}`;
       const { error: upErr } = await sb.storage
         .from(DELIVERABLE_BUCKET)
-        .upload(path, bytes, { contentType: data.file.type ?? "application/octet-stream" });
+        .upload(path, bytes, { contentType });
       if (upErr) throw new Error(upErr.message);
     }
 

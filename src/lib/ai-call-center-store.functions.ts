@@ -1,3 +1,4 @@
+import { pgSafe } from "@/lib/pg-filter";
 // Store-admin server functions for the AI Voice Call Center.
 // Everything is scoped to the signed-in store owner's store; no platform
 // credentials, agent ids, prompts or webhook details are ever returned.
@@ -28,9 +29,17 @@ async function planAllowsAiCalls(supabase: any, storeId: string) {
 }
 
 /** AI calling is still a beta: only the designated test account may use it. */
-async function assertAiCallAllowed(context: any, storeId: string) {
+async function assertVerifiedBetaTester(context: any) {
   const { isBetaTester } = await import("@/lib/beta-features");
-  if (!isBetaTester((context.claims as any)?.email)) throw new Error("AI Call Center এখনো চালু হয়নি।");
+  const { data } = await context.supabase.auth.getUser();
+  const u = data?.user;
+  if (!u || u.id !== context.userId || !u.email_confirmed_at || !isBetaTester(u.email)) {
+    throw new Error("AI Call Center এখনো চালু হয়নি।");
+  }
+}
+
+async function assertAiCallAllowed(context: any, storeId: string) {
+  await assertVerifiedBetaTester(context);
   if (!(await planAllowsAiCalls(context.supabase, storeId))) throw new Error("আপনার প্যাকেজে AI Call নেই।");
 }
 
@@ -98,10 +107,7 @@ export const activateStoreAiCallCenter = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const sb = context.supabase;
     const storeId = await storeIdOrThrow(sb, context.userId);
-    {
-      const { isBetaTester } = await import("@/lib/beta-features");
-      if (!isBetaTester((context.claims as any)?.email)) throw new Error("AI Call Center এখনো চালু হয়নি।");
-    }
+    await assertVerifiedBetaTester(context);
 
     if (!(await planAllowsAiCalls(sb, storeId))) {
       throw new Error("AI Call Center is not included in your current plan. Please upgrade to continue.");
@@ -235,7 +241,7 @@ export const listStoreAiCalls = createServerFn({ method: "GET" })
       .order("created_at", { ascending: false })
       .limit(data.limit);
     if (data.direction !== "all") q = q.eq("direction", data.direction);
-    if (data.search) q = q.or(`customer_name.ilike.%${data.search}%,phone.ilike.%${data.search}%`);
+    if (data.search) q = q.or(`customer_name.ilike.%${pgSafe(data.search)}%,phone.ilike.%${pgSafe(data.search)}%`);
     const { data: rows } = await q;
     return rows ?? [];
   });

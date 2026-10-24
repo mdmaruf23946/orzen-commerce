@@ -1,3 +1,4 @@
+import { pgSafe } from "@/lib/pg-filter";
 // Quick Order — server side for the Store Admin "Create Order" wizard.
 // Lets an owner turn a phone / WhatsApp / Messenger order into a real order
 // with the same invoice, stock, timeline and notification behaviour as a
@@ -286,7 +287,7 @@ export const searchQuickOrderProducts = createServerFn({ method: "POST" })
     } else {
       const term = (data.term ?? "").trim();
       if (term) {
-        const like = `%${term}%`;
+        const like = `%${pgSafe(term)}%`;
         q = q.or(`name.ilike.${like},sku.ilike.${like},product_code.ilike.${like}`);
       }
       if (data.categoryId) q = q.eq("category_id", data.categoryId);
