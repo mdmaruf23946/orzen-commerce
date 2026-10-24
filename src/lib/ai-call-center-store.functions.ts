@@ -1,3 +1,4 @@
+import { pgSafe } from "@/lib/pg-filter";
 // Store-admin server functions for the AI Voice Call Center.
 // Everything is scoped to the signed-in store owner's store; no platform
 // credentials, agent ids, prompts or webhook details are ever returned.
@@ -235,7 +236,7 @@ export const listStoreAiCalls = createServerFn({ method: "GET" })
       .order("created_at", { ascending: false })
       .limit(data.limit);
     if (data.direction !== "all") q = q.eq("direction", data.direction);
-    if (data.search) q = q.or(`customer_name.ilike.%${data.search}%,phone.ilike.%${data.search}%`);
+    if (data.search) q = q.or(`customer_name.ilike.%${pgSafe(data.search)}%,phone.ilike.%${pgSafe(data.search)}%`);
     const { data: rows } = await q;
     return rows ?? [];
   });

@@ -1,3 +1,4 @@
+import { pgSafe } from "@/lib/pg-filter";
 // Manual Call (beta): merchants connect their own SIP/IP-phone line to a
 // Winner-Admin-managed gateway and call customers from the browser.
 import { createServerFn } from "@tanstack/react-start";
@@ -194,7 +195,7 @@ export const listManualCalls = createServerFn({ method: "POST" })
     const storeId = await storeIdFor(sb, context.userId);
     let q = sb.from("manual_calls").select("*").eq("store_id", storeId).order("started_at", { ascending: false }).limit(200);
     if (data.status && data.status !== "all") q = q.eq("status", data.status);
-    if (data.search) q = q.or(`phone.ilike.%${data.search.replace(/[,%()]/g, "")}%,customer_name.ilike.%${data.search.replace(/[,%()]/g, "")}%`);
+    if (data.search) q = q.or(`phone.ilike.%${pgSafe(data.search.replace(/[,%()]/g, ""))}%,customer_name.ilike.%${pgSafe(data.search.replace(/[,%()]/g, ""))}%`);
     const { data: calls } = await q;
     const since = new Date(Date.now() - 30 * 86400_000).toISOString();
     const { data: recent } = await sb.from("manual_calls").select("status,duration_sec,started_at").eq("store_id", storeId).gte("started_at", since);

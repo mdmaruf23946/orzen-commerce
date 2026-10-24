@@ -1,3 +1,4 @@
+import { pgSafe } from "@/lib/pg-filter";
 // Web Chat (storefront chat box) settings + inbox. Store-scoped via requireSupabaseAuth.
 // Conversations live in ai_conversations with channel = "web".
 import { createServerFn } from "@tanstack/react-start";
@@ -103,7 +104,7 @@ export const listWebConversations = createServerFn({ method: "POST" })
     if (failedIds) q = q.in("id", failedIds);
     if (data.search) {
       const s = data.search.replace(/[%_,()]/g, "");
-      q = q.or(`customer_name.ilike.%${s}%,phone.ilike.%${s}%,last_message_preview.ilike.%${s}%`);
+      q = q.or(`customer_name.ilike.%${pgSafe(s)}%,phone.ilike.%${pgSafe(s)}%,last_message_preview.ilike.%${pgSafe(s)}%`);
     }
     const { data: rows, error } = await q;
     if (error) throw new Error(error.message);

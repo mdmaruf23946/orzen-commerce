@@ -1,3 +1,4 @@
+import { pgSafe } from "@/lib/pg-filter";
 // Call history and one-click ePBX calling. All reads/writes are scoped to the
 // signed-in store owner.
 import { createServerFn } from "@tanstack/react-start";
@@ -83,7 +84,7 @@ export const listCalls = createServerFn({ method: "GET" })
 
     if (s) {
       const [contactRes, orderRes] = await Promise.all([
-        baseQuery().or(`customer_name.ilike.%${s}%,phone.ilike.%${s}%`),
+        baseQuery().or(`customer_name.ilike.%${pgSafe(s)}%,phone.ilike.%${pgSafe(s)}%`),
         context.supabase
           .from("orders")
           .select("id")

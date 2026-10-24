@@ -1,3 +1,4 @@
+import { pgSafe } from "@/lib/pg-filter";
 // Owner-authenticated server functions for the AI Admin Control module.
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
@@ -426,7 +427,7 @@ export const listAiAdminLogs = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     let q = supabaseAdmin.from("ai_admin_action_logs").select("*").order("created_at", { ascending: false }).limit(200);
     if (data.result && data.result !== "all") q = q.eq("result", data.result);
-    if (data.search) q = q.or(`action_key.ilike.%${data.search}%,target_label.ilike.%${data.search}%`);
+    if (data.search) q = q.or(`action_key.ilike.%${pgSafe(data.search)}%,target_label.ilike.%${pgSafe(data.search)}%`);
     const { data: rows } = await q;
     return rows ?? [];
   });

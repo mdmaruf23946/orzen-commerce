@@ -1,3 +1,4 @@
+import { pgSafe } from "@/lib/pg-filter";
 // Authenticated server functions for the store-owner (user) admin.
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
@@ -1842,7 +1843,7 @@ export const adminListCustomerAccounts = createServerFn({ method: "POST" })
     if (data.status === "disabled") q = q.eq("is_active", false);
     if (data.search && data.search.trim()) {
       const s = data.search.trim();
-      q = q.or(`full_name.ilike.%${s}%,email.ilike.%${s}%,phone.ilike.%${s}%`);
+      q = q.or(`full_name.ilike.%${pgSafe(s)}%,email.ilike.%${pgSafe(s)}%,phone.ilike.%${pgSafe(s)}%`);
     }
     const { data: rows, error } = await q;
     if (error) throw new Error(error.message);
