@@ -98,7 +98,7 @@ export async function syncCatalog(connectionId: string, rawBody: string, headers
     await sb.from("external_site_products").delete().eq("connection_id", conn.id).lt("updated_at", now);
     await sb.from("external_site_categories").delete().eq("connection_id", conn.id).lt("updated_at", now);
   }
-  const patch: Record<string, unknown> = { last_catalog_sync_at: now, site_type: "website" };
+  const patch: any = { last_catalog_sync_at: now, site_type: "website" };
   if (parsed.contact && Object.keys(parsed.contact).length) patch.site_info = parsed.contact;
   if (parsed.categories.length <= 1 && parsed.products.length <= 1 && !parsed.replace) delete patch.site_type;
   await sb.from("landing_page_connections").update(patch).eq("id", conn.id);
