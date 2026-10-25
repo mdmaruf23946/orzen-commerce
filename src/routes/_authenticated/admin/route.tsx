@@ -495,6 +495,7 @@ function AdminLayout() {
   const [open, setOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const [hoverOpen, setHoverOpen] = useState(false);
+  const [hoverOpen, setHoverOpen] = useState(false);
   const [dark, setDark] = useState(false);
   const [search, setSearch] = useState("");
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
