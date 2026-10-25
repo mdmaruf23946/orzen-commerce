@@ -2690,6 +2690,7 @@ export type Database = {
           recipient_zone: string | null
           request_payload: Json | null
           response_payload: Json | null
+          restocked_at: string | null
           return_charge: number
           returned_at: string | null
           status: string
@@ -2726,6 +2727,7 @@ export type Database = {
           recipient_zone?: string | null
           request_payload?: Json | null
           response_payload?: Json | null
+          restocked_at?: string | null
           return_charge?: number
           returned_at?: string | null
           status?: string
@@ -2762,6 +2764,7 @@ export type Database = {
           recipient_zone?: string | null
           request_payload?: Json | null
           response_payload?: Json | null
+          restocked_at?: string | null
           return_charge?: number
           returned_at?: string | null
           status?: string
