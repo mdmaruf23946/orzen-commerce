@@ -162,6 +162,13 @@
       "when": 1792939714525,
       "tag": "0022_courier_payouts_webhook",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1792941229904,
+      "tag": "0023_courier_parcel_restock",
+      "breakpoints": true
     }
   ]
 }

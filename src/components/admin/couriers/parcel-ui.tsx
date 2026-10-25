@@ -28,6 +28,7 @@ import {
   cancelParcel,
   recreateParcel,
   updateParcelManual,
+  restockReturnedParcel,
   requestPickup,
   listPickupHistory,
   listCourierLogs,
@@ -97,6 +98,7 @@ export function ParcelDrawer({
   const cancel = useServerFn(cancelParcel);
   const recreate = useServerFn(recreateParcel);
   const manualUpdate = useServerFn(updateParcelManual);
+  const restock = useServerFn(restockReturnedParcel);
 
   const { data, refetch, isFetching } = useQuery({
     queryKey: ["parcel", id],
@@ -181,6 +183,27 @@ export function ParcelDrawer({
                 Cancel
               </Button>
             </div>
+
+            {p.status === "returned" && (
+              <div className="rounded-xl border p-3 text-xs">
+                {p.restocked_at ? (
+                  <p className="text-muted-foreground">প্রোডাক্ট স্টকে ফেরত নেওয়া হয়েছে।</p>
+                ) : (
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <span className="text-muted-foreground">প্রোডাক্ট হাতে পেয়ে ঠিক থাকলে স্টকে ফেরত নিন।</span>
+                    <Button
+                      size="sm"
+                      onClick={() => {
+                        if (!confirm("প্রোডাক্টগুলো ভালো অবস্থায় হাতে পেয়েছেন? স্টকে যোগ হবে।")) return;
+                        run(() => restock({ data: { parcelId: p.id } }), "স্টকে ফেরত নেওয়া হলো");
+                      }}
+                    >
+                      স্টকে ফেরত নিন
+                    </Button>
+                  </div>
+                )}
+              </div>
+            )}
 
             <div className="rounded-xl border p-3">
               <p className="mb-2 text-xs font-medium text-muted-foreground">Manual update</p>

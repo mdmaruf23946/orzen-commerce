@@ -1,0 +1,1 @@
+ALTER TABLE public.courier_parcels ADD COLUMN IF NOT EXISTS restocked_at timestamptz;
