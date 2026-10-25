@@ -1,5 +1,6 @@
 // Courier parcel management — authenticated store-owner server functions.
 // Frontend is unified; provider differences live in src/lib/couriers/*.server.ts
+import { collectAmount } from "@/lib/couriers/collect-amount";
 import { createServerFn } from "@tanstack/react-start";
 import { myStoreRow } from "@/lib/store-access";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
@@ -156,7 +157,7 @@ export const listSendableOrders = createServerFn({ method: "POST" })
         ...o,
         items: byOrder[o.id] ?? [],
         total,
-        cod_amount: prepaid ? 0 : total,
+        cod_amount: cod,
         courier_key: defaultKey,
       };
     });
@@ -206,6 +207,7 @@ export const sendOrderToCourier = createServerFn({ method: "POST" })
         weight: z.number().finite().min(0).max(1000).optional(),
         deliveryType: z.string().trim().max(40).optional(),
         note: z.string().trim().max(500).optional(),
+        codAmount: z.number().finite().min(0).max(10000000).optional(),
       })
       .parse(d),
   )
@@ -221,6 +223,7 @@ export const sendOrderToCourier = createServerFn({ method: "POST" })
       courierKey: data.courierKey,
       weight: data.weight,
       note: note || undefined,
+      codAmount: data.codAmount,
     });
   });
 
@@ -791,6 +794,7 @@ export async function dispatchParcel(
     courierKey?: string;
     weight?: number;
     note?: string;
+    codAmount?: number;
   },
 ) {
   let parcel: any;
@@ -801,7 +805,7 @@ export async function dispatchParcel(
     if (!key) throw new Error("No default courier is enabled");
     const { data: order } = await supabase
       .from("orders")
-      .select("id,invoice_no,customer_name,phone,address,area,subtotal,delivery_amount,discount_amount,payment_method,payment_status")
+      .select("id,invoice_no,customer_name,phone,address,area,subtotal,paid_amount,delivery_amount,discount_amount,payment_method,payment_status")
       .eq("id", input.orderId)
       .eq("store_id", store.id)
       .maybeSingle();
@@ -824,13 +828,10 @@ export async function dispatchParcel(
       parcel = await loadParcel(supabase, store.id, existing.id);
     } else {
       const items = await orderItems(supabase, order.id);
-      const prepaid = order.payment_method !== "cod" && order.payment_status === "paid";
-      const cod = prepaid
-        ? 0
-        : Math.max(
-            0,
-            Number(order.subtotal ?? 0) + Number(order.delivery_amount ?? 0) - Number(order.discount_amount ?? 0),
-          );
+      const cod =
+        input.codAmount != null && Number.isFinite(input.codAmount)
+          ? Math.max(0, input.codAmount)
+          : collectAmount(order);
       const { data: inserted, error } = await supabase
         .from("courier_parcels")
         .insert({
