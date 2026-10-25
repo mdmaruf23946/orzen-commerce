@@ -135,6 +135,7 @@ function OmniInbox() {
       .catch(() => {});
   }, [convs, refreshFb, qc]);
   const counts = (data?.counts ?? {}) as Record<string, number>;
+  const folderCounts = ((data as any)?.folderCounts ?? {}) as Record<string, number>;
   const active = convs.find((c) => c.id === activeId) ?? (activeConv?.id === activeId ? activeConv : null);
 
   const { data: msgs = [] } = useQuery({
@@ -205,6 +206,11 @@ function OmniInbox() {
                 {f.key === "attention" && <AlertTriangle className="h-3 w-3" />}
                 {f.key === "ai" && <Bot className="h-3 w-3" />}
                 {f.label}
+                {!!folderCounts[f.key] && (
+                  <span className={cn("ml-0.5 grid h-4 min-w-4 place-items-center rounded-full px-1 text-[10px] font-semibold", f.key === "unread" || f.key === "attention" || f.key === "human" ? "bg-destructive text-destructive-foreground" : "bg-primary text-primary-foreground")}>
+                    {folderCounts[f.key] > 999 ? "999+" : folderCounts[f.key]}
+                  </span>
+                )}
               </button>
             ))}
           </div>

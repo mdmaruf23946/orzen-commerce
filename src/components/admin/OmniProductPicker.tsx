@@ -108,7 +108,7 @@ export function OmniProductPicker({ open, onOpenChange, conversationId, onSent }
                     className="flex w-full items-center gap-3 rounded-lg border p-2 text-left transition-colors hover:bg-muted disabled:opacity-50"
                   >
                     {p.primary_image_url ? (
-                      <img src={p.primary_image_url} alt="" className="h-12 w-12 shrink-0 rounded-md object-cover" loading="lazy" />
+                      <img src={pImg(p.primary_image_url)} alt="" className="h-12 w-12 shrink-0 rounded-md object-cover" loading="lazy" />
                     ) : (
                       <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md bg-muted"><Package className="h-5 w-5 text-muted-foreground" /></div>
                     )}
@@ -128,7 +128,7 @@ export function OmniProductPicker({ open, onOpenChange, conversationId, onSent }
         ) : (
           <div className="flex-1 space-y-4 overflow-y-auto">
             <div className="flex items-center gap-3">
-              {picked.primary_image_url && <img src={picked.primary_image_url} alt="" className="h-14 w-14 rounded-md object-cover" />}
+              {picked.primary_image_url && <img src={pImg(picked.primary_image_url)} alt="" className="h-14 w-14 rounded-md object-cover" />}
               <div>
                 <p className="font-medium">{picked.name}</p>
                 <p className="text-sm text-muted-foreground">৳{chosen?.price ?? picked.price}{chosen?.stock != null && ` · স্টক ${chosen.stock}`}</p>
@@ -173,4 +173,9 @@ export function OmniProductPicker({ open, onOpenChange, conversationId, onSent }
       </DialogContent>
     </Dialog>
   );
+}
+
+function pImg(url?: string | null) {
+  if (!url) return undefined;
+  return /^(https?:|data:|blob:)/i.test(url) ? url : `/api/img/${url.replace(/^\/+/, "")}`;
 }
