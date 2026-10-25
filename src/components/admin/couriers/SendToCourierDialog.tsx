@@ -49,9 +49,13 @@ export function SendToCourierDialog({
   const [weight, setWeight] = useState("0.5");
   const [deliveryType, setDeliveryType] = useState("home");
   const [busy, setBusy] = useState(false);
+  const [cod, setCod] = useState("0");
 
   useEffect(() => {
-    if (order) setCourierKey((defaultKey ?? couriers[0]?.key ?? "") as CourierKey | "");
+    if (order) {
+      setCourierKey((defaultKey ?? couriers[0]?.key ?? "") as CourierKey | "");
+      setCod(String(Number(order.cod_amount ?? 0)));
+    }
   }, [order, defaultKey, couriers]);
 
   const cfg = couriers.find((c) => c.key === courierKey);
@@ -70,6 +74,7 @@ export function SendToCourierDialog({
           courierKey: courierKey as CourierKey,
           weight: Number(weight) || undefined,
           deliveryType,
+          codAmount: Math.max(0, Number(cod) || 0),
         },
       });
       toast.success(r?.trackingCode ? `Parcel created · ${r.trackingCode}` : "Parcel created");
@@ -112,9 +117,26 @@ export function SendToCourierDialog({
                 ))
               )}
               <div className="mt-2 flex justify-between border-t pt-2 text-xs">
-                <span>COD amount</span>
-                <strong>{money(order.cod_amount)}</strong>
+                <span>Order total (with delivery)</span>
+                <strong>{money(order.total)}</strong>
               </div>
+            </div>
+
+            <div className="rounded-xl border border-primary/30 bg-primary/5 p-3">
+              <F label="Amount to collect from customer (COD)">
+                <Input
+                  className="h-9"
+                  type="number"
+                  min={0}
+                  value={cod}
+                  onChange={(e) => setCod(e.target.value)}
+                />
+              </F>
+              <p className="mt-1 text-[11px] text-muted-foreground">
+                {Number(order.cod_amount ?? 0) === 0
+                  ? "Customer already paid — courier will collect ৳0."
+                  : "Auto-filled: order total minus any advance paid. Change it if needed."}
+              </p>
             </div>
 
             <Two>
