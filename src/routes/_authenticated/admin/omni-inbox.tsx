@@ -188,7 +188,7 @@ function OmniInbox() {
   const tabs = [{ key: "all", label: "All" }, ...OMNI_CHANNELS];
 
   return (
-    <div className="mx-auto flex h-[calc(100dvh-9rem)] max-w-7xl overflow-hidden rounded-xl border bg-card shadow-sm">
+    <div className="flex h-[calc(100dvh-9rem)] overflow-hidden rounded-xl border bg-card shadow-sm md:-mx-6 md:-mt-6 md:-mb-8 md:h-[calc(100dvh-4rem)] md:rounded-none md:border-0 md:shadow-none lg:-mx-8 lg:-mt-8">
       {/* Conversation list */}
       <aside className={cn("flex w-full min-w-0 flex-col border-r md:w-[360px]", activeId && "hidden md:flex")}>
         <div className="space-y-3 border-b p-3">
@@ -234,13 +234,13 @@ function OmniInbox() {
           </div>
 
           {/* Smart folders */}
-          <div className="-mx-3 flex gap-1 overflow-x-auto px-3 [scrollbar-width:none]">
+          <div className="flex flex-wrap gap-1">
             {OMNI_FOLDERS.map((f) => (
               <button
                 key={f.key}
                 onClick={() => setFolder(f.key)}
                 className={cn(
-                  "flex shrink-0 items-center gap-1 rounded-md px-2.5 py-1 text-xs transition-colors",
+                  "flex shrink-0 items-center gap-1 rounded-full border px-2.5 py-1 text-xs transition-colors",
                   folder === f.key ? "bg-secondary font-semibold text-secondary-foreground" : "text-muted-foreground hover:bg-muted",
                 )}
               >

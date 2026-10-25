@@ -494,6 +494,7 @@ function AdminLayout() {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
+  const [hoverOpen, setHoverOpen] = useState(false);
   const [dark, setDark] = useState(false);
   const [search, setSearch] = useState("");
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
@@ -552,6 +553,7 @@ function AdminLayout() {
   function toggleCollapsed() {
     const v = !collapsed;
     setCollapsed(v);
+    setHoverOpen(false);
     localStorage.setItem("admin.sidebar.collapsed", v ? "1" : "0");
   }
   function toggleGroup(label: string, currentlyOpen: boolean) {
@@ -611,7 +613,8 @@ function AdminLayout() {
     || !access.isEmployee
     || (!!currentSection && access.can(currentSection.key, "view")));
 
-  const asideWidth = collapsed ? "md:w-[72px]" : "md:w-[288px]";
+  const mini = collapsed && !hoverOpen;
+  const asideWidth = mini ? "md:w-[72px]" : "md:w-[288px]";
 
   return (
     <UpgradeProvider>
@@ -632,9 +635,14 @@ function AdminLayout() {
       </header>
 
       <div className="flex">
+        {collapsed && <div className="hidden w-[72px] shrink-0 md:block" aria-hidden />}
         <aside
+          onMouseEnter={() => collapsed && setHoverOpen(true)}
+          onMouseLeave={() => setHoverOpen(false)}
           className={cn(
             "fixed inset-y-0 left-0 z-40 flex h-screen w-72 transform flex-col border-r bg-sidebar text-sidebar-foreground transition-all duration-200 md:sticky md:top-0 md:translate-x-0",
+            collapsed && "md:fixed",
+            collapsed && hoverOpen && "md:shadow-2xl",
             asideWidth,
             open ? "translate-x-0" : "-translate-x-full md:translate-x-0",
           )}
@@ -649,8 +657,8 @@ function AdminLayout() {
             {collapsed ? <ChevronsRight className="h-4 w-4" /> : <ChevronsLeft className="h-4 w-4" />}
           </button>
           {/* Brand */}
-          <div className={cn("flex h-20 shrink-0 items-center gap-3 border-b px-4", collapsed && "md:justify-center md:px-2")}>
-            {(!collapsed || open) ? (
+          <div className={cn("flex h-20 shrink-0 items-center gap-3 border-b px-4", mini && "md:justify-center md:px-2")}>
+            {(!mini || open) ? (
               <div className="flex min-w-0 flex-col leading-tight">
                 <StoreBrandMark />
                 <span className="mt-1 truncate text-[12px] text-muted-foreground">Merchant Panel</span>
@@ -658,7 +666,7 @@ function AdminLayout() {
             ) : (
               <StoreBrandMark iconOnly />
             )}
-            {(!collapsed || open) && storeName && (
+            {(!mini || open) && storeName && (
               <div className="ml-auto hidden shrink-0 md:block">
                 <StoreSwitcher
                   compact
@@ -680,7 +688,7 @@ function AdminLayout() {
           </div>
 
           {/* Search (+ store switcher beside it on mobile) */}
-          {(!collapsed || open) && (
+          {(!mini || open) && (
             <div className="flex items-center gap-2 border-b p-3">
               <div className="relative min-w-0 flex-1">
                 <SearchIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -712,7 +720,7 @@ function AdminLayout() {
               const groupOpen = search.trim() ? true : (openGroups[g.label] ?? groupActive);
               return (
                 <div key={g.label}>
-                  {(!collapsed || open) && (
+                  {(!mini || open) && (
                     <button
                       type="button"
                       onClick={() => toggleGroup(g.label, groupOpen)}
@@ -729,11 +737,11 @@ function AdminLayout() {
                       <ChevronDown className={cn("h-4 w-4 shrink-0 transition-transform", !groupOpen && "-rotate-90")} />
                     </button>
                   )}
-                  {(groupOpen || (collapsed && !open)) && (
+                  {(groupOpen || (mini && !open)) && (
                     <div className="space-y-0.5">
                       {g.items.map((l) => {
                         const badgeVal = itemBadgeCount(l, counts);
-                        const hasChildren = !!l.children?.length && (!collapsed || open);
+                        const hasChildren = !!l.children?.length && (!mini || open);
                         const itemActive = activeInItem(currentPath, l);
                         const childSearchMatch = search.trim() && l.children?.some((child) => child.label.toLowerCase().includes(search.trim().toLowerCase()));
                         const subOpen = childSearchMatch ? true : (subMenus[l.to] ?? itemActive);
@@ -745,21 +753,21 @@ function AdminLayout() {
                           to={destination}
                           onClick={() => { if (!hasChildren) setOpen(false); }}
                           activeOptions={l.exact ? { exact: true } : undefined}
-                          title={collapsed ? `${l.label}${badgeVal ? ` (${badgeVal})` : ""}` : undefined}
+                          title={mini ? `${l.label}${badgeVal ? ` (${badgeVal})` : ""}` : undefined}
                           className={cn(
                             "group relative flex flex-1 items-center gap-2.5 rounded-lg py-2 pl-9 pr-3 text-sm text-muted-foreground transition hover:bg-muted hover:text-foreground",
-                            collapsed && "md:justify-center md:px-2 md:pl-2",
+                            mini && "md:justify-center md:px-2 md:pl-2",
                             itemActive && "bg-primary/10 font-medium text-primary",
                           )}
                         >
                           <span className="relative shrink-0">
                             <l.icon className="h-4 w-4" />
-                            {collapsed && badgeVal > 0 && (
+                            {mini && badgeVal > 0 && (
                               <CountBadge count={badgeVal} variant="dot" label={l.label} />
                             )}
                           </span>
-                          {(!collapsed || open) && <span className="truncate">{l.label}</span>}
-                          {(!collapsed || open) && badgeVal > 0 && (!hasChildren || !subOpen) && (
+                          {(!mini || open) && <span className="truncate">{l.label}</span>}
+                          {(!mini || open) && badgeVal > 0 && (!hasChildren || !subOpen) && (
                             <CountBadge count={badgeVal} label={l.label} />
                           )}
                         </Link>
@@ -812,52 +820,52 @@ function AdminLayout() {
               <Link
                 to="/owner"
                 onClick={() => setOpen(false)}
-                title={collapsed ? "Owner Panel" : undefined}
+                title={mini ? "Owner Panel" : undefined}
                 className={cn(
                   "flex items-center gap-3 rounded-lg border border-dashed border-primary/30 bg-primary/5 px-3 py-2 text-sm font-medium text-primary hover:bg-primary/10",
-                  collapsed && !open && "md:justify-center md:px-2",
+                  mini && !open && "md:justify-center md:px-2",
                 )}
               >
                 <Sparkles className="h-4 w-4 shrink-0" />
-                {(!collapsed || open) && <span>Owner Panel</span>}
+                {(!mini || open) && <span>Owner Panel</span>}
               </Link>
             )}
 
-            <div className={cn("grid grid-cols-2 gap-1", collapsed && !open && "md:grid-cols-1")}>
+            <div className={cn("grid grid-cols-2 gap-1", mini && !open && "md:grid-cols-1")}>
               {!access.isEmployee && (
                 <Link
                   to="/admin/billing"
                   search={{ highlight: undefined, plan: undefined, from: undefined }}
                   onClick={() => setOpen(false)}
-                  title={collapsed ? "Billing" : undefined}
+                  title={mini ? "Billing" : undefined}
                   className={cn(
                     "flex min-w-0 items-center justify-center gap-2 rounded-md px-2 py-2 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground",
-                    collapsed && !open && "md:px-1",
+                    mini && !open && "md:px-1",
                   )}
                 >
                   <Wallet className="h-4 w-4 shrink-0" />
-                  {(!collapsed || open) && <span>Billing</span>}
+                  {(!mini || open) && <span>Billing</span>}
                 </Link>
               )}
               <Link
                 to="/admin/support"
                 onClick={() => setOpen(false)}
-                title={collapsed ? "Help Center" : undefined}
+                title={mini ? "Help Center" : undefined}
                 className={cn(
                   "flex min-w-0 items-center justify-center gap-2 rounded-md px-2 py-2 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground",
                   access.isEmployee && "col-span-2",
-                  collapsed && !open && "md:col-span-1 md:px-1",
+                  mini && !open && "md:col-span-1 md:px-1",
                 )}
               >
                 <LifeBuoy className="h-4 w-4 shrink-0" />
-                {(!collapsed || open) && <span>Help Center</span>}
+                {(!mini || open) && <span>Help Center</span>}
               </Link>
             </div>
 
             <Link
               to="/admin/profile"
               onClick={() => setOpen(false)}
-              title={collapsed ? "Profile" : undefined}
+              title={mini ? "Profile" : undefined}
               className="flex min-w-0 items-center gap-2.5 rounded-lg border px-2.5 py-2 hover:bg-muted md:hidden"
             >
               {accountProfile ? (
@@ -867,7 +875,7 @@ function AdminLayout() {
                   <UserRound className="h-4 w-4 text-muted-foreground" />
                 </div>
               )}
-              {(!collapsed || open) && (
+              {(!mini || open) && (
                 <div className="min-w-0 leading-tight">
                   <div className="truncate text-sm font-semibold">{accountProfile?.name ?? "My Profile"}</div>
                   <div className="truncate text-[11px] text-muted-foreground">{accountProfile?.email ?? "Account settings"}</div>
