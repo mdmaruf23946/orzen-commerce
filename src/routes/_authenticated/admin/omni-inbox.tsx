@@ -188,7 +188,27 @@ function OmniInbox() {
   const tabs = [{ key: "all", label: "All" }, ...OMNI_CHANNELS];
 
   return (
-    <div className="flex h-[calc(100dvh-9rem)] overflow-hidden rounded-xl border bg-card shadow-sm md:-mx-6 md:-mt-6 md:-mb-8 md:h-[calc(100dvh-4rem)] md:rounded-none md:border-0 md:shadow-none lg:-mx-8 lg:-mt-8">
+    <div className="flex flex-col h-[calc(100dvh-9rem)] overflow-hidden rounded-xl border bg-card shadow-sm md:-mx-6 md:-mt-6 md:-mb-8 md:h-[calc(100dvh-4rem)] md:rounded-none md:border-0 md:shadow-none lg:-mx-8 lg:-mt-8">
+          {/* Smart folders */}
+          <div className="flex shrink-0 items-center gap-1.5 overflow-x-auto border-b bg-card px-3 py-2 [scrollbar-width:none]">
+            {OMNI_FOLDERS.map((f) => (
+              <button
+                key={f.key}
+                onClick={() => setFolder(f.key)}
+                className={cn(
+                  "flex shrink-0 items-center gap-1 rounded-full border whitespace-nowrap px-3 py-1 text-xs transition-colors",
+                  folder === f.key ? "bg-secondary font-semibold text-secondary-foreground" : "text-muted-foreground hover:bg-muted",
+                )}
+              >
+                {f.key === "human" && <User className="h-3 w-3" />}
+                {f.key === "vip" && <Crown className="h-3 w-3" />}
+                {f.key === "attention" && <AlertTriangle className="h-3 w-3" />}
+                {f.key === "ai" && <Bot className="h-3 w-3" />}
+                {f.label}
+              </button>
+            ))}
+          </div>
+      <div className="flex min-h-0 flex-1">
       {/* Conversation list */}
       <aside className={cn("flex w-full min-w-0 flex-col border-r md:w-[360px]", activeId && "hidden md:flex")}>
         <div className="space-y-3 border-b p-3">
@@ -233,25 +253,6 @@ function OmniInbox() {
             <Input className="h-9 pl-8" placeholder="নাম, ফোন বা মেসেজ খুঁজুন…" value={search} onChange={(e) => setSearch(e.target.value)} />
           </div>
 
-          {/* Smart folders */}
-          <div className="flex flex-wrap gap-1">
-            {OMNI_FOLDERS.map((f) => (
-              <button
-                key={f.key}
-                onClick={() => setFolder(f.key)}
-                className={cn(
-                  "flex shrink-0 items-center gap-1 rounded-full border px-2.5 py-1 text-xs transition-colors",
-                  folder === f.key ? "bg-secondary font-semibold text-secondary-foreground" : "text-muted-foreground hover:bg-muted",
-                )}
-              >
-                {f.key === "human" && <User className="h-3 w-3" />}
-                {f.key === "vip" && <Crown className="h-3 w-3" />}
-                {f.key === "attention" && <AlertTriangle className="h-3 w-3" />}
-                {f.key === "ai" && <Bot className="h-3 w-3" />}
-                {f.label}
-              </button>
-            ))}
-          </div>
         </div>
 
         <div className="flex-1 overflow-y-auto">
@@ -431,6 +432,7 @@ function OmniInbox() {
           {active && <OmniCustomerPanel conversationId={active.id} onClose={() => setInfoOpen(false)} />}
         </SheetContent>
       </Sheet>
+      </div>
     </div>
   );
 }
