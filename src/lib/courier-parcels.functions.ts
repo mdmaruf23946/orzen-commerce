@@ -122,7 +122,7 @@ export const listSendableOrders = createServerFn({ method: "POST" })
     const { data: orders } = await supabase
       .from("orders")
       .select(
-        "id,invoice_no,customer_name,phone,address,area,subtotal,delivery_amount,discount_amount,payment_method,payment_status,status,created_at",
+        "id,invoice_no,customer_name,phone,address,area,subtotal,paid_amount,delivery_amount,discount_amount,payment_method,payment_status,status,created_at",
       )
       .eq("store_id", store.id)
       .eq("status", "processing")
@@ -150,11 +150,8 @@ export const listSendableOrders = createServerFn({ method: "POST" })
     }
     const defaultKey = defaultCourier(store);
     return list.map((o: any) => {
-      const prepaid = o.payment_method !== "cod" && o.payment_status === "paid";
-      const total = Math.max(
-        0,
-        Number(o.subtotal ?? 0) + Number(o.delivery_amount ?? 0) - Number(o.discount_amount ?? 0),
-      );
+      const total = Math.max(0, Number(o.subtotal ?? 0));
+      const cod = collectAmount(o);
       return {
         ...o,
         items: byOrder[o.id] ?? [],
