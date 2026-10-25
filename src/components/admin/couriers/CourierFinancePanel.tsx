@@ -3,7 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { Copy, Wallet } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { getCourierFinance, markCourierPaid } from "@/lib/courier-parcels.functions";
+import { getCourierFinance, markCourierPaid, getCourierBalances } from "@/lib/courier-parcels.functions";
 import { courierLabel, money } from "@/components/admin/couriers/parcel-ui";
 
 export function CourierFinancePanel() {
@@ -11,6 +11,8 @@ export function CourierFinancePanel() {
   const fetchFin = useServerFn(getCourierFinance);
   const payFn = useServerFn(markCourierPaid);
   const { data } = useQuery({ queryKey: ["courier-finance"], queryFn: () => fetchFin() });
+  const fetchBal = useServerFn(getCourierBalances);
+  const { data: bal } = useQuery({ queryKey: ["courier-balances"], queryFn: () => fetchBal(), staleTime: 60_000 });
   const pay = useMutation({
     mutationFn: (key: string) => payFn({ data: { courierKey: key as any } }),
     onSuccess: (r) => {
@@ -26,6 +28,12 @@ export function CourierFinancePanel() {
       <div className="flex items-center gap-2 text-sm font-semibold">
         <Wallet className="h-4 w-4" /> কুরিয়ারের টাকার হিসাব
       </div>
+      {bal?.balances?.map((b) => (
+        <div key={b.key} className="flex items-center justify-between rounded-lg bg-muted px-3 py-2 text-xs">
+          <span>{courierLabel(b.key as any)} অ্যাকাউন্টে এখন জমা</span>
+          <span className="font-semibold">{b.balance != null ? money(b.balance) : b.error}</span>
+        </div>
+      ))}
       {data.couriers.length === 0 ? (
         <p className="text-xs text-muted-foreground">এখনও কোনো পার্সেল ডেলিভারি বা রিটার্ন হয়নি।</p>
       ) : (
