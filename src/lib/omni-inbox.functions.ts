@@ -58,7 +58,8 @@ export const listOmniConversations = createServerFn({ method: "POST" })
     if (data.folder === "human") q = q.eq("handoff_mode", "human");
     if (data.folder === "ai") q = q.neq("handoff_mode", "human");
     if (data.folder === "attention") {
-      if (!failed.size) return { rows: [], counts: {} as Record<string, number> };
+      if (!failed.size) q = q.in("id", ["00000000-0000-0000-0000-000000000000"]);
+      else
       q = q.in("id", [...failed]);
     }
     if (data.folder === "vip") q = q.or("total_orders.gte.3,total_spent.gte.5000");
@@ -94,7 +95,32 @@ export const listOmniConversations = createServerFn({ method: "POST" })
       counts[(u as any).channel] = (counts[(u as any).channel] ?? 0) + 1;
       counts.all++;
     }
-    return { rows: out, counts };
+    // Per-folder counts for the current channel (same rules as the filters above).
+    const { data: all } = await sb
+      .from("ai_conversations")
+      .select("id,unread_count,handoff_mode,total_orders,total_spent,lead_status,first_contact_at,pending:psid_profile->pending_order,pending_phone:psid_profile->pending_order->>phone")
+      .eq("store_id", storeId)
+      .in("channel", data.channel === "all" ? [...OMNI_CHANNEL_KEYS] : [data.channel])
+      .limit(2000);
+    const dayAgo = Date.now() - 86400_000;
+    const folderCounts: Record<string, number> = {};
+    const inc = (k: string) => (folderCounts[k] = (folderCounts[k] ?? 0) + 1);
+    for (const r of (all ?? []) as any[]) {
+      const orders = r.total_orders ?? 0;
+      inc("all");
+      if ((r.unread_count ?? 0) > 0) inc("unread");
+      if (r.handoff_mode === "human") inc("human"); else inc("ai");
+      if (failed.has(r.id)) inc("attention");
+      if (isVip(r)) inc("vip");
+      if (orders >= 1 || r.lead_status === "ordered") inc("customers");
+      if (r.lead_status === "hold") inc("hold");
+      if (orders === 0 && r.pending != null) {
+        if (r.lead_status !== "ordered") inc("interested");
+        if (!r.pending_phone) inc("incomplete");
+      }
+      if (r.first_contact_at && new Date(r.first_contact_at).getTime() >= dayAgo) inc("new");
+    }
+    return { rows: out, counts, folderCounts };
   });
 
 export const listOmniMessages = createServerFn({ method: "POST" })
