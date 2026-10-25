@@ -969,7 +969,8 @@ export async function syncOne(supabase: any, store: { id: string; couriers: any 
     };
     const changed = res.status !== parcel.status;
     if (changed) patch.status = res.status;
-    if (res.status === "delivered") patch.collection_status = "collected";
+    if (res.status === "delivered" && parcel.collection_status !== "paid") patch.collection_status = "collected";
+    if (changed && res.status === "returned") { patch.returned_at = new Date().toISOString(); patch.collection_status = "not_applicable"; }
     await supabase.from("courier_parcels").update(patch as never).eq("id", parcel.id);
     if (changed) {
       await addEvent(supabase, store.id, parcel.id, res.status, res.message ?? null, "api");
