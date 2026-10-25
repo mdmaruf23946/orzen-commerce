@@ -242,6 +242,7 @@ import { Route as ApiPublicAiAdminMessengerWebhookRouteImport } from './routes/a
 import { Route as ApiPublicAiAdminWebhookRouteImport } from './routes/api/public/ai-admin/webhook'
 import { Route as ApiPublicAiCallsToolRouteImport } from './routes/api/public/ai-calls/tool'
 import { Route as ApiPublicAiCallsWebhookRouteImport } from './routes/api/public/ai-calls/webhook'
+import { Route as ApiPublicCouriersWebhookRouteImport } from './routes/api/public/couriers/webhook'
 import { Route as ApiPublicCronAiCallsRouteImport } from './routes/api/public/cron/ai-calls'
 import { Route as ApiPublicCronDomainIdleRouteImport } from './routes/api/public/cron/domain-idle'
 import { Route as ApiPublicCronNotifyOrdersRouteImport } from './routes/api/public/cron/notify-orders'
@@ -1616,6 +1617,12 @@ const ApiPublicAiCallsWebhookRoute = ApiPublicAiCallsWebhookRouteImport.update({
   path: '/api/public/ai-calls/webhook',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicCouriersWebhookRoute =
+  ApiPublicCouriersWebhookRouteImport.update({
+    id: '/api/public/couriers/webhook',
+    path: '/api/public/couriers/webhook',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicCronAiCallsRoute = ApiPublicCronAiCallsRouteImport.update({
   id: '/api/public/cron/ai-calls',
   path: '/api/public/cron/ai-calls',
@@ -2089,6 +2096,7 @@ export interface FileRoutesByFullPath {
   '/api/public/ai-admin/webhook': typeof ApiPublicAiAdminWebhookRoute
   '/api/public/ai-calls/tool': typeof ApiPublicAiCallsToolRoute
   '/api/public/ai-calls/webhook': typeof ApiPublicAiCallsWebhookRoute
+  '/api/public/couriers/webhook': typeof ApiPublicCouriersWebhookRoute
   '/api/public/cron/ai-calls': typeof ApiPublicCronAiCallsRoute
   '/api/public/cron/domain-idle': typeof ApiPublicCronDomainIdleRoute
   '/api/public/cron/notify-orders': typeof ApiPublicCronNotifyOrdersRoute
@@ -2355,6 +2363,7 @@ export interface FileRoutesByTo {
   '/api/public/ai-admin/webhook': typeof ApiPublicAiAdminWebhookRoute
   '/api/public/ai-calls/tool': typeof ApiPublicAiCallsToolRoute
   '/api/public/ai-calls/webhook': typeof ApiPublicAiCallsWebhookRoute
+  '/api/public/couriers/webhook': typeof ApiPublicCouriersWebhookRoute
   '/api/public/cron/ai-calls': typeof ApiPublicCronAiCallsRoute
   '/api/public/cron/domain-idle': typeof ApiPublicCronDomainIdleRoute
   '/api/public/cron/notify-orders': typeof ApiPublicCronNotifyOrdersRoute
@@ -2636,6 +2645,7 @@ export interface FileRoutesById {
   '/api/public/ai-admin/webhook': typeof ApiPublicAiAdminWebhookRoute
   '/api/public/ai-calls/tool': typeof ApiPublicAiCallsToolRoute
   '/api/public/ai-calls/webhook': typeof ApiPublicAiCallsWebhookRoute
+  '/api/public/couriers/webhook': typeof ApiPublicCouriersWebhookRoute
   '/api/public/cron/ai-calls': typeof ApiPublicCronAiCallsRoute
   '/api/public/cron/domain-idle': typeof ApiPublicCronDomainIdleRoute
   '/api/public/cron/notify-orders': typeof ApiPublicCronNotifyOrdersRoute
@@ -2917,6 +2927,7 @@ export interface FileRouteTypes {
     | '/api/public/ai-admin/webhook'
     | '/api/public/ai-calls/tool'
     | '/api/public/ai-calls/webhook'
+    | '/api/public/couriers/webhook'
     | '/api/public/cron/ai-calls'
     | '/api/public/cron/domain-idle'
     | '/api/public/cron/notify-orders'
@@ -3183,6 +3194,7 @@ export interface FileRouteTypes {
     | '/api/public/ai-admin/webhook'
     | '/api/public/ai-calls/tool'
     | '/api/public/ai-calls/webhook'
+    | '/api/public/couriers/webhook'
     | '/api/public/cron/ai-calls'
     | '/api/public/cron/domain-idle'
     | '/api/public/cron/notify-orders'
@@ -3463,6 +3475,7 @@ export interface FileRouteTypes {
     | '/api/public/ai-admin/webhook'
     | '/api/public/ai-calls/tool'
     | '/api/public/ai-calls/webhook'
+    | '/api/public/couriers/webhook'
     | '/api/public/cron/ai-calls'
     | '/api/public/cron/domain-idle'
     | '/api/public/cron/notify-orders'
@@ -3563,6 +3576,7 @@ export interface RootRouteChildren {
   ApiPublicAiAdminWebhookRoute: typeof ApiPublicAiAdminWebhookRoute
   ApiPublicAiCallsToolRoute: typeof ApiPublicAiCallsToolRoute
   ApiPublicAiCallsWebhookRoute: typeof ApiPublicAiCallsWebhookRoute
+  ApiPublicCouriersWebhookRoute: typeof ApiPublicCouriersWebhookRoute
   ApiPublicCronAiCallsRoute: typeof ApiPublicCronAiCallsRoute
   ApiPublicCronDomainIdleRoute: typeof ApiPublicCronDomainIdleRoute
   ApiPublicCronNotifyOrdersRoute: typeof ApiPublicCronNotifyOrdersRoute
@@ -5234,6 +5248,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicAiCallsWebhookRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/couriers/webhook': {
+      id: '/api/public/couriers/webhook'
+      path: '/api/public/couriers/webhook'
+      fullPath: '/api/public/couriers/webhook'
+      preLoaderRoute: typeof ApiPublicCouriersWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/cron/ai-calls': {
       id: '/api/public/cron/ai-calls'
       path: '/api/public/cron/ai-calls'
@@ -6268,6 +6289,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicAiAdminWebhookRoute: ApiPublicAiAdminWebhookRoute,
   ApiPublicAiCallsToolRoute: ApiPublicAiCallsToolRoute,
   ApiPublicAiCallsWebhookRoute: ApiPublicAiCallsWebhookRoute,
+  ApiPublicCouriersWebhookRoute: ApiPublicCouriersWebhookRoute,
   ApiPublicCronAiCallsRoute: ApiPublicCronAiCallsRoute,
   ApiPublicCronDomainIdleRoute: ApiPublicCronDomainIdleRoute,
   ApiPublicCronNotifyOrdersRoute: ApiPublicCronNotifyOrdersRoute,

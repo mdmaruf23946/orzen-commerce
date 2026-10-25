@@ -2665,8 +2665,10 @@ export type Database = {
       courier_parcels: {
         Row: {
           cod_amount: number
+          cod_collected: number | null
           collection_status: string
           consignment_id: string | null
+          courier_fee: number | null
           courier_key: string
           created_at: string
           delivery_charge: number
@@ -2678,6 +2680,8 @@ export type Database = {
           last_synced_at: string | null
           note: string | null
           order_id: string | null
+          paid_out_at: string | null
+          payout_ref: string | null
           recipient_address: string | null
           recipient_area: string | null
           recipient_city: string | null
@@ -2687,6 +2691,7 @@ export type Database = {
           request_payload: Json | null
           response_payload: Json | null
           return_charge: number
+          returned_at: string | null
           status: string
           store_id: string
           tracking_code: string | null
@@ -2696,8 +2701,10 @@ export type Database = {
         }
         Insert: {
           cod_amount?: number
+          cod_collected?: number | null
           collection_status?: string
           consignment_id?: string | null
+          courier_fee?: number | null
           courier_key: string
           created_at?: string
           delivery_charge?: number
@@ -2709,6 +2716,8 @@ export type Database = {
           last_synced_at?: string | null
           note?: string | null
           order_id?: string | null
+          paid_out_at?: string | null
+          payout_ref?: string | null
           recipient_address?: string | null
           recipient_area?: string | null
           recipient_city?: string | null
@@ -2718,6 +2727,7 @@ export type Database = {
           request_payload?: Json | null
           response_payload?: Json | null
           return_charge?: number
+          returned_at?: string | null
           status?: string
           store_id: string
           tracking_code?: string | null
@@ -2727,8 +2737,10 @@ export type Database = {
         }
         Update: {
           cod_amount?: number
+          cod_collected?: number | null
           collection_status?: string
           consignment_id?: string | null
+          courier_fee?: number | null
           courier_key?: string
           created_at?: string
           delivery_charge?: number
@@ -2740,6 +2752,8 @@ export type Database = {
           last_synced_at?: string | null
           note?: string | null
           order_id?: string | null
+          paid_out_at?: string | null
+          payout_ref?: string | null
           recipient_address?: string | null
           recipient_area?: string | null
           recipient_city?: string | null
@@ -2749,6 +2763,7 @@ export type Database = {
           request_payload?: Json | null
           response_payload?: Json | null
           return_charge?: number
+          returned_at?: string | null
           status?: string
           store_id?: string
           tracking_code?: string | null

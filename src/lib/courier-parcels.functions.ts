@@ -969,7 +969,8 @@ export async function syncOne(supabase: any, store: { id: string; couriers: any 
     };
     const changed = res.status !== parcel.status;
     if (changed) patch.status = res.status;
-    if (res.status === "delivered") patch.collection_status = "collected";
+    if (res.status === "delivered" && parcel.collection_status !== "paid") patch.collection_status = "collected";
+    if (changed && res.status === "returned") { patch.returned_at = new Date().toISOString(); patch.collection_status = "not_applicable"; }
     await supabase.from("courier_parcels").update(patch as never).eq("id", parcel.id);
     if (changed) {
       await addEvent(supabase, store.id, parcel.id, res.status, res.message ?? null, "api");
@@ -1008,3 +1009,101 @@ async function mirrorOrder(supabase: any, storeId: string, parcel: any) {
 }
 
 export { ACTIVE_STATUSES };
+
+/** Apply a courier webhook update to the matching parcel of one store. */
+export async function applyCourierUpdate(
+  supabase: any,
+  storeId: string,
+  u: import("@/lib/couriers/webhook-parse").WebhookUpdate,
+  source: "webhook" | "cron",
+) {
+  let parcel: any = null;
+  for (const [col, val] of [
+    ["consignment_id", u.consignmentId],
+    ["tracking_code", u.trackingCode ?? u.consignmentId],
+  ] as const) {
+    if (!val || parcel) continue;
+    const { data } = await supabase
+      .from("courier_parcels").select("*").eq("store_id", storeId).eq(col, val)
+      .order("created_at", { ascending: false }).limit(1);
+    parcel = data?.[0] ?? null;
+  }
+  if (!parcel && u.invoice) {
+    const { data: ord } = await supabase.from("orders").select("id").eq("store_id", storeId).eq("invoice_no", u.invoice).limit(1);
+    if (ord?.[0]) {
+      const { data } = await supabase.from("courier_parcels").select("*").eq("store_id", storeId)
+        .eq("order_id", ord[0].id).order("created_at", { ascending: false }).limit(1);
+      parcel = data?.[0] ?? null;
+    }
+  }
+  if (!parcel) return { matched: false };
+  const patch: Record<string, unknown> = { last_synced_at: new Date().toISOString() };
+  if (u.codCollected != null) patch.cod_collected = u.codCollected;
+  if (u.courierFee != null) patch.courier_fee = u.courierFee;
+  const changed = !!u.status && u.status !== parcel.status;
+  if (changed) {
+    patch.status = u.status;
+    if (u.status === "delivered" && parcel.collection_status !== "paid") patch.collection_status = "collected";
+    if (u.status === "returned") { patch.returned_at = new Date().toISOString(); patch.collection_status = "not_applicable"; }
+  }
+  await supabase.from("courier_parcels").update(patch as never).eq("id", parcel.id);
+  if (changed) {
+    await addEvent(supabase, storeId, parcel.id, u.status!, u.message, source);
+    await mirrorOrder(supabase, storeId, { ...parcel, status: u.status });
+    if (parcel.order_id) {
+      try {
+        const { pushOrzenOrder } = await import("@/lib/orzen-sync.server");
+        await pushOrzenOrder(storeId, parcel.order_id, "order.courier_updated", { courier: parcel.courier_key, courier_status: u.status, previous_courier_status: parcel.status, tracking_code: parcel.tracking_code ?? null, message: u.message });
+      } catch { /* non-fatal */ }
+    }
+  }
+  return { matched: true, changed };
+}
+
+/** Money summary: COD collected by couriers, fees, and what is still owed to the merchant. */
+export const getCourierFinance = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const store = await getStore(context.supabase, context.userId);
+    const { data } = await context.supabase
+      .from("courier_parcels")
+      .select("id,courier_key,status,cod_amount,cod_collected,delivery_charge,courier_fee,return_charge,collection_status,paid_out_at")
+      .eq("store_id", store.id)
+      .in("status", ["delivered", "partial_delivered", "returned"])
+      .limit(5000);
+    const by: Record<string, { delivered: number; returned: number; collected: number; fees: number; paid: number; due: number }> = {};
+    for (const p of (data ?? []) as any[]) {
+      const r = (by[p.courier_key] ??= { delivered: 0, returned: 0, collected: 0, fees: 0, paid: 0, due: 0 });
+      const fee = Number(p.courier_fee ?? p.delivery_charge ?? 0) + (p.status === "returned" ? Number(p.return_charge ?? 0) : 0);
+      r.fees += fee;
+      if (p.status === "returned") { r.returned += 1; continue; }
+      r.delivered += 1;
+      const got = Number(p.cod_collected ?? p.cod_amount ?? 0);
+      r.collected += got;
+      if (p.collection_status === "paid") r.paid += got - fee;
+      else r.due += got - fee;
+    }
+    const { courierWebhookSig } = await import("@/lib/couriers/webhook-sign.server");
+    return {
+      webhookPath: `/api/public/couriers/webhook?s=${store.id}&k=${courierWebhookSig(store.id)}`,
+      couriers: Object.entries(by).map(([key, v]) => ({ key, ...v })),
+    };
+  });
+
+/** Mark every delivered, unpaid parcel of a courier as paid out (merchant received the money). */
+export const markCourierPaid = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ courierKey: z.enum(COURIER_KEYS), reference: z.string().max(120).optional() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const store = await getStore(context.supabase, context.userId);
+    const { data: rows, error } = await context.supabase
+      .from("courier_parcels")
+      .update({ collection_status: "paid", paid_out_at: new Date().toISOString(), payout_ref: data.reference ?? null } as never)
+      .eq("store_id", store.id)
+      .eq("courier_key", data.courierKey)
+      .in("status", ["delivered", "partial_delivered"])
+      .neq("collection_status", "paid")
+      .select("id");
+    if (error) throw new Error(error.message);
+    return { ok: true, count: rows?.length ?? 0 };
+  });

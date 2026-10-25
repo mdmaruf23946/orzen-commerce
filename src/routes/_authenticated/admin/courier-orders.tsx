@@ -39,6 +39,7 @@ import {
   openPrintWindow,
 } from "@/components/admin/couriers/parcel-ui";
 import { SendToCourierDialog } from "@/components/admin/couriers/SendToCourierDialog";
+import { CourierFinancePanel } from "@/components/admin/couriers/CourierFinancePanel";
 import { ItemThumbs } from "@/components/admin/couriers/ItemThumbs";
 import { type ParcelStatus } from "@/lib/couriers/status";
 import { type CourierKey } from "@/components/admin/couriers/providers";
@@ -357,6 +358,8 @@ function CourierOrdersPage() {
           ))}
         </div>
       )}
+      {connected.length > 0 && <CourierFinancePanel />}
+
 
       <Tabs
         value={active.value}
