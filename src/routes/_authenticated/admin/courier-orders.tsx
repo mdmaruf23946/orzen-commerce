@@ -10,10 +10,11 @@ import { useFeature } from "@/components/admin/FeatureGate";
 import { updateOrderStatus } from "@/lib/admin.functions";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { CallButton } from "@/components/admin/calls/CallButton";
+import { CourierLogo } from "@/components/admin/couriers/CourierLogo";
 import { Thumb } from "@/components/admin/orders/OrderCard";
 
 const ACT =
-  "inline-flex h-8 items-center justify-center gap-1 rounded-lg border px-2.5 text-xs transition-colors hover:bg-muted disabled:pointer-events-none";
+  "inline-flex h-8 items-center justify-center gap-1 rounded-lg border px-2.5 text-xs transition-colors hover:bg-muted disabled:pointer-events-none lg:h-8 lg:w-8 lg:gap-0 lg:px-0 lg:text-[0px]";
 
 function waHref(phone: string) {
   let d = String(phone ?? "").replace(/\D/g, "");
@@ -158,8 +159,9 @@ function CourierOrdersPage() {
     enabled: isReady,
   });
 
-  const rows = (parcelData?.rows ?? []) as any[];
-  const orderRows = (orders ?? []) as any[];
+  const [courierFilter, setCourierFilter] = useState<string>("all");
+  const rows = ((parcelData?.rows ?? []) as any[]).filter((p) => courierFilter === "all" || p.courier_key === courierFilter);
+  const orderRows = ((orders ?? []) as any[]).filter((o) => courierFilter === "all" || (o.courier_key ?? defaultKey) === courierFilter);
   const [fraudFor, setFraudFor] = useState<{ id: string; phone: string } | null>(null);
   const { allowed: fraudAllowed } = useFeature("fraud_checker");
   const updateStatus = useServerFn(updateOrderStatus);
@@ -335,26 +337,27 @@ function CourierOrdersPage() {
           </Button>
         </div>
       ) : (
-        <div className="flex flex-wrap items-center gap-2 rounded-xl border bg-card p-3">
-          <Truck className="h-4 w-4 text-muted-foreground" />
-          <span className="text-xs text-muted-foreground">Current Courier:</span>
+        <div className="flex items-center gap-2 overflow-x-auto rounded-xl border bg-card p-2">
+          <button
+            type="button"
+            onClick={() => setCourierFilter("all")}
+            className={`flex h-10 shrink-0 items-center gap-1.5 rounded-lg border px-3 text-xs font-semibold transition-colors ${courierFilter === "all" ? "border-primary bg-primary/10 text-primary" : "hover:bg-muted"}`}
+          >
+            <Truck className="h-4 w-4" /> All
+          </button>
           {connected.map((c) => (
-            <span key={c.key} className="flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs">
-              <span className="font-medium">{courierLabel(c.key)}</span>
-              <span className="rounded-full bg-emerald-500/10 px-1.5 py-0.5 text-[10px] text-emerald-600 dark:text-emerald-400">
-                Connected
-              </span>
-              {c.isDefault && (
-                <span className="rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] text-primary">
-                  Default Courier
-                </span>
-              )}
-              {c.sandbox && (
-                <span className="rounded-full bg-amber-500/10 px-1.5 py-0.5 text-[10px] text-amber-600 dark:text-amber-400">
-                  Test mode
-                </span>
-              )}
-            </span>
+            <button
+              type="button"
+              key={c.key}
+              onClick={() => setCourierFilter(c.key)}
+              className={`flex h-10 shrink-0 items-center gap-2 rounded-lg border px-2.5 text-xs transition-colors ${courierFilter === c.key ? "border-primary bg-primary/10" : "hover:bg-muted"}`}
+            >
+              <CourierLogo courierKey={c.key} className="h-6 w-6" />
+              <span className="font-semibold">{courierLabel(c.key)}</span>
+              <span className="h-2 w-2 rounded-full bg-emerald-500" title="Connected" />
+              {c.isDefault && <span className="rounded bg-primary/10 px-1 text-[10px] text-primary">Default</span>}
+              {c.sandbox && <span className="rounded bg-amber-500/10 px-1 text-[10px] text-amber-600 dark:text-amber-400">Test</span>}
+            </button>
           ))}
         </div>
       )}
@@ -394,10 +397,10 @@ function CourierOrdersPage() {
               const first = items[0];
               const addr = [o.address, o.area].filter(Boolean).join(", ");
               return (
-                <article key={o.id} className="rounded-2xl border bg-card p-3 shadow-sm sm:p-4">
-                  <div className="grid grid-cols-[56px_1fr_auto] gap-3">
+                <article key={o.id} className="rounded-2xl border bg-card p-3 shadow-sm sm:p-4 lg:grid lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center lg:gap-x-4 lg:rounded-xl lg:px-3 lg:py-2.5">
+                  <div className="grid grid-cols-[56px_1fr_auto] gap-3 lg:items-center">
                     <div className="relative">
-                      <Thumb url={first?.image ?? first?.image_url ?? first?.primary_image_url} alt={first?.name ?? "Item"} className="h-14 w-14" />
+                      <Thumb url={first?.image ?? first?.image_url ?? first?.primary_image_url} alt={first?.name ?? "Item"} className="h-14 w-14 lg:h-12 lg:w-12" />
                       {items.length > 1 && (
                         <span className="absolute -bottom-1 -right-1 rounded-full bg-primary px-1.5 text-[10px] font-semibold text-primary-foreground">
                           +{items.length - 1}
@@ -430,7 +433,7 @@ function CourierOrdersPage() {
                         {items.length > 1 && <span className="text-muted-foreground"> +{items.length - 1} more</span>}
                       </div>
                     </div>
-                    <div className="flex flex-col items-end gap-1 text-right">
+                    <div className="flex flex-col items-end gap-1 text-right lg:max-w-[230px] lg:flex-row lg:flex-wrap lg:items-center lg:justify-end lg:gap-1.5">
                       <div className="text-base font-bold leading-tight">{money(o.cod_amount)}</div>
                       <div className="text-[10px] text-muted-foreground">COD</div>
                       <div className="text-[10px] text-muted-foreground">Delivery {money(o.delivery_amount)}</div>
@@ -442,13 +445,13 @@ function CourierOrdersPage() {
                       </span>
                       {(o.courier_key ?? defaultKey) && (
                         <span className="inline-flex items-center gap-1 rounded-md bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary">
-                          <Truck className="h-3 w-3" /> {courierLabel(o.courier_key ?? defaultKey)}
+                          <CourierLogo courierKey={o.courier_key ?? defaultKey} className="h-3.5 w-3.5" /> {courierLabel(o.courier_key ?? defaultKey)}
                         </span>
                       )}
                     </div>
                   </div>
-                  {fraudAllowed && o.phone && <FraudSummary phone={o.phone} />}
-                  <div className="mt-3 grid grid-cols-2 gap-1.5 border-t pt-2.5 sm:flex sm:flex-wrap">
+                  {fraudAllowed && o.phone && <div className="lg:col-span-2"><FraudSummary phone={o.phone} /></div>}
+                  <div className="mt-3 grid grid-cols-2 gap-1.5 border-t pt-2.5 sm:flex sm:flex-wrap lg:col-start-2 lg:row-start-1 lg:mt-0 lg:flex-nowrap lg:items-center lg:border-0 lg:pt-0">
                     {connected.length === 0 ? (
                       <Link
                         to="/admin/couriers/apps"
@@ -457,7 +460,7 @@ function CourierOrdersPage() {
                         <Truck className="h-3.5 w-3.5" /> Connect a Courier
                       </Link>
                     ) : (
-                      <div className="col-span-2 flex">
+                      <div className="col-span-2 flex lg:shrink-0">
                         <button
                           type="button"
                           disabled={sendingId === o.id}
@@ -492,7 +495,7 @@ function CourierOrdersPage() {
                         </DropdownMenu>
                       </div>
                     )}
-                    <div className="col-span-2 grid grid-cols-3 gap-1.5 sm:flex sm:flex-wrap">
+                    <div className="col-span-2 grid grid-cols-3 gap-1.5 sm:flex sm:flex-wrap lg:flex-nowrap">
                       <Link to="/admin/orders" search={{ q: o.invoice_no ?? undefined } as never} className={ACT}>
                         <Eye className="h-3.5 w-3.5" /> View
                       </Link>
@@ -578,8 +581,8 @@ function CourierOrdersPage() {
                 {rows.map((p) => {
                   const it = ((p as any).items ?? []) as any[];
                   return (
-                  <article key={p.id} className="rounded-2xl border bg-card p-3 shadow-sm sm:p-4">
-                    <div className="grid grid-cols-[auto_56px_1fr_auto] gap-3">
+                  <article key={p.id} className="rounded-2xl border bg-card p-3 shadow-sm sm:p-4 lg:grid lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center lg:gap-x-4 lg:rounded-xl lg:px-3 lg:py-2.5">
+                    <div className="grid grid-cols-[auto_56px_1fr_auto] gap-3 lg:items-center">
                       <Checkbox
                         className="mt-1"
                         checked={selected.includes(p.id)}
@@ -588,7 +591,7 @@ function CourierOrdersPage() {
                         }
                       />
                       <div className="relative">
-                        <Thumb url={it[0]?.image} alt={it[0]?.name ?? "Item"} className="h-14 w-14" />
+                        <Thumb url={it[0]?.image} alt={it[0]?.name ?? "Item"} className="h-14 w-14 lg:h-12 lg:w-12" />
                         {it.length > 1 && (
                           <span className="absolute -bottom-1 -right-1 rounded-full bg-primary px-1.5 text-[10px] font-semibold text-primary-foreground">+{it.length - 1}</span>
                         )}
@@ -609,19 +612,19 @@ function CourierOrdersPage() {
                           Updated {new Date(p.last_synced_at ?? p.updated_at ?? p.created_at).toLocaleString("en-GB", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
                         </div>
                       </button>
-                      <div className="flex flex-col items-end gap-1 text-right">
+                      <div className="flex flex-col items-end gap-1 text-right lg:max-w-[230px] lg:flex-row lg:flex-wrap lg:items-center lg:justify-end lg:gap-1.5">
                         <div className="text-base font-bold leading-tight">{money(p.cod_amount)}</div>
                         <div className="text-[10px] text-muted-foreground">COD</div>
                         <StatusPill status={p.status} />
                         <span className="inline-flex items-center gap-1 rounded-md bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary">
-                          <Truck className="h-3 w-3" /> {courierLabel(p.courier_key)}
+                          <CourierLogo courierKey={p.courier_key} className="h-3.5 w-3.5" /> {courierLabel(p.courier_key)}
                         </span>
                       </div>
                     </div>
                     {p.last_error && (
-                      <p className="mt-2 line-clamp-2 rounded-lg bg-destructive/10 px-2 py-1 text-xs text-destructive">{p.last_error}</p>
+                      <p className="mt-2 line-clamp-2 lg:col-span-2 rounded-lg bg-destructive/10 px-2 py-1 text-xs text-destructive">{p.last_error}</p>
                     )}
-                    <div className="mt-3 grid grid-cols-3 gap-1.5 border-t pt-2.5 sm:flex sm:flex-wrap">
+                    <div className="mt-3 grid grid-cols-3 gap-1.5 border-t pt-2.5 sm:flex sm:flex-wrap lg:col-start-2 lg:row-start-1 lg:mt-0 lg:flex-nowrap lg:border-0 lg:pt-0">
                       {p.tracking_url ? (
                         <a href={p.tracking_url} target="_blank" rel="noreferrer" className={`${ACT} border-primary/30 bg-primary/10 text-primary`}>
                           <ExternalLink className="h-3.5 w-3.5" /> Track
