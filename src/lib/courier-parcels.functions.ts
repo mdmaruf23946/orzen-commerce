@@ -1107,3 +1107,58 @@ export const markCourierPaid = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true, count: rows?.length ?? 0 };
   });
+
+/** Put the products of a returned parcel back into stock — once, merchant-confirmed. */
+export const restockReturnedParcel = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ parcelId: uuid }).parse(d))
+  .handler(async ({ data, context }) => {
+    const sb = context.supabase;
+    const store = await getStore(sb, context.userId);
+    // Claim first so a double click can never add the stock twice.
+    const { data: claimed, error } = await sb
+      .from("courier_parcels")
+      .update({ restocked_at: new Date().toISOString() } as never)
+      .eq("id", data.parcelId)
+      .eq("store_id", store.id)
+      .eq("status", "returned")
+      .is("restocked_at", null)
+      .select("id,order_id");
+    if (error) throw new Error(error.message);
+    const p = (claimed ?? [])[0] as any;
+    if (!p) throw new Error("এই পার্সেল রিটার্ন হয়নি বা আগেই স্টকে ফেরত নেওয়া হয়েছে");
+    if (!p.order_id) return { ok: true, items: 0 };
+    const { data: lines } = await sb.from("order_items").select("product_id,qty").eq("order_id", p.order_id);
+    let items = 0;
+    for (const l of (lines ?? []) as any[]) {
+      if (!l.product_id) continue;
+      const { data: prod } = await sb.from("products").select("id,stock,product_type").eq("id", l.product_id).eq("store_id", store.id).maybeSingle();
+      if (!prod || (prod as any).product_type !== "physical") continue;
+      const add = Number(l.qty ?? 0);
+      await sb.from("products").update({ stock: Number((prod as any).stock ?? 0) + add } as never).eq("id", l.product_id);
+      await sb.from("stock_movements").insert({ store_id: store.id, product_id: l.product_id, delta: add, type: "return", ref_order_id: p.order_id, reason: `Courier return ${String(p.id).slice(0, 8)}` } as never);
+      items += add;
+    }
+    return { ok: true, items };
+  });
+
+/** Live account balance straight from the courier API (SteadFast exposes it). */
+export const getCourierBalances = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const store = await getStore(context.supabase, context.userId);
+    const out: Array<{ key: string; balance: number | null; error: string | null }> = [];
+    const cfg = courierCfg(store, "steadfast");
+    if (cfg?.enabled !== false && (cfg?.credentials?.api_key || cfg?.api_key)) {
+      const { call, trimUrl } = await import("@/lib/couriers/types.server");
+      const ctx = buildCtx(store, "steadfast");
+      const url = trimUrl(ctx.baseUrl) || "https://portal.packzy.com/api/v1";
+      const r = await call(ctx as any, "get_balance", {
+        url: `${url}/get_balance`,
+        headers: { "Api-Key": ctx.creds.api_key ?? "", "Secret-Key": ctx.creds.secret ?? ctx.creds.api_secret ?? "" },
+      });
+      const b = Number(r.json?.current_balance);
+      out.push({ key: "steadfast", balance: r.ok && Number.isFinite(b) ? b : null, error: r.ok ? null : "ব্যালেন্স আনা যায়নি" });
+    }
+    return { balances: out };
+  });
