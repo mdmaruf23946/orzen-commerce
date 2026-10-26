@@ -158,6 +158,7 @@ export default function AIChatPanel({
     if (!conversationId || !historyLoaded) return;
     const id = setInterval(async () => {
       if (status === "submitted" || status === "streaming") return;
+      if (typeof document !== "undefined" && document.hidden) return;
       try {
         const res = await loadHistory({ data: { slug, conversationId, ...access() } });
         setHandedOff(!!res.handedOff);
