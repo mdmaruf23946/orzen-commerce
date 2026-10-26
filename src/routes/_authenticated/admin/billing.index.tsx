@@ -441,17 +441,6 @@ function BillingPage() {
                   )}
                 </ul>
 
-                {/* Summary bullets */}
-                {p.feature_summary && p.feature_summary.length > 0 && (
-                  <ul className="mt-2 space-y-0.5 text-[11px] text-muted-foreground sm:mt-3 sm:space-y-1 sm:text-xs">
-                    {p.feature_summary.map((s, i) => (
-                      <li key={i} className="flex items-start gap-1.5">
-                        <span className="mt-1 h-1 w-1 shrink-0 rounded-full bg-primary/60" />
-                        <span className="min-w-0">{s}</span>
-                      </li>
-                    ))}
-                  </ul>
-                )}
 
                 {/* All plan perks — only what this plan includes */}
                 {(() => {

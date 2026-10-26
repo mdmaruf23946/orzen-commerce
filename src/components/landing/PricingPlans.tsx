@@ -97,19 +97,19 @@ export function PricingPlans() {
             const any = (...ks: string[]) => isCustom || ks.some((k) => !!f[k]);
             const items: { key: string; label: Bi; on: boolean }[] = [
               { key: "ai_agent", label: { en: "AI Sales Agent", bn: "AI Sales Agent" }, on: any("ai_agent") },
-              { key: "messaging", label: { en: "AI Messaging (Messenger, WhatsApp & more)", bn: "AI মেসেজিং (Messenger, WhatsApp ও আরও)" }, on: any("ai_messenger", "whatsapp", "messenger_inbox", "facebook_page") },
+              { key: "messaging", label: { en: "AI Messaging", bn: "AI মেসেজিং" }, on: any("ai_messenger", "whatsapp", "messenger_inbox", "facebook_page") },
               { key: "call", label: { en: "Call Center", bn: "কল সেন্টার" }, on: any("call_center") },
               { key: "builder", label: { en: "AI Product Builder", bn: "AI প্রোডাক্ট বিল্ডার" }, on: any("ai_product_builder") },
-              { key: "lp_create", label: { en: "Landing Page Create", bn: "ল্যান্ডিং পেজ তৈরি" }, on: any("landing_page_create") || (f.landing_page_create === undefined && !!f.landing_pages) },
+              { key: "lp_create", label: { en: "Landing Pages", bn: "ল্যান্ডিং পেজ" }, on: any("landing_page_create") || (f.landing_page_create === undefined && !!f.landing_pages) },
               { key: "lp_connect", label: { en: "Website Integration", bn: "Website Integration" }, on: any("landing_page_connect") || (f.landing_page_connect === undefined && !!f.landing_pages) },
-              { key: "courier", label: { en: "Courier Integration", bn: "কুরিয়ার ইন্টিগ্রেশন" }, on: any("courier") },
-              { key: "fraud", label: { en: "Fraud Checker & Duplicate Protection", bn: "ফ্রড চেকার ও ডুপ্লিকেট প্রোটেকশন" }, on: any("fraud_checker", "duplicate_protection") },
-              { key: "pixel", label: { en: "Facebook Pixel & Tracking", bn: "Facebook Pixel ও ট্র্যাকিং" }, on: any("pixel") },
+              { key: "courier", label: { en: "Courier Integration", bn: "কুরিয়ার" }, on: any("courier") },
+              { key: "fraud", label: { en: "Fraud Checker", bn: "ফ্রড চেকার" }, on: any("fraud_checker", "duplicate_protection") },
+              { key: "pixel", label: { en: "Facebook Pixel", bn: "Facebook Pixel" }, on: any("pixel") },
               { key: "domain", label: { en: "Custom Domain", bn: "নিজস্ব ডোমেইন" }, on: any("custom_domain") },
-              { key: "coupons", label: { en: "Coupons & Discounts", bn: "কুপন ও ডিসকাউন্ট" }, on: any("coupons") },
-              { key: "inventory", label: { en: "Inventory, Bulk & Import/Export", bn: "ইনভেন্টরি, বাল্ক ও ইমপোর্ট/এক্সপোর্ট" }, on: any("inventory", "bulk_actions", "import_export", "quick_order") },
+              { key: "coupons", label: { en: "Coupons", bn: "কুপন" }, on: any("coupons") },
+              { key: "inventory", label: { en: "Inventory & Bulk", bn: "ইনভেন্টরি ও বাল্ক" }, on: any("inventory", "bulk_actions", "import_export", "quick_order") },
               { key: "analytics", label: { en: "Analytics", bn: "Analytics" }, on: any("analytics") },
-              { key: "returns", label: { en: "Returns & Exchanges", bn: "রিটার্ন ও এক্সচেঞ্জ" }, on: any("returns") },
+              { key: "returns", label: { en: "Returns", bn: "রিটার্ন" }, on: any("returns") },
               { key: "reviews", label: { en: "Product Reviews", bn: "প্রোডাক্ট রিভিউ" }, on: any("product_reviews") },
               { key: "staff", label: { en: "Staff Management", bn: "স্টাফ ম্যানেজমেন্ট" }, on: any("staff") },
             ];
@@ -118,7 +118,7 @@ export function PricingPlans() {
               <article
                 key={p.id}
                 className={cn(
-                  "relative flex flex-col rounded-2xl border bg-white p-5 transition hover:-translate-y-1 hover:shadow-[var(--shadow-lift)]",
+                  "relative flex min-w-0 flex-col rounded-2xl border bg-white p-4 transition hover:-translate-y-1 hover:shadow-[var(--shadow-lift)]",
                   isPopular ? "border-[color:var(--orzen-blue)] ring-2 ring-[color:var(--orzen-blue)]/25" : "border-[color:var(--orzen-border)]",
                 )}
               >
@@ -128,7 +128,7 @@ export function PricingPlans() {
                   </span>
                 )}
                 <h3 className="text-base font-bold">{p.name}</h3>
-                {p.description && <p className="mt-0.5 line-clamp-2 text-xs text-[color:var(--orzen-muted)]">{p.description}</p>}
+                {p.description && <p className="mt-0.5 truncate text-xs text-[color:var(--orzen-muted)]" title={p.description}>{p.description}</p>}
 
                 <div className="mt-3">
                   {isCustom ? (
@@ -161,7 +161,7 @@ export function PricingPlans() {
                   </div>
                 )}
 
-                <ul className="mt-3 space-y-1.5 text-sm">
+                <ul className="mt-3 space-y-1 text-[13px]">
                   <Limit label={pick({ en: "Products", bn: "প্রোডাক্ট" })} value={formatLimit(p.product_limit, undefined)} />
                   <Limit label={pick({ en: "Orders / month", bn: "অর্ডার / মাস" })} value={formatLimit(p.order_limit, undefined)} />
                   <Limit label={pick({ en: "Storage", bn: "স্টোরেজ" })} value={formatLimit(p.storage_mb, "MB")} />
@@ -171,23 +171,12 @@ export function PricingPlans() {
                   )}
                 </ul>
 
-                {Array.isArray(p.feature_summary) && p.feature_summary.length > 0 && (
-                  <ul className="mt-3 space-y-1 text-xs text-[color:var(--orzen-muted)]">
-                    {p.feature_summary.map((t: string, i: number) => (
-                      <li key={i} className="flex items-start gap-1.5">
-                        <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-[color:var(--orzen-blue)]/60" />
-                        <span>{t}</span>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-
-                <ul className="mt-3 flex-1 space-y-2 border-t border-[color:var(--orzen-border)] pt-3 text-sm">
+                <ul className="mt-3 flex-1 space-y-1.5 border-t border-[color:var(--orzen-border)] pt-3 text-[13px]">
                   {enabled.length === 0 && <li className="text-[color:var(--orzen-muted)]">{pick({ en: "All core store features", bn: "সব মৌলিক স্টোর ফিচার" })}</li>}
                   {enabled.map((i) => (
-                    <li key={i.key} className="flex items-start gap-2">
-                      <Check className="mt-0.5 h-4 w-4 flex-none text-[color:var(--orzen-success)]" />
-                      <span>{pick(i.label)}</span>
+                    <li key={i.key} className="flex min-w-0 items-center gap-1.5" title={pick(i.label)}>
+                      <Check className="h-3.5 w-3.5 flex-none text-[color:var(--orzen-success)]" />
+                      <span className="truncate whitespace-nowrap">{pick(i.label)}</span>
                     </li>
                   ))}
                 </ul>
