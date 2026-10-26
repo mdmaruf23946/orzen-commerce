@@ -27,9 +27,9 @@ export const Route = createFileRoute("/api/public/cron/product-image-embeddings"
             if (budget <= 0) break;
             const r: any = await syncProductImageEmbeddings(sb, { storeId: s.id, limit: budget });
             totals.stores++;
-            totals.done += Number(r?.done ?? 0);
+            totals.done += Number(r?.embedded ?? 0);
             totals.failed += Number(r?.failed ?? 0);
-            budget -= Number(r?.done ?? 0) + Number(r?.failed ?? 0);
+            budget -= Number(r?.embedded ?? 0) + Number(r?.failed ?? 0);
           }
           return Response.json({ ok: true, ...totals });
         } catch {
