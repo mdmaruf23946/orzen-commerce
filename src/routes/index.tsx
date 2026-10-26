@@ -57,6 +57,7 @@ import { TestimonialsMarquee } from "@/components/landing/TestimonialsMarquee";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { getPublicShowcase, type ShowcaseRow } from "@/lib/showcase.functions";
+import { PricingPlans, PlatformHighlights } from "@/components/landing/PricingPlans";
 
 export const Route = createFileRoute("/")({
   // If the request host is a store subdomain or a verified custom domain,
@@ -148,8 +149,10 @@ function Landing() {
         <TrustBar />
         <Features />
         <AIShowcase />
+        <PlatformHighlights />
         <Workflow />
         <DashboardShowcase />
+        <PricingPlans />
         <WhyOrzen />
         <Testimonials />
         <FAQ />
@@ -169,6 +172,7 @@ function Landing() {
 const NAV = [
   { key: "nav_features", href: "#features" },
   { key: "nav_ai", href: "#ai" },
+  { key: "nav_pricing", href: "#pricing" },
   { key: "nav_faq", href: "#faq" },
   { key: "nav_contact", href: "#contact" },
 ] as const;
