@@ -5,66 +5,39 @@ import { useServerFn } from "@tanstack/react-start";
 import {
   ArrowRight, Check, Camera, Globe, PhoneCall, Truck, ShieldCheck, Inbox, Sparkles,
 } from "lucide-react";
-import { listPublicPlans } from "@/lib/billing.functions";
+import { getPublicPricing, computeCycleTotal } from "@/lib/billing.functions";
+import { ALWAYS_INCLUDED, FEATURE_LABELS as CORE_LABELS, formatLimit } from "@/lib/features";
 import { useLang } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
 type Bi = { en: string; bn: string };
 
-// Merchant-facing labels; digital/service/subscription products and AI calling
-// are hidden platform-wide, so they are never advertised here.
-const FEATURE_LABELS: Record<string, Bi> = {
-  ai_messenger: { en: "AI Sales Agent (Messenger)", bn: "AI Sales Agent (Messenger)" },
-  ai_agent: { en: "AI automation agent", bn: "AI অটোমেশন এজেন্ট" },
-  whatsapp: { en: "WhatsApp automation", bn: "WhatsApp অটোমেশন" },
-  messenger_inbox: { en: "Omni Inbox (all chats)", bn: "Omni Inbox (সব চ্যাট এক জায়গায়)" },
-  facebook_page: { en: "Facebook Page connect", bn: "Facebook Page কানেক্ট" },
-  ai_product_builder: { en: "AI product builder", bn: "AI প্রোডাক্ট বিল্ডার" },
-  courier: { en: "Courier booking & tracking", bn: "কুরিয়ার বুকিং ও ট্র্যাকিং" },
-  call_center: { en: "Call center (manual calling)", bn: "কল সেন্টার (ম্যানুয়াল কল)" },
-  fraud_checker: { en: "Fraud checker", bn: "ফ্রড চেকার" },
-  duplicate_protection: { en: "Duplicate order protection", bn: "ডুপ্লিকেট অর্ডার প্রোটেকশন" },
-  landing_page_create: { en: "Landing page builder", bn: "ল্যান্ডিং পেজ বিল্ডার" },
-  landing_page_connect: { en: "Website Integration", bn: "Website Integration" },
-  analytics: { en: "Analytics & reports", bn: "Analytics ও রিপোর্ট" },
-  pixel: { en: "Facebook Pixel & CAPI", bn: "Facebook Pixel ও CAPI" },
-  custom_domain: { en: "Custom domain", bn: "নিজস্ব ডোমেইন" },
-  seo: { en: "SEO tools", bn: "SEO টুলস" },
-  inventory: { en: "Inventory management", bn: "ইনভেন্টরি ম্যানেজমেন্ট" },
-  invoice: { en: "Branded invoices", bn: "ব্র্যান্ডেড ইনভয়েস" },
-  returns: { en: "Returns management", bn: "রিটার্ন ম্যানেজমেন্ট" },
-  wallet: { en: "Wallet", bn: "ওয়ালেট" },
-  bulk_actions: { en: "Bulk actions", bn: "বাল্ক অ্যাকশন" },
-  import_export: { en: "Import / export", bn: "ইমপোর্ট / এক্সপোর্ট" },
-  payment_gateways: { en: "Payment gateways", bn: "পেমেন্ট গেটওয়ে" },
-  customer_notes: { en: "Customer CRM notes", bn: "কাস্টমার CRM নোট" },
-  coupons: { en: "Coupons", bn: "কুপন" },
-  themes: { en: "Themes", bn: "থিম" },
-  delivery_zones: { en: "Delivery zones", bn: "ডেলিভারি জোন" },
-  quick_order: { en: "Quick order", bn: "কুইক অর্ডার" },
-  product_reviews: { en: "Product reviews", bn: "প্রোডাক্ট রিভিউ" },
-  customer_accounts: { en: "Customer accounts", bn: "কাস্টমার অ্যাকাউন্ট" },
-  custom_pages: { en: "Custom pages", bn: "কাস্টম পেজ" },
-  notifications: { en: "Notifications", bn: "নোটিফিকেশন" },
-};
 
-const CYCLES = [
-  { key: 1, en: "Monthly", bn: "মাসিক", off: 0 },
-  { key: 3, en: "3 months", bn: "৩ মাস", off: 10 },
-  { key: 6, en: "6 months", bn: "৬ মাস", off: 20 },
-  { key: 12, en: "Yearly", bn: "বাৎসরিক", off: 30 },
-] as const;
+type Cycle = "monthly" | "3m" | "6m" | "yearly";
 
+// Mirrors the Merchant panel "Billing & Subscription" plan cards. Plans and
+// cycle discounts are read live from the database, so editing a package in the
+// admin panel updates this section automatically.
 export function PricingPlans() {
   const { pick } = useLang();
-  const fetchPlans = useServerFn(listPublicPlans);
-  const { data: plans = [], isError } = useQuery({
-    queryKey: ["platform", "public-plans"],
-    queryFn: () => fetchPlans(),
-    staleTime: 5 * 60 * 1000,
+  const fetchPricing = useServerFn(getPublicPricing);
+  const { data, isError } = useQuery({
+    queryKey: ["platform", "public-pricing"],
+    queryFn: () => fetchPricing(),
+    staleTime: 0,
+    refetchOnWindowFocus: true,
   });
-  const [cycle, setCycle] = useState<(typeof CYCLES)[number]>(CYCLES[0]);
-  const popularIdx = plans.length > 2 ? plans.length - 2 : -1;
+  const plans = ((data?.plans ?? []) as any[]);
+  const s = data?.discounts ?? { discount_3m: 5, discount_6m: 10, discount_yearly: 20 };
+  const [cycle, setCycle] = useState<Cycle>("monthly");
+  const cycles: { key: Cycle; en: string; bn: string; off: number }[] = [
+    { key: "monthly", en: "Monthly", bn: "মাসিক", off: 0 },
+    { key: "3m", en: "3 Months", bn: "৩ মাস", off: s.discount_3m },
+    { key: "6m", en: "6 Months", bn: "৬ মাস", off: s.discount_6m },
+    { key: "yearly", en: "Yearly", bn: "বাৎসরিক", off: s.discount_yearly },
+  ];
+  const paid = plans.filter((p) => Number(p.price) > 0).sort((a, b) => Number(a.price) - Number(b.price));
+  const popularId = paid[0]?.id ?? null;
 
   return (
     <section id="pricing" className="scroll-mt-24 py-10 md:py-14">
@@ -74,33 +47,37 @@ export function PricingPlans() {
             {pick({ en: "Pricing", bn: "প্যাকেজ" })}
           </p>
           <h2 className="mt-2 text-3xl font-extrabold tracking-tight sm:text-4xl">
-            {pick({ en: "Simple plans that grow with you", bn: "আপনার ব্যবসার সাথে বাড়ে এমন সহজ প্যাকেজ" })}
+            {pick({ en: "Pick the plan that fits your business", bn: "আপনার ব্যবসার জন্য সঠিক প্যাকেজ বেছে নিন" })}
           </h2>
           <p className="mt-3 text-sm text-[color:var(--orzen-muted)] sm:text-base">
             {pick({ en: "Start free. Upgrade anytime. Longer cycles save more.", bn: "ফ্রিতে শুরু করুন, যেকোনো সময় আপগ্রেড করুন। লম্বা মেয়াদে বেশি সাশ্রয়।" })}
           </p>
         </div>
 
-        <div className="mt-8 flex justify-center">
-          <div className="inline-flex flex-wrap justify-center gap-1 rounded-full border border-[color:var(--orzen-border)] bg-[color:var(--orzen-slate-50)] p-1">
-            {CYCLES.map((c) => (
+        <div className="mx-auto mt-8 grid max-w-3xl grid-cols-2 gap-2 sm:grid-cols-4">
+          {cycles.map((c) => {
+            const active = cycle === c.key;
+            return (
               <button
                 key={c.key}
                 type="button"
-                onClick={() => setCycle(c)}
-                aria-pressed={cycle.key === c.key}
+                onClick={() => setCycle(c.key)}
+                aria-pressed={active}
                 className={cn(
-                  "rounded-full px-4 py-2 text-xs font-semibold transition sm:text-sm",
-                  cycle.key === c.key
-                    ? "bg-[color:var(--orzen-navy)] text-white shadow-[var(--shadow-soft)]"
-                    : "text-[color:var(--orzen-muted)] hover:text-[color:var(--orzen-navy)]",
+                  "relative rounded-xl border bg-white p-3 text-left transition",
+                  active ? "border-[color:var(--orzen-blue)] ring-2 ring-[color:var(--orzen-blue)]/25" : "border-[color:var(--orzen-border)] hover:border-[color:var(--orzen-navy)]",
                 )}
               >
-                {pick(c)}
-                {c.off > 0 && <span className="ml-1 text-[color:var(--orzen-success)]">-{c.off}%</span>}
+                <div className="text-sm font-semibold">{pick(c)}</div>
+                <div className="mt-0.5 text-[11px] text-[color:var(--orzen-muted)]">
+                  {c.off > 0 ? pick({ en: `Save ${c.off}%`, bn: `${c.off}% সাশ্রয়` }) : pick({ en: "No discount", bn: "ছাড় নেই" })}
+                </div>
+                {c.off > 0 && (
+                  <span className="absolute -top-2 right-2 rounded-full bg-[color:var(--orzen-success)] px-1.5 py-0.5 text-[10px] font-bold text-white">-{c.off}%</span>
+                )}
               </button>
-            ))}
-          </div>
+            );
+          })}
         </div>
 
         {isError && (
@@ -109,72 +86,150 @@ export function PricingPlans() {
           </p>
         )}
 
-        <div className="mt-10 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-          {(plans as any[]).map((p, i) => {
-            const price = Number(p.price) || 0;
-            const total = Math.round(price * cycle.key * (1 - cycle.off / 100));
-            const perMonth = Math.round(total / cycle.key);
-            const popular = i === popularIdx;
-            const feats = Object.entries((p.features ?? {}) as Record<string, boolean>)
-              .filter(([k, v]) => v && FEATURE_LABELS[k])
-              .map(([k]) => k);
+        <div className="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          {plans.map((p) => {
+            const tier = p.plan_tier ?? "";
+            const isCustom = tier === "custom";
+            const isFree = !isCustom && Number(p.price) === 0;
+            const isPopular = !isCustom && !isFree && popularId === p.id;
+            const calc = !isFree && !isCustom ? computeCycleTotal(Number(p.price), cycle, s) : null;
+            const f = (p.features ?? {}) as Record<string, boolean>;
+            const any = (...ks: string[]) => isCustom || ks.some((k) => !!f[k]);
+            const items: { key: string; label: Bi; on: boolean }[] = [
+              { key: "ai_agent", label: { en: "AI Sales Agent", bn: "AI Sales Agent" }, on: any("ai_agent") },
+              { key: "messaging", label: { en: "AI Messaging (Messenger, WhatsApp & more)", bn: "AI মেসেজিং (Messenger, WhatsApp ও আরও)" }, on: any("ai_messenger", "whatsapp", "messenger_inbox", "facebook_page") },
+              { key: "call", label: { en: "Call Center", bn: "কল সেন্টার" }, on: any("call_center") },
+              { key: "builder", label: { en: "AI Product Builder", bn: "AI প্রোডাক্ট বিল্ডার" }, on: any("ai_product_builder") },
+              { key: "lp_create", label: { en: "Landing Page Create", bn: "ল্যান্ডিং পেজ তৈরি" }, on: any("landing_page_create") || (f.landing_page_create === undefined && !!f.landing_pages) },
+              { key: "lp_connect", label: { en: "Website Integration", bn: "Website Integration" }, on: any("landing_page_connect") || (f.landing_page_connect === undefined && !!f.landing_pages) },
+              { key: "courier", label: { en: "Courier Integration", bn: "কুরিয়ার ইন্টিগ্রেশন" }, on: any("courier") },
+              { key: "fraud", label: { en: "Fraud Checker & Duplicate Protection", bn: "ফ্রড চেকার ও ডুপ্লিকেট প্রোটেকশন" }, on: any("fraud_checker", "duplicate_protection") },
+              { key: "pixel", label: { en: "Facebook Pixel & Tracking", bn: "Facebook Pixel ও ট্র্যাকিং" }, on: any("pixel") },
+              { key: "domain", label: { en: "Custom Domain", bn: "নিজস্ব ডোমেইন" }, on: any("custom_domain") },
+              { key: "coupons", label: { en: "Coupons & Discounts", bn: "কুপন ও ডিসকাউন্ট" }, on: any("coupons") },
+              { key: "inventory", label: { en: "Inventory, Bulk & Import/Export", bn: "ইনভেন্টরি, বাল্ক ও ইমপোর্ট/এক্সপোর্ট" }, on: any("inventory", "bulk_actions", "import_export", "quick_order") },
+              { key: "analytics", label: { en: "Analytics", bn: "Analytics" }, on: any("analytics") },
+              { key: "returns", label: { en: "Returns & Exchanges", bn: "রিটার্ন ও এক্সচেঞ্জ" }, on: any("returns") },
+              { key: "reviews", label: { en: "Product Reviews", bn: "প্রোডাক্ট রিভিউ" }, on: any("product_reviews") },
+              { key: "staff", label: { en: "Staff Management", bn: "স্টাফ ম্যানেজমেন্ট" }, on: any("staff") },
+            ];
+            const enabled = items.filter((i) => i.on);
             return (
               <article
                 key={p.id}
                 className={cn(
-                  "relative flex flex-col rounded-2xl border bg-white p-6 transition hover:-translate-y-1 hover:shadow-[var(--shadow-lift)]",
-                  popular ? "border-[color:var(--orzen-blue)] shadow-[var(--shadow-lift)] ring-2 ring-[color:var(--orzen-blue)]/20" : "border-[color:var(--orzen-border)]",
+                  "relative flex flex-col rounded-2xl border bg-white p-5 transition hover:-translate-y-1 hover:shadow-[var(--shadow-lift)]",
+                  isPopular ? "border-[color:var(--orzen-blue)] ring-2 ring-[color:var(--orzen-blue)]/25" : "border-[color:var(--orzen-border)]",
                 )}
               >
-                {popular && (
-                  <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-[color:var(--orzen-blue)] px-3 py-1 text-[11px] font-bold text-white">
-                    {pick({ en: "Most popular", bn: "সবচেয়ে জনপ্রিয়" })}
+                {isPopular && (
+                  <span className="absolute -top-2.5 left-4 inline-flex items-center gap-1 rounded-full bg-[color:var(--orzen-blue)] px-2 py-0.5 text-[10px] font-bold uppercase text-white">
+                    <Sparkles className="h-3 w-3" /> Popular
                   </span>
                 )}
-                <h3 className="text-lg font-bold">{p.name}</h3>
+                <h3 className="text-base font-bold">{p.name}</h3>
+                {p.description && <p className="mt-0.5 line-clamp-2 text-xs text-[color:var(--orzen-muted)]">{p.description}</p>}
+
                 <div className="mt-3">
-                  <span className="text-3xl font-extrabold">৳{perMonth.toLocaleString()}</span>
-                  <span className="text-sm text-[color:var(--orzen-muted)]">/{pick({ en: "mo", bn: "মাস" })}</span>
-                  {price > 0 && cycle.key > 1 && (
-                    <p className="mt-1 text-xs text-[color:var(--orzen-muted)]">
-                      ৳{total.toLocaleString()} {pick({ en: `billed every ${cycle.key} months`, bn: `${cycle.key} মাসে একবার` })}
-                    </p>
+                  {isCustom ? (
+                    <div className="text-2xl font-extrabold">Custom</div>
+                  ) : isFree ? (
+                    <div className="text-2xl font-extrabold">৳0<span className="text-sm font-normal text-[color:var(--orzen-muted)]"> / {pick({ en: "forever", bn: "সবসময়" })}</span></div>
+                  ) : (
+                    <>
+                      <div className="flex items-baseline gap-2">
+                        <div className="text-2xl font-extrabold">৳{calc!.total.toLocaleString()}</div>
+                        {calc!.discountPct > 0 && (
+                          <div className="text-xs text-[color:var(--orzen-muted)] line-through">৳{(Number(p.price) * calc!.months).toLocaleString()}</div>
+                        )}
+                      </div>
+                      <div className="mt-0.5 text-[11px] text-[color:var(--orzen-muted)]">
+                        ৳{calc!.perMonth.toLocaleString()}/mo · every {calc!.months} mo
+                      </div>
+                      {calc!.saved > 0 && (
+                        <div className="mt-1 inline-block rounded bg-[color:var(--orzen-success)]/10 px-1.5 py-0.5 text-[10px] font-semibold text-[color:var(--orzen-success)]">
+                          Save ৳{calc!.saved.toLocaleString()}
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
-                <ul className="mt-4 space-y-1.5 border-b border-[color:var(--orzen-border)] pb-4 text-sm">
-                  <li><b>{p.product_limit ?? "∞"}</b> {pick({ en: "products", bn: "প্রোডাক্ট" })}</li>
-                  <li><b>{p.order_limit ?? "∞"}</b> {pick({ en: "orders / month", bn: "অর্ডার / মাস" })}</li>
-                  <li><b>{p.staff_limit ?? "∞"}</b> {pick({ en: "staff", bn: "স্টাফ" })}</li>
-                  {Number(p.landing_page_limit) > 0 && (
-                    <li><b>{p.landing_page_limit}</b> {pick({ en: "landing pages", bn: "ল্যান্ডিং পেজ" })}</li>
+
+                {Number(p.ai_credits_included) > 0 && (
+                  <div className="mt-2 flex items-center gap-1.5 rounded-lg border border-[color:var(--orzen-blue)]/30 bg-[color:var(--orzen-blue)]/10 px-2 py-1.5 text-xs font-semibold text-[color:var(--orzen-blue)]">
+                    <Sparkles className="h-3.5 w-3.5" /> {Number(p.ai_credits_included).toLocaleString()} AI credits free
+                  </div>
+                )}
+
+                <ul className="mt-3 space-y-1.5 text-sm">
+                  <Limit label={pick({ en: "Products", bn: "প্রোডাক্ট" })} value={formatLimit(p.product_limit, undefined)} />
+                  <Limit label={pick({ en: "Orders / month", bn: "অর্ডার / মাস" })} value={formatLimit(p.order_limit, undefined)} />
+                  <Limit label={pick({ en: "Storage", bn: "স্টোরেজ" })} value={formatLimit(p.storage_mb, "MB")} />
+                  <Limit label={pick({ en: "Staff", bn: "স্টাফ" })} value={formatLimit(p.staff_limit, undefined)} />
+                  {(isCustom || !!f.landing_page_create) && (
+                    <Limit label={pick({ en: "Landing Pages", bn: "ল্যান্ডিং পেজ" })} value={formatLimit(p.landing_page_limit, undefined)} />
                   )}
                 </ul>
-                <ul className="mt-4 flex-1 space-y-2 text-sm">
-                  {feats.map((k) => (
-                    <li key={k} className="flex items-start gap-2">
+
+                {Array.isArray(p.feature_summary) && p.feature_summary.length > 0 && (
+                  <ul className="mt-3 space-y-1 text-xs text-[color:var(--orzen-muted)]">
+                    {p.feature_summary.map((t: string, i: number) => (
+                      <li key={i} className="flex items-start gap-1.5">
+                        <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-[color:var(--orzen-blue)]/60" />
+                        <span>{t}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+
+                <ul className="mt-3 flex-1 space-y-2 border-t border-[color:var(--orzen-border)] pt-3 text-sm">
+                  {enabled.length === 0 && <li className="text-[color:var(--orzen-muted)]">{pick({ en: "All core store features", bn: "সব মৌলিক স্টোর ফিচার" })}</li>}
+                  {enabled.map((i) => (
+                    <li key={i.key} className="flex items-start gap-2">
                       <Check className="mt-0.5 h-4 w-4 flex-none text-[color:var(--orzen-success)]" />
-                      <span>{pick(FEATURE_LABELS[k]!)}</span>
+                      <span>{pick(i.label)}</span>
                     </li>
                   ))}
                 </ul>
+
                 <Link
                   to="/auth"
                   className={cn(
-                    "mt-6 inline-flex items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-semibold transition",
-                    popular
+                    "mt-5 inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold transition",
+                    isPopular
                       ? "bg-[color:var(--orzen-blue)] text-white hover:bg-[color:var(--orzen-blue-600)]"
                       : "border border-[color:var(--orzen-border)] text-[color:var(--orzen-navy)] hover:border-[color:var(--orzen-navy)]",
                   )}
                 >
-                  {price === 0 ? pick({ en: "Start free", bn: "ফ্রিতে শুরু করুন" }) : pick({ en: "Choose plan", bn: "প্যাকেজ নিন" })}
+                  {isCustom ? pick({ en: "Contact Sales", bn: "যোগাযোগ করুন" }) : isFree ? pick({ en: "Start free", bn: "ফ্রিতে শুরু করুন" }) : pick({ en: "Choose plan", bn: "প্যাকেজ নিন" })}
                   <ArrowRight className="h-4 w-4" />
                 </Link>
               </article>
             );
           })}
         </div>
+
+        <div className="mt-5 rounded-2xl border border-[color:var(--orzen-border)] bg-[color:var(--orzen-slate-50)] p-4">
+          <div className="text-sm font-semibold">{pick({ en: "Included in every plan", bn: "প্রতিটি প্যাকেজে অন্তর্ভুক্ত" })}</div>
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {["Physical Products", ...ALWAYS_INCLUDED.map((k) => CORE_LABELS[k])].map((l) => (
+              <span key={l} className="inline-flex items-center gap-1 rounded-full border border-[color:var(--orzen-border)] bg-white px-2.5 py-1 text-xs">
+                <Check className="h-3.5 w-3.5 text-[color:var(--orzen-success)]" />{l}
+              </span>
+            ))}
+          </div>
+        </div>
       </div>
     </section>
+  );
+}
+
+function Limit({ label, value }: { label: string; value: string }) {
+  return (
+    <li className="flex items-center justify-between gap-2">
+      <span className="text-[color:var(--orzen-muted)]">{label}</span>
+      <span className="font-medium">{value}</span>
+    </li>
   );
 }
 

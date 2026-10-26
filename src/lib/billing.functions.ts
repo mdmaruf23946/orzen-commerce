@@ -403,3 +403,32 @@ export const listAiCreditPacks = createServerFn({ method: "GET" })
       .select("id,name,credits,price_bdt").eq("is_active", true).order("sort_order").order("credits");
     return ((data ?? []) as any[]).map((b) => ({ id: b.id as string, name: b.name as string, credits: Number(b.credits), price_bdt: Number(b.price_bdt) }));
   });
+
+/** Public landing-page pricing: same active plans + the same cycle discounts the Merchant panel uses. */
+export const getPublicPricing = createServerFn({ method: "GET" }).handler(async () => {
+  const sb = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_PUBLISHABLE_KEY!, {
+    auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
+  });
+  const { data: plans, error } = await sb
+    .from("subscription_packages")
+    .select(PUBLIC_FIELDS)
+    .eq("is_active", true)
+    .eq("is_trial", false)
+    .order("sort_order", { ascending: true })
+    .order("price", { ascending: true });
+  if (error) throw new Error(error.message);
+  let d: any = {};
+  try {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data } = await (supabaseAdmin as any).rpc("get_billing_discounts");
+    d = data ?? {};
+  } catch { /* fall back to defaults */ }
+  return {
+    plans: plans ?? [],
+    discounts: {
+      discount_3m: Number(d?.discount_3m ?? 5),
+      discount_6m: Number(d?.discount_6m ?? 10),
+      discount_yearly: Number(d?.discount_yearly ?? 20),
+    },
+  };
+});
