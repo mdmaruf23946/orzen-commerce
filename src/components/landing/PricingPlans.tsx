@@ -212,7 +212,7 @@ export function PricingPlans() {
         <div className="mt-5 rounded-2xl border border-[color:var(--orzen-border)] bg-[color:var(--orzen-slate-50)] p-4">
           <div className="text-sm font-semibold">{pick({ en: "Included in every plan", bn: "প্রতিটি প্যাকেজে অন্তর্ভুক্ত" })}</div>
           <div className="mt-2 flex flex-wrap gap-1.5">
-            {["Physical Products", ...ALWAYS_INCLUDED.map((k) => CORE_LABELS[k])].map((l) => (
+            {["Physical Products", ...ALWAYS_INCLUDED.filter((k) => !["digital_products", "service_products", "subscription_products"].includes(k)).map((k) => CORE_LABELS[k])].map((l) => (
               <span key={l} className="inline-flex items-center gap-1 rounded-full border border-[color:var(--orzen-border)] bg-white px-2.5 py-1 text-xs">
                 <Check className="h-3.5 w-3.5 text-[color:var(--orzen-success)]" />{l}
               </span>
