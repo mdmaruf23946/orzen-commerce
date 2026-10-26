@@ -13,6 +13,7 @@ export const LANDING_COPY = {
   /* Header */
   nav_features: { en: "Features", bn: "ফিচার" },
   nav_ai: { en: "AI", bn: "AI" },
+  nav_pricing: { en: "Pricing", bn: "প্যাকেজ" },
   nav_faq: { en: "FAQ", bn: "FAQ" },
   nav_contact: { en: "Contact", bn: "যোগাযোগ" },
   sign_in: { en: "Sign In", bn: "সাইন ইন" },
@@ -342,8 +343,8 @@ export const WHY_COPY: { title: CopyPair; desc: CopyPair }[] = [
   {
     title: { en: "Affordable Pricing", bn: "সাশ্রয়ী প্রাইসিং" },
     desc: {
-      en: "Start free. Enterprise features from ৳ 990/mo.",
-      bn: "ফ্রিতে শুরু করুন। এন্টারপ্রাইজ ফিচার মাত্র ৳ ৯৯০/মাস থেকে।",
+      en: "Start free. Paid plans from just ৳ 299/mo.",
+      bn: "ফ্রিতে শুরু করুন। পেইড প্ল্যান মাত্র ৳ ২৯৯/মাস থেকে।",
     },
   },
 ];
@@ -352,8 +353,8 @@ export const FAQ_COPY: { q: CopyPair; a: CopyPair }[] = [
   {
     q: { en: "Is there really a free plan?", bn: "সত্যিই কি ফ্রি প্ল্যান আছে?" },
     a: {
-      en: "Yes. The Free plan is forever-free with 1 store and 20 products — no credit card required.",
-      bn: "হ্যাঁ। Free প্ল্যান আজীবন ফ্রি — ১টি স্টোর ও ২০টি প্রোডাক্ট, ক্রেডিট কার্ড লাগবে না।",
+      en: "Yes. The Free plan is forever-free with 1 store, 10 products and 30 orders/month — no credit card required.",
+      bn: "হ্যাঁ। Free প্ল্যান আজীবন ফ্রি — ১টি স্টোর, ১০টি প্রোডাক্ট ও মাসে ৩০টি অর্ডার, ক্রেডিট কার্ড লাগবে না।",
     },
   },
   {
@@ -415,8 +416,8 @@ export const FAQ_COPY: { q: CopyPair; a: CopyPair }[] = [
   {
     q: { en: "Is there a free trial on paid plans?", bn: "পেইড প্ল্যানে কি ফ্রি ট্রায়াল আছে?" },
     a: {
-      en: "Every paid plan includes a 7-day trial with all features unlocked.",
-      bn: "প্রতিটি পেইড প্ল্যানে ৭ দিনের ট্রায়াল — সব ফিচার আনলকড।",
+      en: "New stores get a 3-day free trial with all features unlocked.",
+      bn: "নতুন স্টোরে ৩ দিনের ফ্রি ট্রায়াল — সব ফিচার আনলকড।",
     },
   },
   {
