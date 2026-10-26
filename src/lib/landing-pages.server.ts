@@ -304,6 +304,14 @@ export async function intakeLandingPageOrder(input: IntakeInput): Promise<Intake
     if (map?.store_product_id) productId = map.store_product_id;
   }
   if (!productId) productId = conn.default_product_id ?? null;
+  // Test orders only: fall back to any active in-stock product of this store,
+  // so "Test order" works before the merchant maps products.
+  if (!productId && input.isTest) {
+    const { data: any1 } = await sb.from("products").select("id")
+      .eq("store_id", conn.store_id).eq("status", "active").gt("stock", 0)
+      .order("created_at", { ascending: false }).limit(1).maybeSingle();
+    productId = any1?.id ?? null;
+  }
 
   if (!productId) {
     await writeLog(sb, conn.store_id, conn.id, "invalid", {
