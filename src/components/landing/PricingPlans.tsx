@@ -118,7 +118,7 @@ export function PricingPlans() {
               <article
                 key={p.id}
                 className={cn(
-                  "relative flex flex-col rounded-2xl border bg-white p-5 transition hover:-translate-y-1 hover:shadow-[var(--shadow-lift)]",
+                  "relative flex min-w-0 flex-col rounded-2xl border bg-white p-4 transition hover:-translate-y-1 hover:shadow-[var(--shadow-lift)]",
                   isPopular ? "border-[color:var(--orzen-blue)] ring-2 ring-[color:var(--orzen-blue)]/25" : "border-[color:var(--orzen-border)]",
                 )}
               >
@@ -161,7 +161,7 @@ export function PricingPlans() {
                   </div>
                 )}
 
-                <ul className="mt-3 space-y-1.5 text-sm">
+                <ul className="mt-3 space-y-1 text-[13px]">
                   <Limit label={pick({ en: "Products", bn: "প্রোডাক্ট" })} value={formatLimit(p.product_limit, undefined)} />
                   <Limit label={pick({ en: "Orders / month", bn: "অর্ডার / মাস" })} value={formatLimit(p.order_limit, undefined)} />
                   <Limit label={pick({ en: "Storage", bn: "স্টোরেজ" })} value={formatLimit(p.storage_mb, "MB")} />
