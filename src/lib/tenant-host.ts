@@ -4,8 +4,8 @@
 // Kept dependency-free (plain fetch against the Supabase REST RPC) so it can run
 // before the app bundle is loaded. Every failure falls back to the platform site.
 
-const CACHE_TTL_MS = 60_000;
-const SETTINGS_TTL_MS = 300_000;
+const CACHE_TTL_MS = 300_000;
+const SETTINGS_TTL_MS = 3_600_000;
 
 type Tenant = { slug: string; primaryHostname: string | null };
 
