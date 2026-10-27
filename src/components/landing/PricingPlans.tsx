@@ -37,7 +37,11 @@ export function PricingPlans() {
     { key: "yearly", en: "Yearly", bn: "বাৎসরিক", off: s.discount_yearly },
   ];
   const paid = plans.filter((p) => Number(p.price) > 0).sort((a, b) => Number(a.price) - Number(b.price));
-  const popularId = paid[0]?.id ?? null;
+  // Pro is the recommended "Best Choice" plan.
+  const popularId =
+    (paid.find((p) => (p.name ?? "").trim().toLowerCase() === "pro") ??
+      paid.find((p) => p.plan_tier === "business") ??
+      paid[0])?.id ?? null;
 
   return (
     <section id="pricing" className="scroll-mt-24 py-10 md:py-14">
@@ -125,7 +129,7 @@ export function PricingPlans() {
               >
                 {isPopular && (
                   <span className="absolute -top-2.5 left-4 inline-flex items-center gap-1 rounded-full bg-[color:var(--orzen-blue)] px-2 py-0.5 text-[10px] font-bold uppercase text-white">
-                    <Sparkles className="h-3 w-3" /> Popular
+                    <Sparkles className="h-3 w-3" /> {pick({ en: "Best Choice", bn: "সেরা পছন্দ" })}
                   </span>
                 )}
                 <h3 className="text-base font-bold">{p.name}</h3>
