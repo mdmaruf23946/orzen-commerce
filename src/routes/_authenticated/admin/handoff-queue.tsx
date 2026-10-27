@@ -34,7 +34,6 @@ function HandoffQueuePage() {
   const { data: rows = [] } = useQuery({
     queryKey: ["handoff-queue"],
     queryFn: () => listFn(),
-   ,
   });
 
   async function returnToAi(id: string) {

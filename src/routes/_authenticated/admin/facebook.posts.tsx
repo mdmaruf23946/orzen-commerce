@@ -56,7 +56,6 @@ function PostsPage() {
     queryFn: () => listFn({ data: { q: q || null, after: cursors[pageIdx] ?? null, limit: 10 } }),
     enabled: tab === "published",
     // Live sync: the Facebook webhook writes changes server-side, this keeps the view fresh.
-   ,
   });
   const drafts = useQuery({
     queryKey: ["fbpage", "drafts"],

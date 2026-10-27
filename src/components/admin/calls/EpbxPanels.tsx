@@ -45,7 +45,7 @@ export function useProviderOverview() {
   const fn = useServerFn(getProviderOverview);
   return useQuery({
     queryKey: ["voice", "overview"], queryFn: () => fn(), staleTime: 30_000,
-   , refetchOnWindowFocus: true,
+   refetchOnWindowFocus: true,
   });
 }
 

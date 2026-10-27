@@ -68,7 +68,6 @@ function Dashboard() {
   const { data: inboxStats } = useQuery({
     queryKey: ["admin", "inbox-stats"],
     queryFn: () => inboxStatsFn(),
-   ,
   });
 
   const [range, setRange] = useState<Range>("7d");
@@ -616,7 +615,6 @@ function InboxTile() {
   const { data } = useQuery({
     queryKey: ["admin", "inbox-stats"],
     queryFn: () => statsFn(),
-   ,
   });
   const items: { label: string; value: number; tone: string }[] = [
     { label: "Unread", value: data?.unread ?? 0, tone: "text-blue-600 dark:text-blue-400" },

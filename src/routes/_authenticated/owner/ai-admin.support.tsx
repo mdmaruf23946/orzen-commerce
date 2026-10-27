@@ -30,7 +30,6 @@ function Conversation({ threadId }: { threadId: string }) {
   const { data } = useQuery({
     queryKey: ["ai-admin", "customer-thread", threadId],
     queryFn: () => get({ data: { thread_id: threadId } }),
-   ,
   });
 
   async function send() {
@@ -102,7 +101,6 @@ function Page() {
   const { data = [] } = useQuery({
     queryKey: ["ai-admin", "support"],
     queryFn: () => list(),
-   ,
   });
 
   async function resolve(id: string) {
