@@ -18,7 +18,7 @@ function Page() {
   const fn = useServerFn(aiAgentsOverview);
   const toggle = useServerFn(setCustomerAgentEnabled);
   const qc = useQueryClient();
-  const { data } = useQuery({ queryKey: ["ai-admin", "agents"], queryFn: () => fn(), refetchInterval: 120_000 });
+  const { data } = useQuery({ queryKey: ["ai-admin", "agents"], queryFn: () => fn(),});
 
   const m = data?.messenger as any;
   const connected = m?.status === "connected";

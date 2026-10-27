@@ -155,7 +155,7 @@ export default function AIChatPanel({
 
   // Pull merchant replies from the panel inbox (and notice a takeover).
   useEffect(() => {
-    if (!conversationId || !historyLoaded) return;
+    if (!conversationId || !historyLoaded || !handedOff) return;
     const id = setInterval(async () => {
       if (status === "submitted" || status === "streaming") return;
       if (typeof document !== "undefined" && document.hidden) return;
@@ -171,7 +171,7 @@ export default function AIChatPanel({
           );
         }
       } catch { /* ignore */ }
-    }, handedOff ? 5000 : 15000);
+    }, 8000);
     return () => clearInterval(id);
   }, [conversationId, historyLoaded, handedOff, status, slug, loadHistory, setMessages]);
 

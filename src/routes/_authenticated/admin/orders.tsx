@@ -228,7 +228,6 @@ function OrdersPage() {
   const { data: drafts = [], refetch: refetchDrafts } = useQuery({
     queryKey: ["admin", "orders", "checkout-drafts"],
     queryFn: () => listDrafts(),
-    refetchInterval: 180_000,
   });
 
   const type = scope as TypeKey;

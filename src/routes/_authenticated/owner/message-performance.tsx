@@ -53,7 +53,6 @@ function MessagePerformancePage() {
   const { data, isLoading, isFetching, refetch } = useQuery({
     queryKey: ["owner", "msg-perf", days],
     queryFn: () => fn({ data: { days } }),
-    refetchInterval: 120_000,
   });
 
   const s = data?.summary;

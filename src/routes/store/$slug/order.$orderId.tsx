@@ -34,7 +34,7 @@ const orderQuery = (orderId: string, proof?: { token?: string | null; contact?: 
           ...(proof?.contact ? { contact: proof.contact } : {}),
         },
       }),
-    refetchInterval: 30_000,
+
   });
 
 export const Route = createFileRoute("/store/$slug/order/$orderId")({

@@ -84,7 +84,7 @@ export function ServiceOrderView({ order, slug }: { order: any; slug: string }) 
   const { data, isLoading } = useQuery({
     queryKey: ["serviceOrder", order.id, token, contact],
     queryFn: () => load({ data: { orderId: order.id, ...proof } }),
-    refetchInterval: 30_000,
+
   });
   const verified = !!data?.verified;
 

@@ -32,7 +32,7 @@ const LEVEL_CLASS: Record<string, string> = {
 
 function LogsPage() {
   const logsFn = useServerFn(aiGetLogs);
-  const { data } = useQuery({ queryKey: ["ai-cc-logs"], queryFn: () => logsFn(), refetchInterval: 90_000 });
+  const { data } = useQuery({ queryKey: ["ai-cc-logs"], queryFn: () => logsFn(),});
   const logs = data?.logs ?? [];
 
   return (
