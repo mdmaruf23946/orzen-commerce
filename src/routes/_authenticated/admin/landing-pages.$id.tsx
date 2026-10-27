@@ -99,7 +99,7 @@ function Detail() {
     try {
       const r = await testFn({ data: { id } });
       const body = (r as any)?.body;
-      if (body?.ok) toast.success(body.duplicate ? "Duplicate — order already exists" : "Test order created");
+      if (body?.ok) toast.success(body.duplicate ? "Duplicate — order already exists" : "টেস্ট সফল — কোনো আসল অর্ডার তৈরি হয়নি");
       else toast.error(body?.error ?? "Test failed");
       qc.invalidateQueries({ queryKey: ["landing-page", id, "logs"] });
     } catch (e) { toast.error((e as Error).message); }

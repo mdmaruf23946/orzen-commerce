@@ -93,7 +93,7 @@ function LandingPagesIndex() {
   async function sendTest(id: string) {
     try {
       const r = await test({ data: { id } });
-      if ((r as any)?.body?.ok) toast.success("Test order created");
+      if ((r as any)?.body?.ok) toast.success("টেস্ট সফল — কোনো আসল অর্ডার তৈরি হয়নি");
       else toast.error((r as any)?.body?.error ?? "Test failed");
       refresh();
     } catch (e) {
