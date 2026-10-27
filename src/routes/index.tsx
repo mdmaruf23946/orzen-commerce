@@ -170,6 +170,7 @@ function Landing() {
 /* -------------------------------------------------------------------------- */
 
 const NAV = [
+  { key: "nav_home", href: "#top" },
   { key: "nav_features", href: "#features" },
   { key: "nav_ai", href: "#ai" },
   { key: "nav_pricing", href: "#pricing" },
@@ -326,25 +327,28 @@ function Hero() {
         <div className="absolute -top-32 left-1/2 h-[520px] w-[720px] -translate-x-1/2 rounded-full bg-[radial-gradient(closest-side,rgba(37,99,235,0.10),transparent)]" />
         <div className="absolute top-40 -right-24 h-72 w-72 rounded-full bg-[radial-gradient(closest-side,rgba(17,24,39,0.06),transparent)]" />
       </div>
-      <div className="mx-auto grid max-w-7xl gap-12 px-5 pt-6 pb-10 md:px-8 md:pt-10 md:pb-12 lg:grid-cols-[1.05fr_1fr] lg:gap-16 lg:pt-12">
-        <div className="orzen-fade-up">
+      <div className="mx-auto flex max-w-7xl flex-col items-center gap-12 px-5 pt-6 pb-10 md:px-8 md:pt-10 md:pb-12 lg:pt-12">
+        <div className="orzen-fade-up flex max-w-4xl flex-col items-center text-center">
           <span className="inline-flex items-center gap-2 rounded-full border border-[color:var(--orzen-border)] bg-white px-3 py-1 text-xs font-semibold text-[color:var(--orzen-muted)]">
             <span className="h-1.5 w-1.5 rounded-full bg-[color:var(--orzen-success)]" />
             {t("hero_badge")}
           </span>
-          <h1 className="mt-5 text-4xl font-extrabold leading-[1.05] tracking-tight sm:text-5xl lg:text-6xl">
-            {t("hero_title_1")} <br className="hidden sm:block" />
-            <span className="text-[color:var(--orzen-blue)]">{t("hero_title_2")}</span>
+          <h1 className="mt-5 text-4xl font-extrabold leading-[1.1] tracking-tight sm:text-5xl lg:text-6xl">
+            <span className="block">{t("hero_title_1")}</span>
+            <span className="block text-[color:var(--orzen-blue)]">{t("hero_title_2")}</span>
           </h1>
-          <p className="mt-5 max-w-xl text-base text-[color:var(--orzen-muted)] sm:text-lg">
+          <p className="mt-5 max-w-2xl text-base text-[color:var(--orzen-muted)] sm:text-lg">
             {t("hero_sub")}
           </p>
-          <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+          <div className="mt-8 flex w-full flex-col items-center justify-center gap-3 sm:flex-row">
             <Link
               to="/auth"
-              className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-[color:var(--orzen-blue)] px-6 py-3.5 text-sm font-semibold text-white shadow-[var(--shadow-soft)] hover:bg-[color:var(--orzen-blue-600)] sm:w-auto"
+              className="orzen-ring-btn relative inline-flex w-full items-center justify-center overflow-hidden rounded-full p-[2.5px] shadow-[var(--shadow-soft)] sm:w-auto"
             >
-              {t("hero_cta_primary")} <ArrowRight className="h-4 w-4" />
+              <span aria-hidden className="orzen-ring-spin" />
+              <span className="relative inline-flex w-full items-center justify-center gap-2 rounded-full bg-[color:var(--orzen-blue)] px-7 py-3.5 text-sm font-semibold text-white transition hover:bg-[color:var(--orzen-blue-600)]">
+                {t("hero_cta_primary")} <ArrowRight className="h-4 w-4" />
+              </span>
             </Link>
             <a
               href="#ai"
@@ -353,7 +357,7 @@ function Hero() {
               <Play className="h-4 w-4" /> {t("hero_cta_secondary")}
             </a>
           </div>
-          <div className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-2 text-xs text-[color:var(--orzen-muted)]">
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-[color:var(--orzen-muted)]">
             <span className="inline-flex items-center gap-1.5">
               <Check className="h-4 w-4 text-[color:var(--orzen-success)]" /> {t("hero_point_1")}
             </span>
@@ -366,7 +370,9 @@ function Hero() {
           </div>
         </div>
 
-        <HeroMockup />
+        <div className="w-full max-w-4xl">
+          <HeroMockup />
+        </div>
       </div>
     </section>
   );
