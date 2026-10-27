@@ -13,7 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
-import { BILLING_CYCLES, PLAN_DISPLAY_FEATURES, displayFeatureOn } from "@/lib/features";
+import { BILLING_CYCLES, PLAN_DISPLAY_FEATURES, displayFeatureOn, isDisplayHidden } from "@/lib/features";
 
 export const Route = createFileRoute("/_authenticated/owner/packages")({
   component: PackagesPage,
@@ -217,21 +217,34 @@ function PackageDialog({ editing, onClose, onSaved }: { editing: any; onClose: (
             </TabsContent>
 
             <TabsContent value="features" className="space-y-2">
-              <p className="text-xs text-muted-foreground">যে ফিচার ON রাখবেন, Merchant Panel-এ এই package-এ সেটা দেখাবে; OFF করলে দেখাবে না। Trial package-এ সব খোলা থাকে।</p>
-              <div className="grid gap-2 sm:grid-cols-2">
-                {PLAN_DISPLAY_FEATURES.map((g) => (
-                  <label key={g.key} className="flex items-center justify-between gap-2 rounded-md border p-2 text-sm">
-                    <span>{g.label}</span>
-                    <Switch
-                      checked={displayFeatureOn(form.features, g.flags)}
-                      onCheckedChange={(v) => {
-                        const next = { ...form.features };
-                        g.flags.forEach((k) => { next[k] = v; });
-                        set("features", next);
-                      }}
-                    />
-                  </label>
-                ))}
+              <p className="text-xs text-muted-foreground">✓ = এই package-এ চালু · ✗ = নেই, কার্ডে ক্রস চিহ্নসহ দেখাবে · Hide = নেই, কার্ডে একদমই দেখাবে না। Trial package-এ সব খোলা থাকে।</p>
+              <div className="space-y-1.5">
+                {PLAN_DISPLAY_FEATURES.map((g) => {
+                  const hidden = isDisplayHidden(form.features, g.key);
+                  const on = !hidden && displayFeatureOn(form.features, g.flags);
+                  const state = hidden ? "hide" : on ? "on" : "off";
+                  const choose = (s: "on" | "off" | "hide") => {
+                    const next = { ...form.features };
+                    g.flags.forEach((k) => { next[k] = s === "on"; });
+                    next[`hide_${g.key}`] = s === "hide";
+                    set("features", next);
+                  };
+                  return (
+                    <div key={g.key} className="flex items-center justify-between gap-2 rounded-md border p-2 text-sm">
+                      <span className="truncate">{g.label}</span>
+                      <div className="flex shrink-0 overflow-hidden rounded-md border text-xs">
+                        {([["on", "✓ Access"], ["off", "✗ Cross"], ["hide", "Hide"]] as const).map(([s, l]) => (
+                          <button
+                            key={s}
+                            type="button"
+                            onClick={() => choose(s)}
+                            className={`px-2.5 py-1 ${state === s ? (s === "on" ? "bg-primary text-primary-foreground" : s === "off" ? "bg-destructive text-destructive-foreground" : "bg-muted-foreground text-background") : "hover:bg-muted"}`}
+                          >{l}</button>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </TabsContent>
 

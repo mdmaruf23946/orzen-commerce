@@ -160,6 +160,11 @@ export const PLAN_DISPLAY_FEATURES: { key: string; label: string; flags: string[
   { key: "staff", label: "Staff Management", flags: ["staff"] },
 ];
 
+/** Winner Admin can hide a display feature from a plan card entirely (no ✓, no ✗). Stored as `hide_<key>` in the package features map. */
+export function isDisplayHidden(f: Record<string, boolean | undefined> | null | undefined, key: string): boolean {
+  return !!f?.[`hide_${key}`];
+}
+
 /** Whether a display feature is on for a package's stored feature map. */
 export function displayFeatureOn(f: Record<string, boolean | undefined>, flags: string[]): boolean {
   if (flags.some((k) => !!f[k])) return true;

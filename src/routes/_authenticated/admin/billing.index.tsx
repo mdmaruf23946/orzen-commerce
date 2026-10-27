@@ -12,7 +12,7 @@ import {
   activateFreePlan,
   type CycleKey,
 } from "@/lib/billing.functions";
-import { FEATURE_KEYS, FEATURE_LABELS, ALWAYS_INCLUDED, PLAN_FEATURE_GROUPS, HIGHLIGHT_PRIORITY, formatLimit, PLAN_DISPLAY_FEATURES, displayFeatureOn } from "@/lib/features";
+import { FEATURE_KEYS, FEATURE_LABELS, ALWAYS_INCLUDED, PLAN_FEATURE_GROUPS, HIGHLIGHT_PRIORITY, formatLimit, PLAN_DISPLAY_FEATURES, displayFeatureOn, isDisplayHidden } from "@/lib/features";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import WalletPanel from "@/components/admin/billing/WalletPanel";
@@ -449,7 +449,7 @@ function BillingPage() {
                 {/* Full feature list — included first (✓), missing below (✗, struck through) */}
                 {(() => {
                   const f = (p.features ?? {}) as Record<string, boolean>;
-                  const items = PLAN_DISPLAY_FEATURES.map((g) => ({
+                  const items = PLAN_DISPLAY_FEATURES.filter((g) => !isDisplayHidden(f, g.key)).map((g) => ({
                     key: g.key, label: g.label, on: isCustom || !!p.is_trial || displayFeatureOn(f, g.flags),
                   }));
                   const sorted = [...items.filter((i) => i.on), ...items.filter((i) => !i.on)];

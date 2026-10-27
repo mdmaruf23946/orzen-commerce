@@ -118,7 +118,8 @@ export function PricingPlans() {
               { key: "reviews", label: { en: "Product Reviews", bn: "প্রোডাক্ট রিভিউ" }, on: any("product_reviews") },
               { key: "staff", label: { en: "Staff Management", bn: "স্টাফ ম্যানেজমেন্ট" }, on: any("staff") },
             ];
-            const enabled = items.filter((i) => i.on);
+            const visible = items.filter((i) => !f[`hide_${i.key}`]);
+            const enabled = visible.filter((i) => i.on);
             return (
               <article
                 key={p.id}
@@ -177,7 +178,7 @@ export function PricingPlans() {
                 </ul>
 
                 <ul className="mt-3 flex-1 space-y-1.5 border-t border-[color:var(--orzen-border)] pt-3 text-[13px]">
-                  {[...enabled, ...items.filter((i) => !i.on)].map((i) => (
+                  {[...enabled, ...visible.filter((i) => !i.on)].map((i) => (
                     <li key={i.key} className="flex min-w-0 items-center gap-1.5" title={pick(i.label)}>
                       {i.on ? (
                         <Check className="h-3.5 w-3.5 flex-none text-[color:var(--orzen-success)]" />
