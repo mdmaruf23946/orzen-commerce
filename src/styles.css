@@ -293,6 +293,19 @@
   from { transform: translateX(0); }
   to { transform: translateX(-50%); }
 }
+@keyframes orzen-ring-rotate {
+  to { transform: translate(-50%, -50%) rotate(360deg); }
+}
+@utility orzen-ring-spin {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 300%;
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  background: conic-gradient(from 0deg, var(--orzen-blue), oklch(0.75 0.17 160), oklch(0.8 0.16 85), oklch(0.65 0.22 15), oklch(0.6 0.2 300), var(--orzen-blue));
+  animation: orzen-ring-rotate 3s linear infinite;
+}
 
 
 
