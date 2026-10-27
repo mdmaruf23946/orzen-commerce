@@ -3,7 +3,7 @@ import { StoreErrorState } from "@/components/storefront/StoreErrorState";
 import { createFileRoute, notFound } from "@tanstack/react-router";
 import { keepPreviousData, queryOptions, useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Sparkles, Flame, Grid3x3, ChevronRight, ChevronDown, SearchX } from "lucide-react";
+import { Sparkles, Flame, Grid3x3, ChevronRight, ChevronLeft, ChevronDown, SearchX } from "lucide-react";
 import {
   listStoreBanners,
   listStoreProducts,
