@@ -371,6 +371,16 @@ export async function intakeLandingPageOrder(input: IntakeInput): Promise<Intake
     .filter(Boolean)
     .join(" · ") || null;
 
+  // Test button: validate everything but never create a real order.
+  if (input.isTest) {
+    await writeLog(sb, conn.store_id, conn.id, "test", {
+      external_order_id: canonical.external_order_id,
+      request_hash: rHash, ip: input.ip, ua: input.ua,
+      processing_ms: Date.now() - started,
+    });
+    return { status: 200, body: { ok: true, test: true, dry_run: true, product: productName } };
+  }
+
   const { data: order, error: oErr } = await sb
     .from("orders")
     .insert({
@@ -534,6 +544,10 @@ async function intakeMultiItemOrder(
   const paymentMethod = ["cod", "bkash", "nagad", "rocket", "bank"].includes(canonical.payment_method) ? canonical.payment_method : "cod";
   const noteText = [input.isTest ? "TEST ORDER" : null, canonical.note ? String(canonical.note).slice(0, 400) : null].filter(Boolean).join(" · ") || null;
 
+  if (input.isTest) {
+    await writeLog(sb, conn.store_id, conn.id, "test", { external_order_id: canonical.external_order_id, request_hash: rHash, ip: input.ip, ua: input.ua, processing_ms: Date.now() - started });
+    return { status: 200, body: { ok: true, test: true, dry_run: true, items: lines.length } };
+  }
   const { data: order, error: oErr } = await sb.from("orders").insert({
     store_id: conn.store_id,
     customer_name: canonical.customer_name.slice(0, 120),
