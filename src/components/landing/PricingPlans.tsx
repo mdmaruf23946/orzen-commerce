@@ -3,7 +3,7 @@ import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import {
-  ArrowRight, Check, Camera, Globe, PhoneCall, Truck, ShieldCheck, Inbox, Sparkles,
+  ArrowRight, Check, X, Camera, Globe, PhoneCall, Truck, ShieldCheck, Inbox, Sparkles,
 } from "lucide-react";
 import { getPublicPricing, computeCycleTotal } from "@/lib/billing.functions";
 import { ALWAYS_INCLUDED, FEATURE_LABELS as CORE_LABELS, formatLimit } from "@/lib/features";
@@ -97,7 +97,8 @@ export function PricingPlans() {
             const any = (...ks: string[]) => isCustom || ks.some((k) => !!f[k]);
             const items: { key: string; label: Bi; on: boolean }[] = [
               { key: "ai_agent", label: { en: "AI Sales Agent", bn: "AI Sales Agent" }, on: any("ai_agent") },
-              { key: "messaging", label: { en: "AI Messaging", bn: "AI মেসেজিং" }, on: any("ai_messenger", "whatsapp", "messenger_inbox", "facebook_page") },
+              { key: "messaging", label: { en: "AI Messaging", bn: "AI মেসেজিং" }, on: any("ai_messenger", "whatsapp", "messenger_inbox") },
+              { key: "facebook", label: { en: "Facebook Comment & Posts", bn: "ফেসবুক কমেন্ট ও পোস্ট" }, on: any("facebook_page") },
               { key: "call", label: { en: "Call Center", bn: "কল সেন্টার" }, on: any("call_center") },
               { key: "builder", label: { en: "AI Product Builder", bn: "AI প্রোডাক্ট বিল্ডার" }, on: any("ai_product_builder") },
               { key: "lp_create", label: { en: "Landing Pages", bn: "ল্যান্ডিং পেজ" }, on: any("landing_page_create") || (f.landing_page_create === undefined && !!f.landing_pages) },
@@ -172,11 +173,14 @@ export function PricingPlans() {
                 </ul>
 
                 <ul className="mt-3 flex-1 space-y-1.5 border-t border-[color:var(--orzen-border)] pt-3 text-[13px]">
-                  {enabled.length === 0 && <li className="text-[color:var(--orzen-muted)]">{pick({ en: "All core store features", bn: "সব মৌলিক স্টোর ফিচার" })}</li>}
-                  {enabled.map((i) => (
+                  {[...enabled, ...items.filter((i) => !i.on)].map((i) => (
                     <li key={i.key} className="flex min-w-0 items-center gap-1.5" title={pick(i.label)}>
-                      <Check className="h-3.5 w-3.5 flex-none text-[color:var(--orzen-success)]" />
-                      <span className="truncate whitespace-nowrap">{pick(i.label)}</span>
+                      {i.on ? (
+                        <Check className="h-3.5 w-3.5 flex-none text-[color:var(--orzen-success)]" />
+                      ) : (
+                        <X className="h-3.5 w-3.5 flex-none text-destructive/70" />
+                      )}
+                      <span className={cn("truncate whitespace-nowrap", !i.on && "text-[color:var(--orzen-muted)] line-through opacity-70")}>{pick(i.label)}</span>
                     </li>
                   ))}
                 </ul>

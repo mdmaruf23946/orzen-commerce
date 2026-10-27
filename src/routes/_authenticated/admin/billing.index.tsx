@@ -12,7 +12,7 @@ import {
   activateFreePlan,
   type CycleKey,
 } from "@/lib/billing.functions";
-import { FEATURE_KEYS, FEATURE_LABELS, ALWAYS_INCLUDED, PLAN_FEATURE_GROUPS, HIGHLIGHT_PRIORITY, formatLimit } from "@/lib/features";
+import { FEATURE_KEYS, FEATURE_LABELS, ALWAYS_INCLUDED, PLAN_FEATURE_GROUPS, HIGHLIGHT_PRIORITY, formatLimit, PLAN_DISPLAY_FEATURES, displayFeatureOn } from "@/lib/features";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import WalletPanel from "@/components/admin/billing/WalletPanel";
@@ -442,38 +442,23 @@ function BillingPage() {
                 </ul>
 
 
-                {/* All plan perks — only what this plan includes */}
+                {/* Full feature list — included first (✓), missing below (✗, struck through) */}
                 {(() => {
                   const f = (p.features ?? {}) as Record<string, boolean>;
-                  const any = (...ks: string[]) => isCustom || ks.some((k) => !!f[k]);
-                  const items: { key: string; label: string; on: boolean }[] = [
-                    { key: "ai_agent", label: "AI Sales Agent", on: any("ai_agent") },
-                    { key: "messaging", label: "AI Messaging (Messenger, WhatsApp & more)", on: any("ai_messenger", "whatsapp", "messenger_inbox", "facebook_page") },
-                    { key: "call", label: "AI Call Center", on: any("call_center", "ai_call_center") },
-                    { key: "builder", label: "AI Product Builder", on: any("ai_product_builder") },
-                    { key: "lp_create", label: "Landing Page Create", on: any("landing_page_create") || (f.landing_page_create === undefined && !!f.landing_pages) },
-                    { key: "lp_connect", label: "Website Integration", on: any("landing_page_connect") || (f.landing_page_connect === undefined && !!f.landing_pages) },
-                    { key: "courier", label: "Courier Integration", on: any("courier") },
-                    { key: "fraud", label: "Fraud Checker & Duplicate Protection", on: any("fraud_checker", "duplicate_protection") },
-                    { key: "pixel", label: "Facebook Pixel & Tracking", on: any("pixel") },
-                    { key: "domain", label: "Custom Domain", on: any("custom_domain") },
-                    { key: "coupons", label: "Coupons & Discounts", on: any("coupons") },
-                    { key: "inventory", label: "Inventory, Bulk & Import/Export", on: any("inventory", "bulk_actions", "import_export", "quick_order") },
-                    { key: "analytics", label: "Analytics", on: any("analytics") },
-                    { key: "returns", label: "Returns & Exchanges", on: any("returns") },
-                    { key: "reviews", label: "Product Reviews", on: any("product_reviews") },
-                    { key: "staff", label: "Staff Management", on: any("staff") },
-                  ];
-                  const enabled = items.filter((i) => i.on);
+                  const items = PLAN_DISPLAY_FEATURES.map((g) => ({
+                    key: g.key, label: g.label, on: isCustom || !!p.is_trial || displayFeatureOn(f, g.flags),
+                  }));
+                  const sorted = [...items.filter((i) => i.on), ...items.filter((i) => !i.on)];
                   return (
                     <ul className="mt-3 flex-1 space-y-2 border-t pt-3 text-sm sm:text-[15px]">
-                      {enabled.length === 0 && (
-                        <li className="text-muted-foreground">All core store features</li>
-                      )}
-                      {enabled.map((i) => (
+                      {sorted.map((i) => (
                         <li key={i.key} className="flex items-start gap-2">
-                          <Check className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
-                          <span className="min-w-0">{i.label}</span>
+                          {i.on ? (
+                            <Check className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
+                          ) : (
+                            <X className="mt-0.5 h-4 w-4 shrink-0 text-destructive/70" />
+                          )}
+                          <span className={i.on ? "min-w-0" : "min-w-0 text-muted-foreground/70 line-through"}>{i.label}</span>
                         </li>
                       ))}
                     </ul>
