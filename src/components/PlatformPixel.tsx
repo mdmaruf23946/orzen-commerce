@@ -169,12 +169,28 @@ export function PlatformPixel() {
       if (!data.session) return;
       sessionStorage.setItem("orzen_acct_tracked", "1");
       const r: any = await trackAccount({ data: { url: location.href } }).catch(() => null);
+      // Per-device fired list: an account event id reaches the browser pixel once,
+      // even when the server copy was skipped/failed and is offered again later.
+      let fired: string[] = [];
+      try {
+        fired = JSON.parse(localStorage.getItem("orzen_acct_fired") || "[]");
+      } catch {
+        fired = [];
+      }
       for (const e of r?.events ?? []) {
+        const key = `${e.event}:${e.id}`;
+        if (fired.includes(key) || cfg.events[e.event] === false) continue;
         try {
           (window as W).fbq?.("trackSingle", cfg.pixel_id, e.event, {}, { eventID: e.id });
+          fired.push(key);
         } catch {
           /* ignore */
         }
+      }
+      try {
+        localStorage.setItem("orzen_acct_fired", JSON.stringify(fired.slice(-50)));
+      } catch {
+        /* storage blocked */
       }
     };
     void run();
