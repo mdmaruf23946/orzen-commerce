@@ -581,14 +581,22 @@ function CategoryStrip({
   }, [categories.length]);
 
   // Gentle auto-glide while the mouse rests on the strip (desktop only).
+  // A float accumulator is required: browsers round sub-pixel scrollLeft writes,
+  // so `scrollLeft += 0.6` never moved the strip.
   useEffect(() => {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     let raf = 0;
+    let pos = -1;
     const tick = () => {
       const el = scrollRef.current;
-      if (el && hoverRef.current && el.scrollLeft + el.clientWidth < el.scrollWidth - 1) {
-        el.scrollLeft += 0.6;
-      }
+      if (el && hoverRef.current) {
+        const max = el.scrollWidth - el.clientWidth;
+        if (pos < 0 || Math.abs(pos - el.scrollLeft) > 2) pos = el.scrollLeft;
+        if (max > 1) {
+          pos = pos >= max - 1 ? 0 : pos + 0.7;
+          el.scrollLeft = pos;
+        }
+      } else pos = -1;
       raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
@@ -598,12 +606,18 @@ function CategoryStrip({
   function page(dir: 1 | -1) {
     const el = scrollRef.current;
     if (!el) return;
-    el.scrollBy({ left: dir * el.clientWidth * 0.6, behavior: "smooth" });
+    hoverRef.current = false;
+    const max = el.scrollWidth - el.clientWidth;
+    let target = el.scrollLeft + dir * el.clientWidth * 0.6;
+    if (dir === 1 && el.scrollLeft >= max - 2) target = 0;
+    if (dir === -1 && el.scrollLeft <= 2) target = max;
+    el.scrollTo({ left: target, behavior: "smooth" });
   }
 
-  const tileW = "w-[calc(25%-0.5rem)] shrink-0 snap-start sm:w-[calc(16.66%-0.85rem)] md:w-[calc(12.5%-0.9rem)]";
+  const tileW = "w-[calc(25%-0.5rem)] shrink-0 sm:w-[calc(20%-0.8rem)] md:w-[calc(16.66%-0.85rem)]";
   const arrow =
-    "absolute top-[38%] z-10 hidden h-8 w-8 -translate-y-1/2 place-items-center rounded-full border border-sf-line bg-sf-card/80 text-sf-text shadow-md backdrop-blur transition hover:scale-110 sm:grid";
+    "absolute top-[38%] z-10 grid h-8 w-8 -translate-y-1/2 place-items-center rounded-full border border-sf-line bg-sf-card/90 text-sf-text shadow-md backdrop-blur transition hover:scale-110";
+  const scrollable = edges.left || edges.right;
 
   return (
     <div
@@ -611,12 +625,12 @@ function CategoryStrip({
       onMouseEnter={() => (hoverRef.current = true)}
       onMouseLeave={() => (hoverRef.current = false)}
     >
-      {edges.left && (
+      {scrollable && (
         <button type="button" aria-label="Previous" onClick={() => page(-1)} className={`${arrow} left-1`}>
           <ChevronLeft className="h-4 w-4" />
         </button>
       )}
-      {edges.right && (
+      {scrollable && (
         <button type="button" aria-label="Next" onClick={() => page(1)} className={`${arrow} right-1`}>
           <ChevronRight className="h-4 w-4" />
         </button>
@@ -625,7 +639,7 @@ function CategoryStrip({
         ref={scrollRef}
         onScroll={updateEdges}
         onTouchStart={() => (hoverRef.current = false)}
-        className="flex flex-nowrap gap-2 overflow-x-auto overscroll-x-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden snap-x sm:gap-4 sm:pb-1"
+        className="flex flex-nowrap gap-2 overflow-x-auto overscroll-x-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:gap-4 sm:pb-1"
       >
         <div className={tileW}>
           <CategoryTile

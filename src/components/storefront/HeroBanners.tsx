@@ -131,12 +131,13 @@ export function HeroBanners({ banners }: { banners: HeroBanner[] }) {
 
   return (
     <section
-      className="grid grid-cols-1 items-stretch gap-3 lg:aspect-[86/25] lg:grid-cols-[3fr_1fr] lg:gap-3"
+      className="grid grid-cols-1 items-stretch gap-3 lg:grid-cols-[3fr_1fr] lg:gap-3"
       aria-label="Promotions"
     >
-      {/* Main hero banner */}
+      {/* Main hero banner — fixed 12:5 (e.g. 1920×800) on every screen size so the
+          merchant's required upload size shows uncropped on mobile and desktop. */}
       <div
-        className="relative aspect-[47/20] w-full min-w-0 max-w-full overflow-hidden rounded-xl bg-sf-surface sm:rounded-2xl lg:col-span-1 lg:aspect-auto lg:h-full"
+        className="relative aspect-[12/5] w-full min-w-0 max-w-full overflow-hidden rounded-xl bg-sf-surface sm:rounded-2xl lg:col-span-1"
         onPointerDown={onDown}
         onPointerMove={onMove}
         onPointerUp={onUp}
