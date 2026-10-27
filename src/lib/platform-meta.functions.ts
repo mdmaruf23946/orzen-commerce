@@ -130,15 +130,16 @@ export const trackAccountConversions = createServerFn({ method: "POST" })
         out.push({ event: "Lead", id: `store_${store.id}` });
         if (store.subscription_status === "trialing") out.push({ event: "StartTrial", id: `trial_${store.id}` });
       }
-      // Return only events sent for the first time now. Already-sent ids must not be
-      // re-fired by the browser pixel: Meta deduplicates only within 48h, so repeats
-      // on later logins inflated Registration/Trial counts in Ads Manager.
-      const fresh_sent: { event: string; id: string }[] = [];
+      // Drop only ids the server already sent earlier ("duplicate"): Meta deduplicates
+      // within 48h only, so re-firing them on later logins inflated Ads Manager counts.
+      // Skipped (CAPI off/unconfigured) or failed sends still go to the browser pixel;
+      // the browser keeps its own fired-id list so those never repeat either.
+      const toMirror: { event: string; id: string }[] = [];
       for (const e of out) {
         const r = await sendPlatformEvent({ event_name: e.event as any, event_id: e.id, visitor, user });
-        if (r.status === "sent") fresh_sent.push(e);
+        if (r.status !== "duplicate") toMirror.push(e);
       }
-      return { events: fresh_sent };
+      return { events: toMirror };
     } catch {
       return { events: [] };
     }
