@@ -142,7 +142,8 @@ export const PLAN_FEATURE_GROUPS: { title: string; keys: FeatureKey[] }[] = [
 /** The 16 package features shown on plan cards and toggled in Winner Admin. Each maps to the underlying flags. */
 export const PLAN_DISPLAY_FEATURES: { key: string; label: string; flags: string[] }[] = [
   { key: "ai_agent", label: "AI Sales Agent", flags: ["ai_agent"] },
-  { key: "messaging", label: "AI Messaging (Messenger, WhatsApp & more)", flags: ["ai_messenger", "whatsapp", "messenger_inbox", "facebook_page"] },
+  { key: "messaging", label: "AI Messaging (Messenger, WhatsApp & more)", flags: ["ai_messenger", "whatsapp", "messenger_inbox"] },
+  { key: "facebook", label: "Facebook Page (Comment Reply & Posts)", flags: ["facebook_page"] },
   { key: "call", label: "AI Call Center", flags: ["call_center", "ai_call_center"] },
   { key: "builder", label: "AI Product Builder", flags: ["ai_product_builder"] },
   { key: "lp_create", label: "Landing Page Create", flags: ["landing_page_create"] },
