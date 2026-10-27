@@ -138,7 +138,11 @@ function BillingPage() {
     () => plans.filter((p) => !p.is_trial && Number(p.price) > 0).sort((a, b) => Number(a.price) - Number(b.price)),
     [plans],
   );
-  const popularPlanId = paidPlans[0]?.id ?? null;
+  // Pro is the recommended "Best Choice" plan.
+  const popularPlanId =
+    (paidPlans.find((p) => (p.name ?? "").trim().toLowerCase() === "pro") ??
+      paidPlans.find((p) => p.plan_tier === "business") ??
+      paidPlans[0])?.id ?? null;
   const upgradePlan = paidPlans[0] ?? null;
 
   const currentTier = pkg ? tierOf(pkg) : isTrialing ? null : "free";
@@ -377,7 +381,7 @@ function BillingPage() {
                 )}
                 {isPopular && !isHighlighted && (
                   <div className="absolute -top-2 left-3 inline-flex items-center gap-1 rounded-full bg-primary px-1.5 py-0.5 text-[9px] font-bold uppercase text-primary-foreground sm:left-4 sm:px-2 sm:text-[10px]">
-                    <Sparkles className="h-2.5 w-2.5 sm:h-3 sm:w-3" /> Popular
+                    <Sparkles className="h-2.5 w-2.5 sm:h-3 sm:w-3" /> Best Choice
                   </div>
                 )}
                 {isCurrent && (
