@@ -11,6 +11,7 @@ export type CopyPair = { en: string; bn: string };
 
 export const LANDING_COPY = {
   /* Header */
+  nav_home: { en: "Home", bn: "হোম" },
   nav_features: { en: "Features", bn: "ফিচার" },
   nav_ai: { en: "AI", bn: "AI" },
   nav_pricing: { en: "Pricing", bn: "প্যাকেজ" },
