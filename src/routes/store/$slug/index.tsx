@@ -3,7 +3,7 @@ import { StoreErrorState } from "@/components/storefront/StoreErrorState";
 import { createFileRoute, notFound } from "@tanstack/react-router";
 import { keepPreviousData, queryOptions, useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Sparkles, Flame, Grid3x3, ChevronRight, ChevronDown, SearchX } from "lucide-react";
+import { Sparkles, Flame, Grid3x3, ChevronRight, ChevronLeft, ChevronDown, SearchX } from "lucide-react";
 import {
   listStoreBanners,
   listStoreProducts,
@@ -564,16 +564,70 @@ function CategoryStrip({
   onSelect: (id: string | null) => void;
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const hoverRef = useRef(false);
+  const [edges, setEdges] = useState({ left: false, right: false });
   const { t } = useStoreT();
 
+  function updateEdges() {
+    const el = scrollRef.current;
+    if (!el) return;
+    setEdges({ left: el.scrollLeft > 4, right: el.scrollLeft + el.clientWidth < el.scrollWidth - 4 });
+  }
+
+  useEffect(() => {
+    updateEdges();
+    window.addEventListener("resize", updateEdges);
+    return () => window.removeEventListener("resize", updateEdges);
+  }, [categories.length]);
+
+  // Gentle auto-glide while the mouse rests on the strip (desktop only).
+  useEffect(() => {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    let raf = 0;
+    const tick = () => {
+      const el = scrollRef.current;
+      if (el && hoverRef.current && el.scrollLeft + el.clientWidth < el.scrollWidth - 1) {
+        el.scrollLeft += 0.6;
+      }
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, []);
+
+  function page(dir: 1 | -1) {
+    const el = scrollRef.current;
+    if (!el) return;
+    el.scrollBy({ left: dir * el.clientWidth * 0.6, behavior: "smooth" });
+  }
+
+  const tileW = "w-[calc(25%-0.5rem)] shrink-0 snap-start sm:w-[calc(16.66%-0.85rem)] md:w-[calc(12.5%-0.9rem)]";
+  const arrow =
+    "absolute top-[38%] z-10 hidden h-8 w-8 -translate-y-1/2 place-items-center rounded-full border border-sf-line bg-sf-card/80 text-sf-text shadow-md backdrop-blur transition hover:scale-110 sm:grid";
 
   return (
-    <div className="relative">
+    <div
+      className="relative"
+      onMouseEnter={() => (hoverRef.current = true)}
+      onMouseLeave={() => (hoverRef.current = false)}
+    >
+      {edges.left && (
+        <button type="button" aria-label="Previous" onClick={() => page(-1)} className={`${arrow} left-1`}>
+          <ChevronLeft className="h-4 w-4" />
+        </button>
+      )}
+      {edges.right && (
+        <button type="button" aria-label="Next" onClick={() => page(1)} className={`${arrow} right-1`}>
+          <ChevronRight className="h-4 w-4" />
+        </button>
+      )}
       <div
         ref={scrollRef}
-        className="flex flex-nowrap gap-2 overflow-x-auto overscroll-x-contain scroll-smooth [scrollbar-width:none] [&::-webkit-scrollbar]:hidden snap-x snap-mandatory sm:grid sm:grid-cols-6 sm:gap-4 sm:pb-1 md:grid-cols-8"
+        onScroll={updateEdges}
+        onTouchStart={() => (hoverRef.current = false)}
+        className="flex flex-nowrap gap-2 overflow-x-auto overscroll-x-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden snap-x sm:gap-4 sm:pb-1"
       >
-        <div className="w-[calc(25%-0.5rem)] shrink-0 snap-start sm:w-auto">
+        <div className={tileW}>
           <CategoryTile
             label={t("home.categoryAll")}
             image={allImage ?? null}
@@ -582,7 +636,7 @@ function CategoryStrip({
           />
         </div>
         {categories.map((c) => (
-          <div key={c.id} className="w-[calc(25%-0.5rem)] shrink-0 snap-start sm:w-auto">
+          <div key={c.id} className={tileW}>
             <CategoryTile
               label={c.name}
               image={c.image_url ?? null}
