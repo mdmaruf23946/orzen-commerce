@@ -66,7 +66,7 @@ function ModerationPage() {
   const { data, isLoading } = useQuery({
     queryKey: ["fbpage", "moderation", status],
     queryFn: () => listFn({ data: { status } }),
-    refetchInterval: 45_000,
+    refetchInterval: 180_000,
   });
 
   if (data && !data.connected) return <NotConnected />;
