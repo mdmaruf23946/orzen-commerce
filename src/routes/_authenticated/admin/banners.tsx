@@ -17,6 +17,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ImageUploader } from "@/components/admin/ImageUploader";
+import { heroBannerSizeError, HERO_MIN, HERO_MAX } from "@/lib/banner-size";
 import { cn } from "@/lib/utils";
 import { AdminPageHeader } from "@/components/admin/page/AdminPageHeader";
 import { TypeFilterTabs } from "@/components/admin/page/TypeFilterTabs";
@@ -367,7 +368,19 @@ function BannerDialog({
 
           <div className="space-y-1.5">
             <Label>Banner image</Label>
-            <ImageUploader storeId={storeId} value={image} onChange={setImage} />
+            <ImageUploader
+              storeId={storeId}
+              value={image}
+              onChange={setImage}
+              validateSize={position === "hero" ? heroBannerSizeError : undefined}
+            />
+            {position === "hero" ? (
+              <p className="text-xs text-muted-foreground">
+                Hero banner size: {HERO_MIN.w}×{HERO_MIN.h}px to {HERO_MAX.w}×{HERO_MAX.h}px (ratio 12:5). Best: 1920×800px. Larger or mismatched images are rejected.
+              </p>
+            ) : (
+              <p className="text-xs text-muted-foreground">Recommended: 800×500px (ratio 8:5).</p>
+            )}
           </div>
 
           <div className="space-y-1.5">

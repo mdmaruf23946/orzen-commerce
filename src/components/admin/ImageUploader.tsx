@@ -9,6 +9,22 @@ import { compressImage } from "@/lib/compress-image";
 
 const DEFAULT_MAX_BYTES = 5 * 1024 * 1024; // 5 MB
 
+function readImageSize(file: File): Promise<{ w: number; h: number } | null> {
+  return new Promise((resolve) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      resolve({ w: img.naturalWidth, h: img.naturalHeight });
+      URL.revokeObjectURL(url);
+    };
+    img.onerror = () => {
+      resolve(null);
+      URL.revokeObjectURL(url);
+    };
+    img.src = url;
+  });
+}
+
 export function ImageUploader({
   storeId,
   folder,
@@ -18,6 +34,7 @@ export function ImageUploader({
   maxBytes = DEFAULT_MAX_BYTES,
   label,
   wide = false,
+  validateSize,
 }: {
   storeId?: string;
   folder?: string;
@@ -28,6 +45,8 @@ export function ImageUploader({
   label?: string;
   /** Wide, non-cropping preview for wordmark/name logos. */
   wide?: boolean;
+  /** Return an error message to reject an image by its pixel size. */
+  validateSize?: (w: number, h: number) => string | null;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
@@ -42,6 +61,15 @@ export function ImageUploader({
     if (isImage && !file.type.startsWith("image/")) {
       toast.error("Please choose an image file");
       return;
+    }
+    if (isImage && validateSize) {
+      const dims = await readImageSize(file);
+      const err = dims ? validateSize(dims.w, dims.h) : "Could not read image size";
+      if (err) {
+        toast.error(err);
+        if (inputRef.current) inputRef.current.value = "";
+        return;
+      }
     }
     let toUpload = file;
     if (isImage) {
