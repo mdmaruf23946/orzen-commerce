@@ -17,7 +17,7 @@ const tk = (n: unknown) => `৳${Number(n ?? 0).toLocaleString("en-BD")}`;
 
 function useCatalog(id: string) {
   const fn = useServerFn(getExternalCatalog);
-  return useQuery({ queryKey: ["ext-site", id, "catalog"], queryFn: () => fn({ data: { id } }), refetchInterval: 120_000 });
+  return useQuery({ queryKey: ["ext-site", id, "catalog"], queryFn: () => fn({ data: { id } }),});
 }
 
 function Img({ url }: { url?: string | null }) {
@@ -160,7 +160,7 @@ export function OrdersPanel({ id }: { id: string }) {
   const fn = useServerFn(listExternalSiteOrders);
   const retry = useServerFn(retryExternalSync);
   const qc = useQueryClient();
-  const { data, isLoading } = useQuery({ queryKey: ["ext-site", id, "orders"], queryFn: () => fn({ data: { id } }), refetchInterval: 90_000 });
+  const { data, isLoading } = useQuery({ queryKey: ["ext-site", id, "orders"], queryFn: () => fn({ data: { id } }),});
   const syncByOrder = useMemo(() => {
     const m = new Map<string, any>();
     for (const s of data?.sync ?? []) if (!m.has(s.order_id)) m.set(s.order_id, s);

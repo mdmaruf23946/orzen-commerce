@@ -36,7 +36,7 @@ function ApprovalsPage() {
   const { data } = useQuery({
     queryKey: ["ai-cc-overview"],
     queryFn: () => overviewFn(),
-    refetchInterval: 90_000,
+   ,
   });
 
   async function decide(id: string, decision: "approve" | "reject") {
