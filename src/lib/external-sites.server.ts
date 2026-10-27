@@ -53,15 +53,68 @@ async function authConnection(sb: any, connectionId: string, rawBody: string, h:
   return { conn: conn as { id: string; store_id: string } };
 }
 
+/** Accept common website shapes (slug, image, old_price, category, visible, colors/sizes). */
+export function normalizeCatalogPayload(raw: any, siteUrl?: string | null): any {
+  if (!raw || typeof raw !== "object") return raw;
+  const abs = (u: unknown) => {
+    if (typeof u !== "string" || !u.trim()) return null;
+    if (/^https?:\/\//i.test(u)) return u;
+    try { return siteUrl ? new URL(u, siteUrl).toString() : null; } catch { return null; }
+  };
+  const cats = Array.isArray(raw.categories) ? raw.categories : [];
+  const prods = Array.isArray(raw.products) ? raw.products : [];
+  return {
+    ...raw,
+    categories: cats.map((c: any) => ({
+      external_id: c.external_id ?? c.id ?? c.slug ?? c.name,
+      name: c.name ?? c.title ?? c.slug,
+      parent_external_id: c.parent_external_id ?? c.parent ?? null,
+      image_url: abs(c.image_url ?? c.image),
+    })).filter((c: any) => c.external_id != null && c.name != null),
+    products: prods.map((p: any) => {
+      const price = Number(p.price ?? 0);
+      const old = p.old_price ?? p.regular_price ?? p.compare_at_price;
+      const hasOld = old != null && Number(old) > price;
+      const variants = Array.isArray(p.variants) ? p.variants : [
+        ...(Array.isArray(p.colors) ? p.colors.map((c: any) => ({ type: "color", ...(typeof c === "object" ? c : { name: c }) })) : []),
+        ...(Array.isArray(p.sizes) ? p.sizes.map((s: any) => ({ type: "size", name: String(s) })) : []),
+      ];
+      const cat = p.category_external_id ?? p.category_slug ?? p.category ?? p.category_id;
+      return {
+        external_id: p.external_id ?? p.id ?? p.slug ?? p.sku,
+        name: p.name ?? p.title,
+        sku: p.sku ?? null,
+        price: hasOld ? Number(old) : price,
+        sale_price: p.sale_price ?? (hasOld ? price : null),
+        stock: p.stock ?? null,
+        description: p.description ?? null,
+        image_url: abs(p.image_url ?? p.image ?? (Array.isArray(p.images) ? p.images[0] : null)),
+        product_url: abs(p.product_url ?? p.url),
+        category_external_id: typeof cat === "object" && cat ? (cat.slug ?? cat.id ?? null) : (cat ?? null),
+        variants: variants.slice(0, 200),
+        status: p.status ?? (p.visible === false ? "draft" : undefined),
+      };
+    }).filter((p: any) => p.external_id != null && p.name != null),
+  };
+}
+
 export async function syncCatalog(connectionId: string, rawBody: string, headers: Headers): Promise<Res> {
   if (rawBody.length > MAX_CATALOG_BYTES) return { status: 413, body: { ok: false, error: "Payload too large (max 2MB per request)" } };
   const { supabaseAdmin: sb } = await import("@/integrations/supabase/client.server");
   const a = await authConnection(sb, connectionId, rawBody, headers);
   if ("err" in a) return a.err!;
-  const conn = a.conn;
+  let raw: any;
+  try { raw = JSON.parse(rawBody); } catch { return { status: 422, body: { ok: false, error: "Invalid JSON" } }; }
+  return applyCatalog(sb, a.conn, raw);
+}
+
+/** Store a catalog for an already-authenticated connection. */
+export async function applyCatalog(sb: any, connIn: { id: string; store_id: string }, raw: any): Promise<Res> {
+  const conn = connIn;
+  const { data: cinfo } = await sb.from("landing_page_connections").select("url").eq("id", conn.id).maybeSingle();
   let parsed;
   try {
-    parsed = CatalogSchema.parse(JSON.parse(rawBody));
+    parsed = CatalogSchema.parse(normalizeCatalogPayload(raw, cinfo?.url ?? null));
   } catch (e) {
     return { status: 422, body: { ok: false, error: "Invalid catalog payload", detail: String((e as Error).message).slice(0, 400) } };
   }

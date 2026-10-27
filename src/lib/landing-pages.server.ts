@@ -247,6 +247,21 @@ export async function intakeLandingPageOrder(input: IntakeInput): Promise<Intake
     .eq("connection_id", conn.id)
     .maybeSingle();
 
+  const evt = String(parsed?.event ?? parsed?.type ?? "").toLowerCase();
+  if (evt === "ping" || evt === "test.ping") {
+    await sb.from("landing_page_connections").update({ last_error: null }).eq("id", conn.id);
+    return { status: 200, body: { ok: true, pong: true } };
+  }
+  if (evt === "catalog.sync" || evt === "catalog" || (!parsed?.customer_name && !parsed?.phone && Array.isArray(parsed?.products) && !Array.isArray(parsed?.items))) {
+    const { applyCatalog } = await import("@/lib/external-sites.server");
+    const r = await applyCatalog(sb, conn, parsed);
+    await writeLog(sb, conn.store_id, conn.id, r.status === 200 ? "success" : "invalid", {
+      request_hash: rHash, ip: input.ip, ua: input.ua,
+      error: r.status === 200 ? null : String(r.body.error ?? "Catalog sync failed"),
+    });
+    return r;
+  }
+
   const canonical = normalizePayload(parsed, (fmap?.mapping as any) ?? null);
 
   if (!canonical.customer_name || !canonical.phone || !canonical.address) {
