@@ -130,10 +130,15 @@ export const trackAccountConversions = createServerFn({ method: "POST" })
         out.push({ event: "Lead", id: `store_${store.id}` });
         if (store.subscription_status === "trialing") out.push({ event: "StartTrial", id: `trial_${store.id}` });
       }
+      // Return only events sent for the first time now. Already-sent ids must not be
+      // re-fired by the browser pixel: Meta deduplicates only within 48h, so repeats
+      // on later logins inflated Registration/Trial counts in Ads Manager.
+      const fresh_sent: { event: string; id: string }[] = [];
       for (const e of out) {
-        await sendPlatformEvent({ event_name: e.event as any, event_id: e.id, visitor, user });
+        const r = await sendPlatformEvent({ event_name: e.event as any, event_id: e.id, visitor, user });
+        if (r.status === "sent") fresh_sent.push(e);
       }
-      return { events: out };
+      return { events: fresh_sent };
     } catch {
       return { events: [] };
     }
