@@ -81,7 +81,7 @@ function CommentsPage() {
     queryKey: ["fbpage", "comments", filter, post ?? null, q, page],
     queryFn: () => listFn({ data: { filter, post_id: post ?? null, q: q || null, page, page_size: 15 } }),
     // Live sync: the Facebook webhook writes new comments server-side.
-    refetchInterval: 30_000,
+    refetchInterval: 120_000,
   });
 
   if (data && !data.connected) return <NotConnected />;

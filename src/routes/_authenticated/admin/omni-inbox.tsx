@@ -116,7 +116,7 @@ function OmniInbox() {
   const { data, isLoading } = useQuery({
     queryKey: ["omni-inbox", channel, folder, search],
     queryFn: () => fetchList({ data: { channel, folder, search: search || undefined } }),
-    refetchInterval: 6000,
+    refetchInterval: 30_000,
   });
   const convs = (data?.rows ?? []) as any[];
 
@@ -142,7 +142,7 @@ function OmniInbox() {
     queryKey: ["omni-msgs", activeId],
     queryFn: () => fetchMsgs({ data: { conversationId: activeId! } }),
     enabled: !!activeId,
-    refetchInterval: 4000,
+    refetchInterval: 20_000,
   });
 
   useEffect(() => {
