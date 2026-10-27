@@ -18,6 +18,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
+import { useBadgeCounts } from "@/lib/use-badge-counts";
 
 export const Route = createFileRoute("/_authenticated/admin/omni-inbox")({
   component: () => (
@@ -113,11 +115,30 @@ function OmniInbox() {
   const [pickerOpen, setPickerOpen] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
+  // No timed polling: refresh only when a conversation in this store changes (new message).
   const { data, isLoading } = useQuery({
     queryKey: ["omni-inbox", channel, folder, search],
     queryFn: () => fetchList({ data: { channel, folder, search: search || undefined } }),
-    refetchInterval: 30_000,
   });
+  const { storeId } = useBadgeCounts();
+  useEffect(() => {
+    if (!storeId) return;
+    let t: ReturnType<typeof setTimeout> | null = null;
+    const ch = supabase
+      .channel(`omni-inbox:${storeId}:${Math.random().toString(36).slice(2)}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "ai_conversations", filter: `store_id=eq.${storeId}` }, () => {
+        if (t) clearTimeout(t);
+        t = setTimeout(() => {
+          qc.invalidateQueries({ queryKey: ["omni-inbox"] });
+          qc.invalidateQueries({ queryKey: ["omni-msgs"] });
+        }, 800);
+      })
+      .subscribe();
+    return () => {
+      if (t) clearTimeout(t);
+      supabase.removeChannel(ch);
+    };
+  }, [storeId, qc]);
   const convs = (data?.rows ?? []) as any[];
 
   // Pull real Facebook name + photo for Messenger customers missing them (server caches 6h).
@@ -142,7 +163,6 @@ function OmniInbox() {
     queryKey: ["omni-msgs", activeId],
     queryFn: () => fetchMsgs({ data: { conversationId: activeId! } }),
     enabled: !!activeId,
-    refetchInterval: 20_000,
   });
 
   useEffect(() => {
