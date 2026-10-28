@@ -1,3 +1,4 @@
+import { useTabVisible } from "@/lib/use-tab-visible";
 import { useEffect, useMemo } from "react";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -32,8 +33,10 @@ export function useBadgeCounts() {
 
   const storeId = query.data?.store_id ?? null;
 
+  const visible = useTabVisible();
   useEffect(() => {
-    if (!storeId) return;
+    if (!storeId || !visible) return;
+    qc.invalidateQueries({ queryKey: badgeCountsKey });
     const invalidate = () => qc.invalidateQueries({ queryKey: badgeCountsKey });
     const filter = `store_id=eq.${storeId}`;
     const channel = supabase
@@ -53,7 +56,7 @@ export function useBadgeCounts() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [storeId, qc]);
+  }, [storeId, qc, visible]);
 
   return {
     counts: query.data?.counts ?? EMPTY,

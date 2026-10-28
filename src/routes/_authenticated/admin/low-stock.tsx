@@ -1,3 +1,4 @@
+import { useTabVisible } from "@/lib/use-tab-visible";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -33,15 +34,18 @@ function LowStockPage() {
     queryFn: () => listFn(),
   });
 
+  const visible = useTabVisible();
   useEffect(() => {
+    if (!visible) return;
+    qc.invalidateQueries({ queryKey: ["low-stock-alerts"] });
     const channel = supabase
-      .channel("low-stock-alerts")
+      .channel(`low-stock-alerts:${Math.random().toString(36).slice(2)}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "low_stock_alerts" }, () => {
         qc.invalidateQueries({ queryKey: ["low-stock-alerts"] });
       })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
-  }, [qc]);
+  }, [qc, visible]);
 
   async function resolve(id: string) {
     try {

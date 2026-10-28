@@ -1,3 +1,4 @@
+import { useTabVisible } from "@/lib/use-tab-visible";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -121,8 +122,10 @@ function OmniInbox() {
     queryFn: () => fetchList({ data: { channel, folder, search: search || undefined } }),
   });
   const { storeId } = useBadgeCounts();
+  const tabVisible = useTabVisible();
   useEffect(() => {
-    if (!storeId) return;
+    if (!storeId || !tabVisible) return;
+    qc.invalidateQueries({ queryKey: ["omni-inbox"] });
     let t: ReturnType<typeof setTimeout> | null = null;
     const ch = supabase
       .channel(`omni-inbox:${storeId}:${Math.random().toString(36).slice(2)}`)
@@ -138,7 +141,7 @@ function OmniInbox() {
       if (t) clearTimeout(t);
       supabase.removeChannel(ch);
     };
-  }, [storeId, qc]);
+  }, [storeId, qc, tabVisible]);
   const convs = (data?.rows ?? []) as any[];
 
   // Pull real Facebook name + photo for Messenger customers missing them (server caches 6h).
