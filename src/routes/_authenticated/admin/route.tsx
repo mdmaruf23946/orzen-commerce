@@ -1,3 +1,4 @@
+import { PushNotificationButton } from "@/components/admin/PushNotificationButton";
 import { COURIERS } from "@/components/admin/couriers/providers";
 import { useCourierConnections, type CourierConnectionMap } from "@/lib/courier-apps";
 import { MARKETING_PLATFORMS, useMarketingConnections, type MarketingConnectionMap } from "@/lib/marketing-platforms";
@@ -631,6 +632,7 @@ function AdminLayout() {
         </button>
         <div className="ml-3 flex shrink-0 items-center gap-1.5">
         {!access.isEmployee && <><AiCreditsChip /><AdFundChip /></>}
+        <PushNotificationButton storeId={storeId} />
         </div>
       </header>
 
@@ -903,6 +905,7 @@ function AdminLayout() {
             <AdminGlobalSearch groups={allGroups} />
             <div className="ml-auto flex items-center gap-2">
               {!access.isEmployee && <><AiCreditsChip /><AdFundChip /></>}
+              <PushNotificationButton storeId={storeId} />
               <Link
                 to="/admin/omni-inbox"
                 className="relative grid h-9 w-9 place-items-center rounded-full border hover:bg-muted"
