@@ -500,7 +500,7 @@ export const listStoreProducts = createServerFn({ method: "GET" })
       .eq("store_id", data.storeId)
       .neq("status", "draft")
       .order("created_at", { ascending: false });
-    if (data.limit) q = q.limit(data.limit);
+    q = q.limit(data.limit ?? 500);
     const { data: products, error } = await q;
     if (error) throw new Error(error.message);
     return (products ?? []).map((p: any) => ({ ...p, primary_image_url: imgUrl(coverOf(p)) }));
@@ -549,7 +549,8 @@ export const listStoreCategories = createServerFn({ method: "GET" })
       .eq("store_id", data.storeId)
       .eq("is_active", true)
       .order("sort_order", { ascending: true })
-      .order("name", { ascending: true });
+      .order("name", { ascending: true })
+      .limit(300);
     if (error) throw new Error(error.message);
     return (cats ?? []).map((c) => ({
       ...c,
