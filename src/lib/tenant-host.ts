@@ -89,7 +89,7 @@ async function rpc<T>(
   const url = env["SUPABASE_URL"];
   const key = env["SUPABASE_PUBLISHABLE_KEY"];
   if (!url || !key) return null;
-  const ttlSec = name === "platform_routing_hosts" ? SETTINGS_TTL_MS / 1000 : CACHE_TTL_MS / 1000;
+  const ttlSec = name === "platform_routing_hosts" ? 86_400 : CACHE_TTL_MS / 1000;
   const cache = edgeCache();
   const cacheKey = `https://edge-cache.internal/rpc/${name}?b=${encodeURIComponent(JSON.stringify(body))}`;
   if (cache) {
