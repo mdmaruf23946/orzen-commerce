@@ -263,6 +263,7 @@ import { Route as ApiPublicMetaOauthCallbackRouteImport } from './routes/api/pub
 import { Route as ApiPublicOrzenCallCallbackRouteImport } from './routes/api/public/orzen-call/callback'
 import { Route as ApiPublicPlatformMetaConsentRouteImport } from './routes/api/public/platform-meta/consent'
 import { Route as ApiPublicPlatformMetaTrackRouteImport } from './routes/api/public/platform-meta/track'
+import { Route as ApiPublicPushDispatchRouteImport } from './routes/api/public/push/dispatch'
 import { Route as ApiPublicTiktokTrackRouteImport } from './routes/api/public/tiktok/track'
 import { Route as ApiPublicVoiceAudioRouteImport } from './routes/api/public/voice/audio'
 import { Route as ApiPublicVoiceCdrRecordingRouteImport } from './routes/api/public/voice/cdr-recording'
@@ -1735,6 +1736,11 @@ const ApiPublicPlatformMetaTrackRoute =
     path: '/api/public/platform-meta/track',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicPushDispatchRoute = ApiPublicPushDispatchRouteImport.update({
+  id: '/api/public/push/dispatch',
+  path: '/api/public/push/dispatch',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicTiktokTrackRoute = ApiPublicTiktokTrackRouteImport.update({
   id: '/api/public/tiktok/track',
   path: '/api/public/tiktok/track',
@@ -2117,6 +2123,7 @@ export interface FileRoutesByFullPath {
   '/api/public/orzen-call/callback': typeof ApiPublicOrzenCallCallbackRoute
   '/api/public/platform-meta/consent': typeof ApiPublicPlatformMetaConsentRoute
   '/api/public/platform-meta/track': typeof ApiPublicPlatformMetaTrackRoute
+  '/api/public/push/dispatch': typeof ApiPublicPushDispatchRoute
   '/api/public/tiktok/track': typeof ApiPublicTiktokTrackRoute
   '/api/public/voice/audio': typeof ApiPublicVoiceAudioRoute
   '/api/public/voice/cdr-recording': typeof ApiPublicVoiceCdrRecordingRoute
@@ -2384,6 +2391,7 @@ export interface FileRoutesByTo {
   '/api/public/orzen-call/callback': typeof ApiPublicOrzenCallCallbackRoute
   '/api/public/platform-meta/consent': typeof ApiPublicPlatformMetaConsentRoute
   '/api/public/platform-meta/track': typeof ApiPublicPlatformMetaTrackRoute
+  '/api/public/push/dispatch': typeof ApiPublicPushDispatchRoute
   '/api/public/tiktok/track': typeof ApiPublicTiktokTrackRoute
   '/api/public/voice/audio': typeof ApiPublicVoiceAudioRoute
   '/api/public/voice/cdr-recording': typeof ApiPublicVoiceCdrRecordingRoute
@@ -2666,6 +2674,7 @@ export interface FileRoutesById {
   '/api/public/orzen-call/callback': typeof ApiPublicOrzenCallCallbackRoute
   '/api/public/platform-meta/consent': typeof ApiPublicPlatformMetaConsentRoute
   '/api/public/platform-meta/track': typeof ApiPublicPlatformMetaTrackRoute
+  '/api/public/push/dispatch': typeof ApiPublicPushDispatchRoute
   '/api/public/tiktok/track': typeof ApiPublicTiktokTrackRoute
   '/api/public/voice/audio': typeof ApiPublicVoiceAudioRoute
   '/api/public/voice/cdr-recording': typeof ApiPublicVoiceCdrRecordingRoute
@@ -2948,6 +2957,7 @@ export interface FileRouteTypes {
     | '/api/public/orzen-call/callback'
     | '/api/public/platform-meta/consent'
     | '/api/public/platform-meta/track'
+    | '/api/public/push/dispatch'
     | '/api/public/tiktok/track'
     | '/api/public/voice/audio'
     | '/api/public/voice/cdr-recording'
@@ -3215,6 +3225,7 @@ export interface FileRouteTypes {
     | '/api/public/orzen-call/callback'
     | '/api/public/platform-meta/consent'
     | '/api/public/platform-meta/track'
+    | '/api/public/push/dispatch'
     | '/api/public/tiktok/track'
     | '/api/public/voice/audio'
     | '/api/public/voice/cdr-recording'
@@ -3496,6 +3507,7 @@ export interface FileRouteTypes {
     | '/api/public/orzen-call/callback'
     | '/api/public/platform-meta/consent'
     | '/api/public/platform-meta/track'
+    | '/api/public/push/dispatch'
     | '/api/public/tiktok/track'
     | '/api/public/voice/audio'
     | '/api/public/voice/cdr-recording'
@@ -3597,6 +3609,7 @@ export interface RootRouteChildren {
   ApiPublicOrzenCallCallbackRoute: typeof ApiPublicOrzenCallCallbackRoute
   ApiPublicPlatformMetaConsentRoute: typeof ApiPublicPlatformMetaConsentRoute
   ApiPublicPlatformMetaTrackRoute: typeof ApiPublicPlatformMetaTrackRoute
+  ApiPublicPushDispatchRoute: typeof ApiPublicPushDispatchRoute
   ApiPublicTiktokTrackRoute: typeof ApiPublicTiktokTrackRoute
   ApiPublicVoiceAudioRoute: typeof ApiPublicVoiceAudioRoute
   ApiPublicVoiceCdrRecordingRoute: typeof ApiPublicVoiceCdrRecordingRoute
@@ -5395,6 +5408,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicPlatformMetaTrackRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/push/dispatch': {
+      id: '/api/public/push/dispatch'
+      path: '/api/public/push/dispatch'
+      fullPath: '/api/public/push/dispatch'
+      preLoaderRoute: typeof ApiPublicPushDispatchRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/tiktok/track': {
       id: '/api/public/tiktok/track'
       path: '/api/public/tiktok/track'
@@ -6312,6 +6332,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicOrzenCallCallbackRoute: ApiPublicOrzenCallCallbackRoute,
   ApiPublicPlatformMetaConsentRoute: ApiPublicPlatformMetaConsentRoute,
   ApiPublicPlatformMetaTrackRoute: ApiPublicPlatformMetaTrackRoute,
+  ApiPublicPushDispatchRoute: ApiPublicPushDispatchRoute,
   ApiPublicTiktokTrackRoute: ApiPublicTiktokTrackRoute,
   ApiPublicVoiceAudioRoute: ApiPublicVoiceAudioRoute,
   ApiPublicVoiceCdrRecordingRoute: ApiPublicVoiceCdrRecordingRoute,
