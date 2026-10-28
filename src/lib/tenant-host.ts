@@ -124,25 +124,48 @@ async function rpc<T>(
   }
 }
 
-/** Platform hostnames (root, login host, CNAME target) — cached for 5 minutes. */
+let settingsRefreshing = false;
+
+/**
+ * Platform hostnames (root, login host, CNAME target).
+ * Never blocks a request on the database: every request (bots included) is
+ * answered from memory/static defaults, and the stored settings are refreshed
+ * in the background at most once per hour per isolate (edge-cached 24h), so
+ * idle crawler traffic no longer produces a database call per request.
+ */
 export async function getRoutingHosts(
   env: Record<string, string | undefined>,
 ): Promise<RoutingHosts> {
-  const fallbackRoot = (env["PUBLIC_ROOT_DOMAIN"] ?? "orzen.top").toLowerCase();
+  const fallback: RoutingHosts = {
+    rootDomain: (env["PUBLIC_ROOT_DOMAIN"] || "orzen.top").toLowerCase(),
+    loginHost: (env["PUBLIC_LOGIN_HOST"] || "").toLowerCase(),
+    dnsTarget: (env["PUBLIC_DNS_TARGET"] || "").toLowerCase(),
+  };
   if (settingsCache && Date.now() - settingsCache.at < SETTINGS_TTL_MS) return settingsCache.value;
 
-  const json = await rpc<{ root_domain?: string; login_host?: string; dns_target?: string }>(
-    "platform_routing_hosts",
-    {},
-    env,
-  );
-  const value: RoutingHosts = {
-    rootDomain: (json?.root_domain || fallbackRoot).toLowerCase(),
-    loginHost: (json?.login_host || "").toLowerCase(),
-    dnsTarget: (json?.dns_target || "").toLowerCase(),
-  };
-  settingsCache = { value, at: Date.now() };
-  return value;
+  const current = settingsCache?.value ?? fallback;
+  // Mark fresh now so concurrent requests don't each trigger a refresh.
+  settingsCache = { value: current, at: Date.now() };
+  if (!settingsRefreshing) {
+    settingsRefreshing = true;
+    rpc<{ root_domain?: string; login_host?: string; dns_target?: string }>("platform_routing_hosts", {}, env)
+      .then((json) => {
+        if (!json) return;
+        settingsCache = {
+          value: {
+            rootDomain: (json.root_domain || fallback.rootDomain).toLowerCase(),
+            loginHost: (json.login_host || "").toLowerCase(),
+            dnsTarget: (json.dns_target || "").toLowerCase(),
+          },
+          at: Date.now(),
+        };
+      })
+      .catch(() => {})
+      .finally(() => {
+        settingsRefreshing = false;
+      });
+  }
+  return current;
 }
 
 export function isPlatformHost(host: string, hosts: RoutingHosts): boolean {
