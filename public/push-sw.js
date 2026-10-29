@@ -11,8 +11,8 @@ self.addEventListener("push", (event) => {
     wins.forEach((c) => c.postMessage({ type: "orzen-push", kind: d.kind || "message" }));
     await self.registration.showNotification(d.title || "ORZEN", {
       body: d.body || "",
-      icon: d.icon || "/api/img/platform-branding/icons/appicon192-1785856847817.png",
-      badge: d.badge || d.icon || "/api/img/platform-branding/icons/appicon192-1785856847817.png",
+      icon: "/push-icon-192.png",
+      badge: d.badge || "/push-icon-192.png",
       tag: d.tag || undefined,
       renotify: true,
       vibrate: d.kind === "order" ? [120, 60, 120, 60, 220] : [90, 50, 140],
