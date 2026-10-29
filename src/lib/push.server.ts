@@ -11,13 +11,6 @@ export async function dispatchPush(limit = 30) {
     .gte("created_at", new Date(Date.now() - 3600_000).toISOString())
     .order("created_at").limit(limit);
   if (!rows?.length) return { sent: 0 };
-  let icon: string | undefined;
-  try {
-    const { data: b } = await sb.rpc("get_platform_branding");
-    const a = b?.assets ?? {};
-    const u = a.appIcon192?.url ?? a.appIcon512?.url ?? a.favicon?.url;
-    if (u) icon = u.startsWith("http") ? u : `https://orzen.top${u}`;
-  } catch { /* fall back to worker default */ }
   // Claim first so parallel wakes don't double-send.
   const ids = rows.map((r: any) => r.id);
   const { data: claimed } = await sb.from("push_outbox").update({ sent_at: new Date().toISOString() })
