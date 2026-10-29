@@ -32,7 +32,7 @@ export async function dispatchPush(limit = 30) {
           privateJWK: key.private_jwk,
           subscription: { endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } },
           message: {
-            payload: { title: row.title, body: row.body, url: row.url, tag: row.tag, kind: row.kind, icon, badge: icon },
+            payload: { title: row.title, body: row.body, url: row.url, tag: row.tag, kind: row.kind, ...(icon ? { icon, badge: icon } : {}) },
             adminContact: "mailto:support@orzen.top",
             options: { ttl: 3600, urgency: "high" },
           },
