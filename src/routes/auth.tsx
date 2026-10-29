@@ -199,6 +199,12 @@ function AuthPage() {
       }
       if (mode === "signup") {
         if (!canSubmitSignup) throw new Error("Please complete the form correctly.");
+        // Ask for notification permission during the signup tap (browsers require a user gesture).
+        try {
+          if (typeof Notification !== "undefined" && Notification.permission === "default") {
+            void Notification.requestPermission().catch(() => {});
+          }
+        } catch { /* ignore */ }
         const { data: signUpData, error } = await supabase.auth.signUp({
           email,
           password,
