@@ -1,8 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { BellRing, BellOff } from "lucide-react";
-import { toast } from "sonner";
-import { savePushSubscription, removePushSubscription, sendTestPush } from "@/lib/push.functions";
+import { savePushSubscription } from "@/lib/push.functions";
 
 const VAPID_PUBLIC = "BCSPM69GqCsDrsA92VbGIwST3KZFbbcuywYsPHVy56nYiekIkai2q20jPixoJLWqCnoolgYyERVDmDZLQ1Gmdmg";
 
@@ -24,71 +22,39 @@ function toKey(b64: string) {
   return Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
 }
 
+/** Always-on push: no toggle. Subscribes automatically; asks permission on first tap if needed. */
 export function PushNotificationButton({ storeId }: { storeId: string | null }) {
   const save = useServerFn(savePushSubscription);
-  const remove = useServerFn(removePushSubscription);
-  const test = useServerFn(sendTestPush);
-  const [supported, setSupported] = useState(false);
-  const [on, setOn] = useState(false);
-  const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    if (!pushAllowedHere()) return;
-    setSupported(true);
+    if (!storeId || !pushAllowedHere()) return;
     const onMsg = (e: MessageEvent) => { if (e.data?.type === "orzen-push") playNotifySound(e.data.kind); };
     navigator.serviceWorker.addEventListener("message", onMsg);
-    navigator.serviceWorker.getRegistration("/push-sw.js").then(async (reg) => {
-      const sub = await reg?.pushManager.getSubscription();
-      setOn(!!sub && Notification.permission === "granted");
-    });
-    return () => navigator.serviceWorker.removeEventListener("message", onMsg);
-  }, []);
+    let done = false;
+    const subscribe = async () => {
+      if (done || Notification.permission !== "granted") return;
+      done = true;
+      try {
+        const reg = await navigator.serviceWorker.register("/push-sw.js");
+        await navigator.serviceWorker.ready;
+        const sub = (await reg.pushManager.getSubscription()) ??
+          (await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: toKey(VAPID_PUBLIC) }));
+        const j = sub.toJSON() as any;
+        await save({ data: { store_id: storeId, endpoint: j.endpoint, p256dh: j.keys.p256dh, auth: j.keys.auth, user_agent: navigator.userAgent.slice(0, 300) } });
+      } catch (e) { done = false; console.error("push subscribe failed", e); }
+    };
+    const ask = async () => {
+      if (Notification.permission === "default") { try { await Notification.requestPermission(); } catch { /* ignore */ } }
+      await subscribe();
+    };
+    if (Notification.permission === "granted") void subscribe();
+    else if (Notification.permission === "default") {
+      void ask();
+      // Some browsers only allow the permission prompt after a tap.
+      window.addEventListener("pointerdown", ask, { once: true });
+    }
+    return () => { navigator.serviceWorker.removeEventListener("message", onMsg); window.removeEventListener("pointerdown", ask); };
+  }, [storeId, save]);
 
-  if (!supported || !storeId) return null;
-
-  async function enable() {
-    setBusy(true);
-    try {
-      const perm = await Notification.requestPermission();
-      if (perm !== "granted") { toast.error("ব্রাউজারে নোটিফিকেশন অনুমতি দিন।"); return; }
-      const reg = await navigator.serviceWorker.register("/push-sw.js");
-      await navigator.serviceWorker.ready;
-      const sub = (await reg.pushManager.getSubscription()) ??
-        (await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: toKey(VAPID_PUBLIC) }));
-      const j = sub.toJSON() as any;
-      await save({ data: { store_id: storeId!, endpoint: j.endpoint, p256dh: j.keys.p256dh, auth: j.keys.auth, user_agent: navigator.userAgent.slice(0, 300) } });
-      setOn(true);
-      playNotifySound("order");
-      await test({ data: { store_id: storeId! } });
-      toast.success("নোটিফিকেশন চালু হয়েছে — নতুন অর্ডার ও মেসেজ এলে জানানো হবে।");
-    } catch (e) {
-      console.error(e);
-      toast.error("নোটিফিকেশন চালু করা যায়নি, আবার চেষ্টা করুন।");
-    } finally { setBusy(false); }
-  }
-
-  async function disable() {
-    setBusy(true);
-    try {
-      const reg = await navigator.serviceWorker.getRegistration("/push-sw.js");
-      const sub = await reg?.pushManager.getSubscription();
-      if (sub) { await remove({ data: { endpoint: sub.endpoint } }); await sub.unsubscribe(); }
-      setOn(false);
-      toast.success("এই ডিভাইসে নোটিফিকেশন বন্ধ করা হয়েছে।");
-    } finally { setBusy(false); }
-  }
-
-  return (
-    <button
-      type="button"
-      disabled={busy}
-      onClick={on ? disable : enable}
-      title={on ? "নোটিফিকেশন চালু (বন্ধ করতে ক্লিক করুন)" : "নোটিফিকেশন চালু করুন"}
-      aria-label="Push notifications"
-      className={`relative grid h-9 w-9 shrink-0 place-items-center rounded-full border hover:bg-muted ${on ? "text-primary" : "text-muted-foreground"}`}
-    >
-      {on ? <BellRing className="h-4 w-4" /> : <BellOff className="h-4 w-4" />}
-      {!on && <span className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 animate-pulse rounded-full bg-primary" />}
-    </button>
-  );
+  return null;
 }
