@@ -36,3 +36,4 @@
 - Connected websites/landing pages (`landing_page_connections.site_type`) keep their catalog only in `external_site_categories`/`external_site_products` (never mixed with store products); order status/courier changes reach the website via the `t_orders_external_site_sync` outbox → signed POST from `/api/public/external-sites/dispatch` — isolated catalogs and event-driven two-way sync.
 - Courier COD 'amount to collect' comes only from src/lib/couriers/collect-amount.ts (grand total − advance paid; prepaid = 0); merchant can override per parcel — prevents double-charging delivery.
 - Full storefront product catalogues use store-scoped, deterministically ordered range batches; only explicit preview limits truncate results, so database request caps never hide older products.
+- Unit tests use the standalone Vitest configuration, not Vite's application RPC transforms, so server-function handlers can be tested directly with mocked boundaries.
