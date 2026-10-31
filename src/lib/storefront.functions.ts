@@ -492,18 +492,25 @@ export const listStoreProducts = createServerFn({ method: "GET" })
       .parse(d),
   )
   .handler(async ({ data }) => {
-    return swr(`products:${data.storeId}:${data.limit ?? "all"}`, async () => {
+    return swr(`products:${data.storeId}:${data.limit ?? "all-v2"}`, async () => {
     const sb = publicClient();
-    let q = (sb as any)
-      .from("storefront_products")
-      .select(PRODUCT_CARD_COLS)
-      .eq("store_id", data.storeId)
-      .neq("status", "draft")
-      .order("created_at", { ascending: false });
-    q = q.limit(data.limit ?? 500);
-    const { data: products, error } = await q;
-    if (error) throw new Error(error.message);
-    return (products ?? []).map((p: any) => ({ ...p, primary_image_url: imgUrl(coverOf(p)) }));
+    const products: any[] = [];
+    const pageSize = data.limit ?? 500;
+    for (let offset = 0; ; offset += pageSize) {
+      const { data: page, error } = await (sb as any)
+        .from("storefront_products")
+        .select(PRODUCT_CARD_COLS)
+        .eq("store_id", data.storeId)
+        .neq("status", "draft")
+        .order("created_at", { ascending: false })
+        .order("id", { ascending: false })
+        .range(offset, offset + pageSize - 1);
+      if (error) throw new Error(error.message);
+      products.push(...(page ?? []));
+      // Explicit limits are previews; unbounded callers need every page.
+      if (data.limit !== undefined || (page ?? []).length < pageSize) break;
+    }
+    return products.map((p: any) => ({ ...p, primary_image_url: imgUrl(coverOf(p)) }));
     });
   });
 

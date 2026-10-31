@@ -1,5 +1,9 @@
 # Roadmap
 
+## Storefront catalogue cutoff fix (2026-10-31)
+- [x] Verify and remove the implicit 500-product cutoff while preserving bounded requests and explicit preview limits
+- [x] Six regression tests pass, including 1,205 products, scoping, preview limits and later-page failures; existing 16-product store list/search verified in preview. No >500-product store available in the preview backend for live-data verification. Production not deployed; unrelated existing header hydration warning observed.
+
 - [x] Add secure short-lived chat checkout session storage and access policies
 - [x] Add public checkout page and secure submit endpoint
 - [x] Reuse existing order creation and configured payment checkout/webhooks
