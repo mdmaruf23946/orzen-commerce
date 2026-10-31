@@ -1,5 +1,9 @@
 # Roadmap
 
+## Storefront catalogue cutoff fix (2026-10-31)
+- [ ] Verify and remove the implicit 500-product cutoff while preserving bounded requests and explicit preview limits
+- [ ] Test full catalogue retrieval, filters/scoping, preview limits and later-page failure handling
+
 - [x] Add secure short-lived chat checkout session storage and access policies
 - [x] Add public checkout page and secure submit endpoint
 - [x] Reuse existing order creation and configured payment checkout/webhooks
