@@ -303,6 +303,13 @@ export const getMyMessengerPaymentMethods = createServerFn({ method: "GET" })
 export const getStoreAgentPublic = createServerFn({ method: "GET" })
   .inputValidator((d) => z.object({ slug: z.string().min(1).max(120) }).parse(d))
   .handler(async ({ data }) => {
+    const { swr } = await import("@/lib/swr-cache");
+    return swr(`agent-public:${data.slug}`, () => loadStoreAgentPublic(data.slug));
+  });
+
+async function loadStoreAgentPublic(slug: string) {
+  const data = { slug };
+  {
     // Resolve every storefront chat option server-side in as few round trips as
     // possible — this runs during SSR, so latency here delays the first paint of
     // the floating chat launcher. Only safe destinations leave this boundary;
