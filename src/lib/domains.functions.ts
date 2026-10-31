@@ -709,11 +709,12 @@ export const resolveHost = createServerFn({ method: "GET" }).handler(async () =>
   // platform site rather than crashing the whole request.
   try {
     const sb = publicSbClient();
-    const { data: pSettings } = await sb
-      .from("platform_settings")
-      .select("settings")
-      .eq("id", 1)
-      .maybeSingle();
+    const { swr } = await import("@/lib/swr-cache");
+    const pSettings = await swr("platform-settings:routing", async () => {
+      const { data, error } = await sb.from("platform_settings").select("settings").eq("id", 1).maybeSingle();
+      if (error) throw new Error(error.message);
+      return data ? { settings: data.settings } : null;
+    });
     const s = ((pSettings?.settings as any) ?? {}) as Record<string, string>;
     const rootDomain = (s.root_domain ?? "orzen.top").toLowerCase();
     const loginHost = (s.login_host ?? "").toLowerCase();
@@ -737,7 +738,11 @@ export const resolveHost = createServerFn({ method: "GET" }).handler(async () =>
     }
 
     // Custom domain lookup
-    const { data: resolved } = await sb.rpc("resolve_domain", { _host: host });
+    const resolved = await swr(`resolve-domain:${host}`, async () => {
+      const { data, error } = await sb.rpc("resolve_domain", { _host: host });
+      if (error) throw new Error(error.message);
+      return data ?? null;
+    });
     const r = resolved as any;
     if (r && r.slug) return { host, slug: r.slug as string, isPlatform: false };
   } catch {

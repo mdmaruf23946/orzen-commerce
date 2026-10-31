@@ -89,10 +89,13 @@ export const getPublicLanding = createServerFn({ method: "GET" })
       },
     });
 
-    const { data: page } = await supabase.rpc("get_public_landing_page", {
-      _slug: data.slug.toLowerCase(),
+    const { swr } = await import("@/lib/swr-cache");
+    const slug = data.slug.toLowerCase();
+    return swr(`landing-public:${slug}`, async () => {
+      const { data: page, error } = await supabase.rpc("get_public_landing_page", { _slug: slug });
+      if (error) throw new Error(error.message);
+      return (page as unknown as PublicLandingPage | null) ?? null;
     });
-    return (page as unknown as PublicLandingPage | null) ?? null;
   });
 
 export type LandingStoreProducts = {
