@@ -365,7 +365,8 @@ async function loadStoreAgentPublic(slug: string) {
         : null,
       whatsapp_url: whatsappAvailable ? `https://wa.me/${whatsappNumber}` : null,
     };
-  });
+  }
+}
 
 // ---------- Messenger ----------
 const REQUIRED_MESSENGER_SCOPES = [
