@@ -2953,10 +2953,11 @@ export async function handleMessengerWebhook(request: Request): Promise<Response
                   const { handleMerchantChannelMessage } = await import(
                     "@/lib/merchant-ai/router.server"
                   );
-                  const merchant = await handleMerchantChannelMessage(
+                  // Merchant commands are linked to Messenger identities only.
+                  const merchant = channel === "instagram" ? null : await handleMerchantChannelMessage(
                     sb,
                     integ.store_id,
-                    channel,
+                    "messenger",
                     senderId,
                     effectiveText,
                   );
