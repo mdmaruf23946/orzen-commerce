@@ -5422,6 +5422,10 @@ export type Database = {
           faq_reply: boolean
           human_takeover: boolean
           id: string
+          instagram_account_id: string | null
+          instagram_connected_at: string | null
+          instagram_picture_url: string | null
+          instagram_username: string | null
           last_error: string | null
           last_verified_at: string | null
           order_detection: boolean
@@ -5454,6 +5458,10 @@ export type Database = {
           faq_reply?: boolean
           human_takeover?: boolean
           id?: string
+          instagram_account_id?: string | null
+          instagram_connected_at?: string | null
+          instagram_picture_url?: string | null
+          instagram_username?: string | null
           last_error?: string | null
           last_verified_at?: string | null
           order_detection?: boolean
@@ -5486,6 +5494,10 @@ export type Database = {
           faq_reply?: boolean
           human_takeover?: boolean
           id?: string
+          instagram_account_id?: string | null
+          instagram_connected_at?: string | null
+          instagram_picture_url?: string | null
+          instagram_username?: string | null
           last_error?: string | null
           last_verified_at?: string | null
           order_detection?: boolean

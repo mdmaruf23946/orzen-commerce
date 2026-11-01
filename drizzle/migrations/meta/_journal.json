@@ -169,6 +169,13 @@
       "when": 1792941229904,
       "tag": "0023_courier_parcel_restock",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1793540610415,
+      "tag": "0024_instagram_messaging",
+      "breakpoints": true
     }
   ]
 }
