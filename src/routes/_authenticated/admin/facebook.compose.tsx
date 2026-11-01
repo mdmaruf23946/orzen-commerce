@@ -78,7 +78,7 @@ function ComposePage() {
     link_url: type === "link" ? linkUrl : null,
   };
 
-  function useProduct(p: any) {
+  function pickProduct(p: any) {
     const url = store?.slug ? `https://orzen.top/store/${store.slug}/product/${p.id}` : "";
     const price = p.old_price && Number(p.old_price) > Number(p.price)
       ? `💰 দাম: ${tk(p.price)} (আগে ${tk(p.old_price)})`
@@ -206,7 +206,7 @@ function ComposePage() {
         </div>
       </section>
 
-      <ProductPicker open={pickerOpen} onOpenChange={setPickerOpen} onPick={useProduct} />
+      <ProductPicker open={pickerOpen} onOpenChange={setPickerOpen} onPick={pickProduct} />
     </div>
   );
 }
