@@ -5,9 +5,10 @@ import { useServerFn } from "@tanstack/react-start";
 import { getMessengerIntegration } from "@/lib/ai.functions";
 import { getWhatsappIntegration } from "@/lib/whatsapp.functions";
 import { getWebchatSettings } from "@/lib/webchat-inbox.functions";
+import { getInstagramIntegration } from "@/lib/instagram.functions";
 
 export type AiMessagingApp = {
-  id: "messenger" | "whatsapp" | "webchat";
+  id: "messenger" | "instagram" | "whatsapp" | "webchat";
   name: string;
   description: string;
   integrationPath: string;
@@ -21,6 +22,12 @@ export const AI_MESSAGING_APPS: AiMessagingApp[] = [
     name: "Messenger AI",
     description: "AI replies to your Facebook Page messages, takes orders and answers customers 24/7.",
     integrationPath: "/admin/messenger",
+  },
+  {
+    id: "instagram",
+    name: "Instagram AI",
+    description: "AI replies to your Instagram Direct messages, takes orders and answers customers 24/7.",
+    integrationPath: "/admin/instagram",
   },
   {
     id: "whatsapp",
@@ -45,7 +52,10 @@ export function useAiMessagingConnections(enabled = true) {
   const wq = useQuery({ queryKey: ["ai-messaging", "whatsapp"], queryFn: () => w(), enabled, staleTime: 30_000, retry: false });
   const wc = useServerFn(getWebchatSettings);
   const cq = useQuery({ queryKey: ["ai-messaging", "webchat"], queryFn: () => wc(), enabled, staleTime: 30_000, retry: false });
+  const ig = useServerFn(getInstagramIntegration);
+  const iq = useQuery({ queryKey: ["ai-messaging", "instagram"], queryFn: () => ig(), enabled, staleTime: 30_000, retry: false });
   const connected: AiMessagingConnectionMap = {
+    instagram: !!(iq.data as any)?.connected,
     messenger: !!(mq.data as any)?.connected,
     whatsapp: !!(wq.data as any)?.connected,
     webchat: !!(cq.data as any)?.enabled,

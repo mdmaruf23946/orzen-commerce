@@ -1,9 +1,10 @@
 // Omni Inbox channel + folder registry. Add a new chat channel (Instagram, TikTok…)
 // by appending one entry here; the inbox list, filter bar and badges pick it up.
-export type OmniChannelKey = "messenger" | "whatsapp" | "web";
+export type OmniChannelKey = "messenger" | "instagram" | "whatsapp" | "web";
 
 export const OMNI_CHANNELS: { key: OmniChannelKey; label: string }[] = [
   { key: "messenger", label: "Messenger" },
+  { key: "instagram", label: "Instagram" },
   { key: "whatsapp", label: "WhatsApp" },
   { key: "web", label: "Website" },
 ];

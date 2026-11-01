@@ -5,6 +5,10 @@ import { MessengerMark } from "@/components/admin/brand/MessengerMark";
 import { WhatsAppMark } from "@/components/admin/brand/WhatsAppMark";
 import { Button } from "@/components/ui/button";
 import { Globe } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { isBetaPath, isBetaTester } from "@/lib/beta-features";
+import { InstagramMark } from "@/components/admin/brand/InstagramMark";
 
 function WebChatMark({ size = 40 }: { size?: number }) {
   return (
@@ -29,10 +33,12 @@ export const Route = createFileRoute("/_authenticated/admin/ai-messaging/apps")(
   component: HubPage,
 });
 
-const LOGOS = { messenger: MessengerMark, whatsapp: WhatsAppMark, webchat: WebChatMark } as const;
+const LOGOS = { messenger: MessengerMark, instagram: InstagramMark, whatsapp: WhatsAppMark, webchat: WebChatMark } as const;
 
 function HubPage() {
   const { connected, isLoading } = useAiMessagingConnections();
+  const { data: email } = useQuery({ queryKey: ["me-email"], queryFn: async () => (await supabase.auth.getUser()).data.user?.email ?? null, staleTime: 300_000 });
+  const tester = isBetaTester(email);
   return (
     <div className="mx-auto max-w-2xl space-y-4 pb-10">
       <div>
@@ -42,7 +48,7 @@ function HubPage() {
         </p>
       </div>
       <div className="grid gap-3">
-        {AI_MESSAGING_APPS.map((p) => {
+        {AI_MESSAGING_APPS.filter((p) => tester || !isBetaPath(p.integrationPath)).map((p) => {
           const Logo = LOGOS[p.id];
           const on = !!connected[p.id];
           return (

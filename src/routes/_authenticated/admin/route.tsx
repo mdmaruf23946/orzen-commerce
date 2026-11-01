@@ -18,8 +18,7 @@ import {
   MessageSquare, MessageCircle, Boxes, Ticket, RotateCcw, BarChart3, FileUp, Globe,
   Radar, ShieldCheck, FileText, PhoneCall, Sparkles, AlertTriangle, UserCog, Palette,
   ChevronDown, ChevronsLeft, ChevronsRight, Moon, Sun, ExternalLink, LayoutTemplate, X,
-  Gauge, PackageCheck, Headphones, LayoutGrid, Inbox as InboxIcon, Plug as PlugIcon, Store, SlidersHorizontal, LifeBuoy, UserRound,
-} from "lucide-react";
+  Gauge, PackageCheck, Headphones, LayoutGrid, Inbox as InboxIcon, Plug as PlugIcon, Store, SlidersHorizontal, LifeBuoy, UserRound,, Instagram } from "lucide-react";
 import { amIOwner } from "@/lib/owner.functions";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -392,7 +391,7 @@ function aiMessagingItems(connected: AiMessagingConnectionMap): LinkDef[] {
   return AI_MESSAGING_APPS.filter((a) => connected[a.id]).map((a) => ({
     to: a.integrationPath,
     label: a.name,
-    icon: a.id === "messenger" ? MessageSquare : a.id === "webchat" ? Globe : MessageCircle,
+    icon: a.id === "messenger" ? MessageSquare : a.id === "instagram" ? Instagram : a.id === "webchat" ? Globe : MessageCircle,
   })) as LinkDef[];
 }
 
