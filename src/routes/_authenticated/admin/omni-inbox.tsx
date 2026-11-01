@@ -21,6 +21,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useBadgeCounts } from "@/lib/use-badge-counts";
+import { listFacebookComments } from "@/lib/facebook-page.functions";
+import { FacebookCommentThread, FacebookPostPanel } from "@/components/admin/OmniFacebookComment";
 
 export const Route = createFileRoute("/_authenticated/admin/omni-inbox")({
   component: () => (
@@ -43,6 +45,13 @@ export const Route = createFileRoute("/_authenticated/admin/omni-inbox")({
 
 // Official brand marks (fixed brand colours are part of the logos).
 function ChannelIcon({ channel, className }: { channel: string; className?: string }) {
+  if (channel === "facebook")
+    return (
+      <svg viewBox="0 0 24 24" className={className} aria-label="Facebook Comments">
+        <circle cx="12" cy="12" r="12" fill="#0866FF" />
+        <path fill="#fff" d="M15.12 15.47 15.65 12h-3.33V9.75c0-.95.47-1.87 1.96-1.87h1.51V4.93s-1.37-.23-2.68-.23c-2.74 0-4.53 1.66-4.53 4.66V12H5.53v3.47h3.05V24a12.1 12.1 0 0 0 3.74 0v-8.53h2.8Z" />
+      </svg>
+    );
   if (channel === "messenger")
     return (
       <svg viewBox="0 0 24 24" className={className} aria-label="Messenger">
@@ -176,14 +185,52 @@ function OmniInbox() {
       .then((r: any[]) => { if (r?.some((x) => x.profile_pic || x.name)) qc.invalidateQueries({ queryKey: ["omni-inbox"] }); })
       .catch(() => {});
   }, [convs, refreshFb, qc]);
-  const counts = (data?.counts ?? {}) as Record<string, number>;
+  // Facebook comments live in their own table; merge them into the same list.
+  const fetchFbComments = useServerFn(listFacebookComments);
+  const showFb = channel === "all" || channel === "facebook";
+  const { data: fbData } = useQuery({
+    queryKey: ["omni-fb-comments"],
+    queryFn: () => fetchFbComments({ data: { filter: "all", page_size: 50 } }).catch(() => null),
+    enabled: showFb,
+    staleTime: 60_000,
+  });
+  const fbRows = ((fbData as any)?.comments ?? []).map((cm: any) => ({
+    id: `fbc:${cm.comment_id}`,
+    channel: "facebook",
+    customer_name: cm.author_name || "Facebook user",
+    profile_pic: cm.author_picture,
+    last_message_at: cm.comment_created_at ?? cm.created_at,
+    created_at: cm.created_at,
+    last_message_preview: cm.message,
+    unread_count: cm.replied || cm.hidden ? 0 : 1,
+    comment: cm,
+  }));
+  const fbVisible = fbRows.filter((r: any) => {
+    if (folder === "unread") return r.unread_count > 0;
+    if (folder !== "all") return false;
+    if (!search) return true;
+    const s = search.toLowerCase();
+    return `${r.customer_name} ${r.last_message_preview ?? ""}`.toLowerCase().includes(s);
+  });
+  const list: any[] =
+    channel === "facebook"
+      ? fbVisible
+      : channel === "all"
+        ? [...convs, ...fbVisible].sort((a, b) =>
+            new Date(b.last_message_at ?? b.created_at ?? 0).getTime() - new Date(a.last_message_at ?? a.created_at ?? 0).getTime())
+        : convs;
+  const fbUnread = fbRows.filter((r: any) => r.unread_count > 0).length;
+  const counts = { ...((data?.counts ?? {}) as Record<string, number>) };
+  counts.facebook = fbUnread;
+  counts.all = (counts.all ?? 0) + fbUnread;
   const folderCounts = ((data as any)?.folderCounts ?? {}) as Record<string, number>;
-  const active = convs.find((c) => c.id === activeId) ?? (activeConv?.id === activeId ? activeConv : null);
+  const active = list.find((c) => c.id === activeId) ?? (activeConv?.id === activeId ? activeConv : null);
+  const isFb = active?.channel === "facebook";
 
   const { data: msgs = [] } = useQuery({
     queryKey: ["omni-msgs", activeId],
     queryFn: () => fetchMsgs({ data: { conversationId: activeId! } }),
-    enabled: !!activeId,
+    enabled: !!activeId && !activeId.startsWith("fbc:"),
   });
 
   useEffect(() => {
@@ -227,7 +274,7 @@ function OmniInbox() {
     }
   }
 
-  const tabs = [{ key: "all", label: "All" }, ...OMNI_CHANNELS];
+  const tabs = [{ key: "all", label: "All" }, ...OMNI_CHANNELS, { key: "facebook", label: "Facebook Comments" }];
 
   return (
     <div className="flex flex-col h-[calc(100dvh-9rem)] overflow-hidden rounded-xl border bg-card shadow-sm md:-mx-6 md:-mt-6 md:-mb-8 md:h-[calc(100dvh-4rem)] md:rounded-none md:border-0 md:shadow-none lg:-mx-8 lg:-mt-8">
@@ -293,15 +340,6 @@ function OmniInbox() {
                 )}
               </button>
             ))}
-            <Link
-              to="/admin/facebook/comments"
-              search={{ post: undefined }}
-              title="Facebook Comments"
-              aria-label="Facebook Comments"
-              className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-[#1877F2] text-[10px] font-semibold leading-tight text-primary-foreground opacity-90 hover:opacity-100"
-            >
-              FB<br />Cmt
-            </Link>
           </div>
 
           <div className="relative">
@@ -315,10 +353,10 @@ function OmniInbox() {
           {isLoading && (
             <div className="p-8 text-center"><Loader2 className="mx-auto h-5 w-5 animate-spin text-muted-foreground" /></div>
           )}
-          {!isLoading && !convs.length && (
+          {!isLoading && !list.length && (
             <div className="p-8 text-center text-sm text-muted-foreground">এখানে কোনো কথোপকথন নেই।</div>
           )}
-          {convs.map((c) => (
+          {list.map((c) => (
             <button
               key={c.id}
               onClick={() => open(c)}
@@ -380,7 +418,7 @@ function OmniInbox() {
                   {active.vip && <Crown className="h-3.5 w-3.5 shrink-0 text-primary" />}
                 </div>
                 <div className="truncate text-xs text-muted-foreground">
-                  {OMNI_CHANNELS.find((x) => x.key === active.channel)?.label}
+                  {isFb ? "Facebook comment" : OMNI_CHANNELS.find((x) => x.key === active.channel)?.label}
                   {active.phone ? ` · ${active.phone}` : ""}
                   {active.total_orders ? ` · ${active.total_orders} অর্ডার` : ""}
                 </div>
@@ -388,15 +426,18 @@ function OmniInbox() {
               <Button size="icon" variant="ghost" className="shrink-0 xl:hidden" onClick={() => setInfoOpen(true)} aria-label="কাস্টমার তথ্য">
                 <Info className="h-4 w-4" />
               </Button>
-              <Button size="sm" variant={active.handoff_mode === "human" ? "default" : "outline"} onClick={toggleMode} className="shrink-0">
+              {!isFb && <Button size="sm" variant={active.handoff_mode === "human" ? "default" : "outline"} onClick={toggleMode} className="shrink-0">
                 {active.handoff_mode === "human" ? (
                   <><Bot className="h-4 w-4 sm:mr-1" /><span className="hidden sm:inline">AI-কে দিন</span></>
                 ) : (
                   <><User className="h-4 w-4 sm:mr-1" /><span className="hidden sm:inline">নিজে উত্তর দিন</span></>
                 )}
-              </Button>
+              </Button>}
             </div>
 
+            {isFb ? (
+              <FacebookCommentThread comment={active.comment} onDone={() => setActiveId(null)} />
+            ) : (<>
             <div className="flex-1 space-y-2 overflow-y-auto bg-muted/30 p-3 sm:p-4">
               {(msgs as any[]).map((m) => {
                 const failed = m.message_type === "error" || m.delivery_status === "failed";
@@ -462,16 +503,17 @@ function OmniInbox() {
                 {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
               </Button>
             </div>
+            </>)}
           </>
         )}
       </section>
 
       {active && (
         <aside className="hidden w-[320px] shrink-0 border-l xl:block">
-          <OmniCustomerPanel conversationId={active.id} />
+          {isFb ? <FacebookPostPanel comment={active.comment} /> : <OmniCustomerPanel conversationId={active.id} />}
         </aside>
       )}
-      {active && (
+      {active && !isFb && (
         <OmniProductPicker
           open={pickerOpen}
           onOpenChange={setPickerOpen}
@@ -485,7 +527,9 @@ function OmniInbox() {
       <Sheet open={infoOpen && !!active} onOpenChange={setInfoOpen}>
         <SheetContent side="right" className="h-[100dvh] w-full max-w-full p-0 pb-[env(safe-area-inset-bottom)] sm:max-w-sm [&>button]:hidden">
           <SheetTitle className="sr-only">কাস্টমার তথ্য</SheetTitle>
-          {active && <OmniCustomerPanel conversationId={active.id} onClose={() => setInfoOpen(false)} />}
+          {active && (isFb
+            ? <FacebookPostPanel comment={active.comment} onClose={() => setInfoOpen(false)} />
+            : <OmniCustomerPanel conversationId={active.id} onClose={() => setInfoOpen(false)} />)}
         </SheetContent>
       </Sheet>
       </div>
