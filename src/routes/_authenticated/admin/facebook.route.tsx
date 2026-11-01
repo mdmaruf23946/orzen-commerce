@@ -12,16 +12,17 @@ export const Route = createFileRoute("/_authenticated/admin/facebook")({
 
 const TABS = [
   { to: "/admin/facebook", label: "Page Overview", exact: true },
-  { to: "/admin/facebook/posts", label: "Posts" },
-  { to: "/admin/facebook/comments", label: "Comments" },
+  { to: "/admin/facebook/comments", label: "Comment Inbox" },
   { to: "/admin/facebook/compose", label: "Create Post" },
+  { to: "/admin/facebook/posts", label: "Posts" },
   { to: "/admin/facebook/settings", label: "Page Settings" },
 ];
 
 function FacebookLayout() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const wide = pathname.startsWith("/admin/facebook/comments") || pathname.startsWith("/admin/facebook/compose");
   return (
-    <div className="mx-auto max-w-5xl space-y-4 pb-6">
+    <div className={`mx-auto ${wide ? "max-w-7xl" : "max-w-5xl"} space-y-4 pb-6`}>
       <header className="flex items-center gap-3">
         <FacebookMark />
         <div className="min-w-0">
