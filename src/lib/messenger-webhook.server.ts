@@ -2612,7 +2612,7 @@ export async function handleMessengerWebhook(request: Request): Promise<Response
             try {
               const { ensurePostbacksDelivered } = await import("@/lib/messenger-subscribe.server");
               const res = await ensurePostbacksDelivered({
-                pageId,
+                pageId: String((integ as any).page_id ?? pageId),
                 token,
                 appId: (integ as any).app_id ?? null,
                 appSecret: appSecret,
