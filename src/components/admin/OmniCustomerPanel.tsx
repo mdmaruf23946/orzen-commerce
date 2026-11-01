@@ -91,6 +91,26 @@ export function OmniCustomerPanel({ conversationId, onClose }: { conversationId:
         )}
       </div>
 
+      {c.source && (c.source.post_id || c.source.ad_id || c.source.ref) && (
+        <div className="border-b bg-primary/5 p-4">
+          <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-primary">কোথা থেকে এসেছে</div>
+          <div className="flex items-start gap-3">
+            {c.source.photo && <img src={c.source.photo} alt="" className="h-12 w-12 shrink-0 rounded-md border object-cover" />}
+            <div className="min-w-0 text-sm">
+              <div className="font-medium">
+                {c.source.type === "ad" ? "Facebook বিজ্ঞাপন থেকে" : c.source.post_id ? "Facebook post থেকে" : "লিংক থেকে"}
+              </div>
+              {c.source.title && <div className="line-clamp-2 text-xs text-muted-foreground">{c.source.title}</div>}
+              {c.source.post_id && (
+                <a href={`https://facebook.com/${c.source.post_id}`} target="_blank" rel="noreferrer" className="text-xs text-primary hover:underline">
+                  Post দেখুন
+                </a>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {editing ? (
         <div className="space-y-3 border-b p-4">
           <Input placeholder="নাম" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />

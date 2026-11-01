@@ -2714,6 +2714,29 @@ export async function handleMessengerWebhook(request: Request): Promise<Response
                 }
               }
 
+              // Remember where the customer came from (post / ad / link) for the Inbox panel.
+              {
+                const ref: any = ev.referral ?? ev.postback?.referral ?? ev.message?.referral ?? null;
+                if (ref && conv) {
+                  try {
+                    const ads = ref.ads_context_data ?? {};
+                    const source = {
+                      type: ref.source === "ADS" || ref.ad_id ? "ad" : ref.post_id || ads.post_id ? "post" : String(ref.source ?? "link").toLowerCase(),
+                      post_id: ref.post_id ?? ads.post_id ?? null,
+                      ad_id: ref.ad_id ?? null,
+                      ref: ref.ref ?? null,
+                      title: ads.ad_title ?? null,
+                      photo: ads.photo_url ?? null,
+                      at: new Date().toISOString(),
+                    };
+                    const { data: fresh } = await sb.from("ai_conversations").select("psid_profile").eq("id", conv.id).maybeSingle();
+                    await sb.from("ai_conversations")
+                      .update({ psid_profile: { ...(((fresh as any)?.psid_profile ?? {}) as Record<string, any>), source } })
+                      .eq("id", conv.id);
+                  } catch { /* never block messages */ }
+                }
+              }
+
               // Optins / referrals — log as system rows, no reply
               if (ev.optin || ev.referral) {
                 await sb.from("ai_messages").insert({

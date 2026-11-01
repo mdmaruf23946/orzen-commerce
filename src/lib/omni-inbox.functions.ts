@@ -177,7 +177,7 @@ export const getOmniCustomer = createServerFn({ method: "POST" })
     const storeId = await storeIdFor(sb, context.userId);
     const { data: conv } = await sb
       .from("ai_conversations")
-      .select("id,store_id,channel,customer_name,phone,address,first_contact_at,tags,lead_status")
+      .select("id,store_id,channel,customer_name,phone,address,first_contact_at,tags,lead_status,source:psid_profile->source")
       .eq("id", data.conversationId)
       .maybeSingle();
     if (!conv || (conv as any).store_id !== storeId) throw new Error("Conversation not found");
@@ -209,6 +209,7 @@ export const getOmniCustomer = createServerFn({ method: "POST" })
         address: c.address ?? orders[0]?.address ?? null,
         channel: c.channel,
         firstContact: c.first_contact_at,
+        source: (c.source ?? null) as { type?: string; post_id?: string; ad_id?: string; ref?: string; title?: string; at?: string } | null,
       },
       stats: {
         total,
