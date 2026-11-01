@@ -1,5 +1,5 @@
 import { useTabVisible } from "@/lib/use-tab-visible";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useRef, useState } from "react";
@@ -293,6 +293,15 @@ function OmniInbox() {
                 )}
               </button>
             ))}
+            <Link
+              to="/admin/facebook/comments"
+              search={{ post: undefined }}
+              title="Facebook Comments"
+              aria-label="Facebook Comments"
+              className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-[#1877F2] text-[10px] font-semibold leading-tight text-primary-foreground opacity-90 hover:opacity-100"
+            >
+              FB<br />Cmt
+            </Link>
           </div>
 
           <div className="relative">
