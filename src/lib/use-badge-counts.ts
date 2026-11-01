@@ -40,7 +40,7 @@ export function useBadgeCounts() {
     const invalidate = () => qc.invalidateQueries({ queryKey: badgeCountsKey });
     const filter = `store_id=eq.${storeId}`;
     const channel = supabase
-      .channel(`admin-badges:${storeId}`)
+      .channel(`admin-badges:${storeId}:${Math.random().toString(36).slice(2)}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "orders", filter }, invalidate)
       .on("postgres_changes", { event: "*", schema: "public", table: "returns", filter }, invalidate)
       .on("postgres_changes", { event: "*", schema: "public", table: "store_customers", filter }, invalidate)

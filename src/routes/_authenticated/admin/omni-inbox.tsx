@@ -24,7 +24,7 @@ import { useBadgeCounts } from "@/lib/use-badge-counts";
 
 export const Route = createFileRoute("/_authenticated/admin/omni-inbox")({
   component: () => (
-    <FeatureGate feature="ai_agent">
+    <FeatureGate feature="ai_agent" anyOf={["ai_messenger", "messenger_inbox", "whatsapp"]}>
       <OmniInbox />
     </FeatureGate>
   ),

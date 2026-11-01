@@ -11,6 +11,8 @@ type GateMode = "soft" | "badge" | "passthrough";
 
 type Props = {
   feature: FeatureKey;
+  /** Allow access if any of these features is included. */
+  anyOf?: FeatureKey[];
   children: ReactNode;
   mode?: GateMode;
   /** @deprecated kept for backwards compatibility — no longer used */
@@ -28,7 +30,7 @@ type Props = {
  * - `mode="badge"` shows only the badge and leaves clicks passing through
  *   (useful when the page already gates its own actions via `useFeature`).
  */
-export function FeatureGate({ feature, children, mode = "soft", className }: Props) {
+export function FeatureGate({ feature, anyOf, children, mode = "soft", className }: Props) {
   const fn = useServerFn(myBillingStatus);
   const { data, isLoading } = useQuery({
     queryKey: ["admin", "billing"],
@@ -41,7 +43,7 @@ export function FeatureGate({ feature, children, mode = "soft", className }: Pro
     return <div className="h-24 animate-pulse rounded-xl bg-muted/40" />;
   }
 
-  const allowed = hasFeature(data?.store as any, feature);
+  const allowed = [feature, ...(anyOf ?? [])].some((f) => hasFeature(data?.store as any, f));
   if (allowed || mode === "passthrough") return <>{children}</>;
 
   const label = FEATURE_LABELS[feature];
