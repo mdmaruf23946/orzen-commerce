@@ -29,7 +29,7 @@ export const getInstagramIntegration = createServerFn({ method: "GET" })
     const storeId = await storeIdFor(context.supabase, context.userId);
     const { data } = await context.supabase
       .from("messenger_integrations")
-      .select("status,page_id,page_name,instagram_account_id,instagram_username,instagram_picture_url,instagram_connected_at")
+      .select("status,page_id,page_name,verify_token,instagram_account_id,instagram_username,instagram_picture_url,instagram_connected_at")
       .eq("store_id", storeId)
       .maybeSingle();
     const r: any = data ?? {};
@@ -40,48 +40,46 @@ export const getInstagramIntegration = createServerFn({ method: "GET" })
       username: (r.instagram_username as string | null) ?? null,
       picture: (r.instagram_picture_url as string | null) ?? null,
       connectedAt: (r.instagram_connected_at as string | null) ?? null,
+      verifyToken: (r.verify_token as string | null) ?? null,
     };
   });
 
 export const connectInstagram = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
+  .inputValidator((input: { instagram_account_id: string }) => {
+    const id = String(input?.instagram_account_id ?? "").trim();
+    if (!/^\d{5,30}$/.test(id)) throw new Error("সঠিক Instagram Business Account ID দিন (শুধু সংখ্যা)।");
+    return { instagram_account_id: id };
+  })
+  .handler(async ({ context, data }) => {
     const storeId = await storeIdFor(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: integ } = await supabaseAdmin
       .from("messenger_integrations")
-      .select("id,page_id,status,page_access_token,page_access_token_encrypted,app_id,app_secret_encrypted,verify_token")
+      .select("id,page_id,page_access_token,page_access_token_encrypted")
       .eq("store_id", storeId)
       .maybeSingle();
     const i: any = integ;
     if (!i?.page_id) {
-      return { ok: false, error: "আগে Messenger-এ আপনার Facebook Page connect করুন, তারপর Instagram connect করুন।" };
+      return { ok: false, error: "আগে Messenger-এ আপনার Facebook Page manual connect করুন, তারপর Instagram connect করুন।" };
     }
     const token = (await decrypt(i.page_access_token_encrypted)) || i.page_access_token;
     if (!token) return { ok: false, error: "Facebook Page-এর token পাওয়া যায়নি। Messenger আবার connect করুন।" };
 
+    const igId = data.instagram_account_id;
     const r = await fetch(
-      `${GRAPH}/${encodeURIComponent(i.page_id)}?fields=instagram_business_account{id,username,profile_picture_url}&access_token=${encodeURIComponent(token)}`,
+      `${GRAPH}/${encodeURIComponent(igId)}?fields=id,username,profile_picture_url&access_token=${encodeURIComponent(token)}`,
     );
-    const j: any = await r.json().catch(() => ({}));
-    if (!r.ok) {
-      console.warn("[instagram] lookup failed", j?.error?.message);
+    const ig: any = await r.json().catch(() => ({}));
+    if (!r.ok || !ig?.id) {
+      console.warn("[instagram] manual verify failed", ig?.error?.message);
       return {
         ok: false,
         error:
-          "Instagram পড়ার অনুমতি নেই। Messenger পেজে গিয়ে Auto Connect দিয়ে আবার Facebook login করুন এবং Instagram-এর সব অনুমতি দিন।",
-      };
-    }
-    const ig = j?.instagram_business_account;
-    if (!ig?.id) {
-      return {
-        ok: false,
-        error:
-          "এই Facebook Page-এর সাথে কোনো Instagram Business/Creator account যুক্ত নেই। Instagram-কে Professional account করে Page-এর সাথে link করুন।",
+          "এই Instagram ID যাচাই করা যায়নি। ID সঠিক কিনা, Instagram account Page-এর সাথে link করা কিনা এবং Page token-এ instagram_basic ও instagram_manage_messages অনুমতি আছে কিনা দেখুন।",
       };
     }
 
-    // Same id already linked to another store? Never share one inbox across stores.
     const { data: other } = await supabaseAdmin
       .from("messenger_integrations")
       .select("store_id")
@@ -89,51 +87,6 @@ export const connectInstagram = createServerFn({ method: "POST" })
       .neq("store_id", storeId)
       .maybeSingle();
     if (other) return { ok: false, error: "এই Instagram account অন্য একটি স্টোরে যুক্ত আছে।" };
-
-    // Page must be subscribed (Instagram messages are delivered via the Page app link).
-    try {
-      const { ensurePageSubscribed } = await import("@/lib/messenger-subscribe.server");
-      await ensurePageSubscribed(i.page_id, token);
-    } catch {
-      /* best effort */
-    }
-
-    // App-level webhook subscription for the "instagram" object, reusing the Page callback.
-    let webhook: string = "skipped";
-    const appSecret = await decrypt(i.app_secret_encrypted);
-    if (i.app_id && appSecret && i.verify_token) {
-      const appAccess = `${i.app_id}|${appSecret}`;
-      try {
-        const sr = await fetch(`${GRAPH}/${encodeURIComponent(i.app_id)}/subscriptions?access_token=${encodeURIComponent(appAccess)}`);
-        const sj: any = await sr.json().catch(() => ({}));
-        const subs: any[] = sj?.data ?? [];
-        const pageSub = subs.find((s) => s?.object === "page");
-        const igSub = subs.find((s) => s?.object === "instagram");
-        const names: string[] = (igSub?.fields ?? []).map((f: any) => String(f?.name ?? f));
-        if (igSub && names.includes("messages")) webhook = "ok";
-        else if (pageSub?.callback_url) {
-          const body = new URLSearchParams({
-            object: "instagram",
-            callback_url: pageSub.callback_url,
-            verify_token: i.verify_token,
-            fields: [...new Set([...names, "messages", "messaging_postbacks", "messaging_seen"])].join(","),
-            include_values: "true",
-            access_token: appAccess,
-          });
-          const pr = await fetch(`${GRAPH}/${encodeURIComponent(i.app_id)}/subscriptions`, {
-            method: "POST",
-            headers: { "content-type": "application/x-www-form-urlencoded" },
-            body,
-          });
-          const pj: any = await pr.json().catch(() => ({}));
-          webhook = pr.ok && pj?.success ? "ok" : "failed";
-          if (webhook === "failed") console.warn("[instagram] app subscribe failed", pj?.error?.message);
-        } else webhook = "no-page-sub";
-      } catch (e) {
-        console.warn("[instagram] subscribe error", (e as Error).message);
-        webhook = "failed";
-      }
-    }
 
     await supabaseAdmin
       .from("messenger_integrations")
@@ -145,7 +98,7 @@ export const connectInstagram = createServerFn({ method: "POST" })
       } as any)
       .eq("id", i.id);
 
-    return { ok: true, username: (ig.username as string | null) ?? null, webhook };
+    return { ok: true, username: (ig.username as string | null) ?? null };
   });
 
 export const disconnectInstagram = createServerFn({ method: "POST" })
