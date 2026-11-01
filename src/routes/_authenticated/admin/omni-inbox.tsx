@@ -147,6 +147,7 @@ function OmniInbox() {
   const { data, isLoading } = useQuery({
     queryKey: ["omni-inbox", channel, folder, search],
     queryFn: () => fetchList({ data: { channel, folder, search: search || undefined } }),
+    enabled: channel !== "facebook",
   });
   const { storeId } = useBadgeCounts();
   const tabVisible = useTabVisible();
@@ -169,7 +170,7 @@ function OmniInbox() {
       supabase.removeChannel(ch);
     };
   }, [storeId, qc, tabVisible]);
-  const convs = (data?.rows ?? []) as any[];
+  const convs = (channel === "facebook" ? [] : (data?.rows ?? [])) as any[];
 
   // Pull real Facebook name + photo for Messenger customers missing them (server caches 6h).
   const refreshFb = useServerFn(refreshMessengerProfiles);
