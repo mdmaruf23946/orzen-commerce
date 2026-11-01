@@ -209,7 +209,7 @@ export const getOmniCustomer = createServerFn({ method: "POST" })
         address: c.address ?? orders[0]?.address ?? null,
         channel: c.channel,
         firstContact: c.first_contact_at,
-        source: (c.source ?? null) as { type?: string; post_id?: string; ad_id?: string; ref?: string; title?: string; at?: string } | null,
+        source: (c.source ?? null) as { type?: string; post_id?: string; ad_id?: string; ref?: string; title?: string; photo?: string; at?: string } | null,
       },
       stats: {
         total,
