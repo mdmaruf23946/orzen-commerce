@@ -18,7 +18,7 @@ import {
   MessageSquare, MessageCircle, Boxes, Ticket, RotateCcw, BarChart3, FileUp, Globe,
   Radar, ShieldCheck, FileText, PhoneCall, Sparkles, AlertTriangle, UserCog, Palette,
   ChevronDown, ChevronsLeft, ChevronsRight, Moon, Sun, ExternalLink, LayoutTemplate, X,
-  Gauge, PackageCheck, Headphones, LayoutGrid, Inbox as InboxIcon, Plug as PlugIcon, Store, SlidersHorizontal, LifeBuoy, UserRound,, Instagram } from "lucide-react";
+  Gauge, PackageCheck, Headphones, LayoutGrid, Inbox as InboxIcon, Plug as PlugIcon, Store, SlidersHorizontal, LifeBuoy, UserRound, Instagram } from "lucide-react";
 import { amIOwner } from "@/lib/owner.functions";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";

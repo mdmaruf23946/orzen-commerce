@@ -64,6 +64,7 @@ import { Route as AuthenticatedAdminFinanceRouteImport } from './routes/_authent
 import { Route as AuthenticatedAdminHandoffQueueRouteImport } from './routes/_authenticated/admin/handoff-queue'
 import { Route as AuthenticatedAdminImportExportRouteImport } from './routes/_authenticated/admin/import-export'
 import { Route as AuthenticatedAdminInboxRouteImport } from './routes/_authenticated/admin/inbox'
+import { Route as AuthenticatedAdminInstagramRouteImport } from './routes/_authenticated/admin/instagram'
 import { Route as AuthenticatedAdminInventoryRouteImport } from './routes/_authenticated/admin/inventory'
 import { Route as AuthenticatedAdminInvoiceTemplatesRouteImport } from './routes/_authenticated/admin/invoice-templates'
 import { Route as AuthenticatedAdminLegalRouteImport } from './routes/_authenticated/admin/legal'
@@ -591,6 +592,12 @@ const AuthenticatedAdminInboxRoute = AuthenticatedAdminInboxRouteImport.update({
   path: '/inbox',
   getParentRoute: () => AuthenticatedAdminRouteRoute,
 } as any)
+const AuthenticatedAdminInstagramRoute =
+  AuthenticatedAdminInstagramRouteImport.update({
+    id: '/instagram',
+    path: '/instagram',
+    getParentRoute: () => AuthenticatedAdminRouteRoute,
+  } as any)
 const AuthenticatedAdminInventoryRoute =
   AuthenticatedAdminInventoryRouteImport.update({
     id: '/inventory',
@@ -1940,6 +1947,7 @@ export interface FileRoutesByFullPath {
   '/admin/handoff-queue': typeof AuthenticatedAdminHandoffQueueRoute
   '/admin/import-export': typeof AuthenticatedAdminImportExportRoute
   '/admin/inbox': typeof AuthenticatedAdminInboxRoute
+  '/admin/instagram': typeof AuthenticatedAdminInstagramRoute
   '/admin/inventory': typeof AuthenticatedAdminInventoryRoute
   '/admin/invoice-templates': typeof AuthenticatedAdminInvoiceTemplatesRoute
   '/admin/legal': typeof AuthenticatedAdminLegalRoute
@@ -2211,6 +2219,7 @@ export interface FileRoutesByTo {
   '/admin/handoff-queue': typeof AuthenticatedAdminHandoffQueueRoute
   '/admin/import-export': typeof AuthenticatedAdminImportExportRoute
   '/admin/inbox': typeof AuthenticatedAdminInboxRoute
+  '/admin/instagram': typeof AuthenticatedAdminInstagramRoute
   '/admin/inventory': typeof AuthenticatedAdminInventoryRoute
   '/admin/invoice-templates': typeof AuthenticatedAdminInvoiceTemplatesRoute
   '/admin/legal': typeof AuthenticatedAdminLegalRoute
@@ -2491,6 +2500,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/handoff-queue': typeof AuthenticatedAdminHandoffQueueRoute
   '/_authenticated/admin/import-export': typeof AuthenticatedAdminImportExportRoute
   '/_authenticated/admin/inbox': typeof AuthenticatedAdminInboxRoute
+  '/_authenticated/admin/instagram': typeof AuthenticatedAdminInstagramRoute
   '/_authenticated/admin/inventory': typeof AuthenticatedAdminInventoryRoute
   '/_authenticated/admin/invoice-templates': typeof AuthenticatedAdminInvoiceTemplatesRoute
   '/_authenticated/admin/legal': typeof AuthenticatedAdminLegalRoute
@@ -2774,6 +2784,7 @@ export interface FileRouteTypes {
     | '/admin/handoff-queue'
     | '/admin/import-export'
     | '/admin/inbox'
+    | '/admin/instagram'
     | '/admin/inventory'
     | '/admin/invoice-templates'
     | '/admin/legal'
@@ -3045,6 +3056,7 @@ export interface FileRouteTypes {
     | '/admin/handoff-queue'
     | '/admin/import-export'
     | '/admin/inbox'
+    | '/admin/instagram'
     | '/admin/inventory'
     | '/admin/invoice-templates'
     | '/admin/legal'
@@ -3324,6 +3336,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/handoff-queue'
     | '/_authenticated/admin/import-export'
     | '/_authenticated/admin/inbox'
+    | '/_authenticated/admin/instagram'
     | '/_authenticated/admin/inventory'
     | '/_authenticated/admin/invoice-templates'
     | '/_authenticated/admin/legal'
@@ -4013,6 +4026,13 @@ declare module '@tanstack/react-router' {
       path: '/inbox'
       fullPath: '/admin/inbox'
       preLoaderRoute: typeof AuthenticatedAdminInboxRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
+    '/_authenticated/admin/instagram': {
+      id: '/_authenticated/admin/instagram'
+      path: '/instagram'
+      fullPath: '/admin/instagram'
+      preLoaderRoute: typeof AuthenticatedAdminInstagramRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
     '/_authenticated/admin/inventory': {
@@ -5766,6 +5786,7 @@ interface AuthenticatedAdminRouteRouteChildren {
   AuthenticatedAdminHandoffQueueRoute: typeof AuthenticatedAdminHandoffQueueRoute
   AuthenticatedAdminImportExportRoute: typeof AuthenticatedAdminImportExportRoute
   AuthenticatedAdminInboxRoute: typeof AuthenticatedAdminInboxRoute
+  AuthenticatedAdminInstagramRoute: typeof AuthenticatedAdminInstagramRoute
   AuthenticatedAdminInventoryRoute: typeof AuthenticatedAdminInventoryRoute
   AuthenticatedAdminInvoiceTemplatesRoute: typeof AuthenticatedAdminInvoiceTemplatesRoute
   AuthenticatedAdminLegalRoute: typeof AuthenticatedAdminLegalRoute
@@ -5845,6 +5866,7 @@ const AuthenticatedAdminRouteRouteChildren: AuthenticatedAdminRouteRouteChildren
     AuthenticatedAdminHandoffQueueRoute: AuthenticatedAdminHandoffQueueRoute,
     AuthenticatedAdminImportExportRoute: AuthenticatedAdminImportExportRoute,
     AuthenticatedAdminInboxRoute: AuthenticatedAdminInboxRoute,
+    AuthenticatedAdminInstagramRoute: AuthenticatedAdminInstagramRoute,
     AuthenticatedAdminInventoryRoute: AuthenticatedAdminInventoryRoute,
     AuthenticatedAdminInvoiceTemplatesRoute:
       AuthenticatedAdminInvoiceTemplatesRoute,
