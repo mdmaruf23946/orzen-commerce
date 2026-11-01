@@ -50,6 +50,24 @@ function ChannelIcon({ channel, className }: { channel: string; className?: stri
         <path fill="#fff" d="M12 5.2c-3.9 0-6.9 2.8-6.9 6.6 0 2 .8 3.7 2.2 4.9v2.3l2.1-1.2c.8.2 1.7.3 2.6.3 3.9 0 6.9-2.8 6.9-6.3S15.9 5.2 12 5.2Zm.7 8.6-1.8-1.9-3.4 1.9 3.8-4 1.8 1.9 3.4-1.9-3.8 4Z" />
       </svg>
     );
+  if (channel === "instagram")
+    return (
+      <svg viewBox="0 0 24 24" className={className} aria-label="Instagram">
+        <defs>
+          <radialGradient id="ig-omni-grad" cx="30%" cy="107%" r="150%">
+            <stop offset="0" stopColor="#FDF497" />
+            <stop offset="0.05" stopColor="#FDF497" />
+            <stop offset="0.45" stopColor="#FD5949" />
+            <stop offset="0.6" stopColor="#D6249F" />
+            <stop offset="0.9" stopColor="#285AEB" />
+          </radialGradient>
+        </defs>
+        <circle cx="12" cy="12" r="12" fill="url(#ig-omni-grad)" />
+        <rect x="6.3" y="6.3" width="11.4" height="11.4" rx="3.4" fill="none" stroke="#fff" strokeWidth="1.5" />
+        <circle cx="12" cy="12" r="2.7" fill="none" stroke="#fff" strokeWidth="1.5" />
+        <circle cx="15.3" cy="8.7" r="0.85" fill="#fff" />
+      </svg>
+    );
   if (channel === "whatsapp")
     return (
       <svg viewBox="0 0 24 24" className={className} aria-label="WhatsApp">
@@ -149,7 +167,7 @@ function OmniInbox() {
   const askedRef = useRef(new Set<string>());
   useEffect(() => {
     const ids = convs
-      .filter((c) => c.channel === "messenger" && (!c.profile_pic || !c.customer_name) && !askedRef.current.has(c.id))
+      .filter((c) => (c.channel === "messenger" || c.channel === "instagram") && (!c.profile_pic || !c.customer_name) && !askedRef.current.has(c.id))
       .map((c) => c.id)
       .slice(0, 30);
     if (!ids.length) return;
@@ -183,7 +201,7 @@ function OmniInbox() {
     const text = draft.trim();
     try {
       const payload = { data: { conversationId: active.id, text } };
-      if (active.channel === "messenger") await sendFb(payload as any);
+      if (active.channel === "messenger" || active.channel === "instagram") await sendFb(payload as any);
       else if (active.channel === "whatsapp") await sendWa(payload as any);
       else await sendWeb(payload);
       setDraft("");

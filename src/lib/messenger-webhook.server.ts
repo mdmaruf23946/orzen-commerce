@@ -2400,7 +2400,19 @@ async function decryptToken(enc: string | null | undefined): Promise<string | nu
   }
 }
 
-async function fetchPsidProfile(token: string, psid: string) {
+async function fetchPsidProfile(token: string, psid: string, channel: "messenger" | "instagram" = "messenger") {
+  if (channel === "instagram") {
+    try {
+      const r = await fetch(
+        `https://graph.facebook.com/v19.0/${encodeURIComponent(psid)}?fields=name,username,profile_pic&access_token=${encodeURIComponent(token)}`,
+      );
+      const j: any = await r.json().catch(() => null);
+      if (!r.ok || !j) return null;
+      return { name: j.name || (j.username ? `@${j.username}` : null), username: j.username ?? null, profile_pic: j.profile_pic ?? null, fetched_at: new Date().toISOString() } as Record<string, any>;
+    } catch {
+      return null;
+    }
+  }
   const { fetchMessengerProfile } = await import("@/lib/messenger-profile.server");
   return fetchMessengerProfile(token, psid);
 }
@@ -2520,14 +2532,18 @@ export async function handleMessengerWebhook(request: Request): Promise<Response
         }
 
         const sb = admin();
+        // Instagram DMs arrive on the same webhook (object "instagram", entry.id =
+        // Instagram business account) and reuse the linked Page's integration,
+        // token and AI pipeline; only the conversation channel differs.
+        const channel: "messenger" | "instagram" = body.object === "instagram" ? "instagram" : "messenger";
         for (const entry of body.entry ?? []) {
           const pageId = String(entry.id);
           const { data: integ } = await sb
             .from("messenger_integrations")
             .select(
-              "id,store_id,page_access_token,page_access_token_encrypted,app_secret_encrypted,ai_auto_reply,human_takeover,conversation_history,compact_memory,delivery_failures,reply_delay_seconds,reply_speed,app_id,verify_token",
+              "id,store_id,page_access_token,page_access_token_encrypted,app_secret_encrypted,ai_auto_reply,human_takeover,conversation_history,compact_memory,delivery_failures,reply_delay_seconds,reply_speed,app_id,verify_token,page_id",
             )
-            .eq("page_id", pageId)
+            .eq(channel === "instagram" ? "instagram_account_id" : "page_id", pageId)
             .maybeSingle();
           if (!integ) continue;
 
@@ -2596,7 +2612,7 @@ export async function handleMessengerWebhook(request: Request): Promise<Response
             try {
               const { ensurePostbacksDelivered } = await import("@/lib/messenger-subscribe.server");
               const res = await ensurePostbacksDelivered({
-                pageId,
+                pageId: String((integ as any).page_id ?? pageId),
                 token,
                 appId: (integ as any).app_id ?? null,
                 appSecret: appSecret,
@@ -2638,7 +2654,7 @@ export async function handleMessengerWebhook(request: Request): Promise<Response
                   .from("ai_conversations")
                   .select("id")
                   .eq("store_id", integ.store_id)
-                  .eq("channel", "messenger")
+                  .eq("channel", channel)
                   .eq("external_id", senderId)
                   .maybeSingle();
                 if (convRow) {
@@ -2658,11 +2674,11 @@ export async function handleMessengerWebhook(request: Request): Promise<Response
                 .from("ai_conversations")
                 .select("id,psid_profile,unread_count,handoff_mode,handoff_reason,handoff_at")
                 .eq("store_id", integ.store_id)
-                .eq("channel", "messenger")
+                .eq("channel", channel)
                 .eq("external_id", senderId)
                 .maybeSingle();
               if (!conv) {
-                const profile = token ? await fetchPsidProfile(token, senderId) : null;
+                const profile = token ? await fetchPsidProfile(token, senderId, channel) : null;
                 const name = profile
                   ? (profile["name"] as string | undefined) ||
                     [profile["first_name"], profile["last_name"]].filter(Boolean).join(" ") ||
@@ -2672,7 +2688,7 @@ export async function handleMessengerWebhook(request: Request): Promise<Response
                   .from("ai_conversations")
                   .insert({
                     store_id: integ.store_id,
-                    channel: "messenger",
+                    channel,
                     external_id: senderId,
                     customer_name: name,
                     psid_profile: profile ?? {},
@@ -2681,7 +2697,7 @@ export async function handleMessengerWebhook(request: Request): Promise<Response
                   .single();
                 conv = created;
               } else if (token && profileIsStale(conv.psid_profile as any)) {
-                const profile = await fetchPsidProfile(token, senderId);
+                const profile = await fetchPsidProfile(token, senderId, channel);
                 if (profile) {
                   const fbName =
                     (profile["name"] as string | undefined) ||
@@ -2940,7 +2956,7 @@ export async function handleMessengerWebhook(request: Request): Promise<Response
                   const merchant = await handleMerchantChannelMessage(
                     sb,
                     integ.store_id,
-                    "messenger",
+                    channel,
                     senderId,
                     effectiveText,
                   );
@@ -2960,7 +2976,7 @@ export async function handleMessengerWebhook(request: Request): Promise<Response
                       actionKey: "channel_router_failed",
                       level: "error",
                       message: err instanceof Error ? err.message : "Merchant command router failed",
-                      meta: { channel: "messenger" },
+                      meta: { channel },
                     });
                   } catch {
                     /* logging must not break delivery */

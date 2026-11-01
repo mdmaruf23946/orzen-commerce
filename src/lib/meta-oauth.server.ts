@@ -12,6 +12,8 @@ export const MESSENGER_OAUTH_SCOPES = [
   "pages_manage_posts",
   "pages_manage_engagement",
   "business_management",
+  "instagram_basic",
+  "instagram_manage_messages",
 ];
 
 export const WHATSAPP_OAUTH_SCOPES = [
