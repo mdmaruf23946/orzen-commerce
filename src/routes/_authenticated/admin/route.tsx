@@ -254,9 +254,8 @@ const menuGroups: NavGroupDef[] = [
         icon: Globe,
         children: [
           { to: "/admin/facebook", label: "Page Overview", icon: Globe },
-          { to: "/admin/facebook/posts", label: "Posts", icon: FileText },
-          { to: "/admin/facebook/comments", label: "Comments", icon: MessageSquare },
           { to: "/admin/facebook/compose", label: "Create Post", icon: Megaphone },
+          { to: "/admin/facebook/posts", label: "Posts & Drafts", icon: FileText },
           { to: "/admin/facebook/moderation", label: "Moderation", icon: ShieldCheck },
           { to: "/admin/facebook/settings", label: "Page Settings", icon: Settings },
         ],

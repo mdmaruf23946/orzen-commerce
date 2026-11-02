@@ -87,7 +87,11 @@ function PageOverview() {
 
       <div className="grid gap-3 sm:grid-cols-3">
         <Stat label="Saved drafts" value={data.drafts} to="/admin/facebook/posts" />
-        <Stat label="Unanswered comments" value={data.unanswered_comments} to="/admin/facebook/comments" />
+        <Link to="/admin/omni-inbox" search={{ channel: "facebook" }} className="rounded-2xl border bg-card p-4 shadow-sm transition-colors hover:bg-muted/40">
+          <div className="text-xs text-muted-foreground">Unanswered comments</div>
+          <div className="mt-1 text-2xl font-semibold">{data.unanswered_comments}</div>
+          <div className="mt-1 text-xs text-primary">Reply in Omni Inbox →</div>
+        </Link>
         <div className="rounded-2xl border bg-card p-4 shadow-sm">
           <div className="text-xs text-muted-foreground">AI comment management</div>
           <div className="mt-1 text-sm font-semibold">
@@ -127,10 +131,10 @@ function PageOverview() {
         )}
       </Section>
 
-      <Section title="Comments" description="Reply, moderate and hand conversations to Messenger.">
-        <Button asChild variant="outline" size="sm">
-          <Link to="/admin/facebook/comments" search={{ post: undefined }}>
-            <MessageSquare className="mr-1.5 h-4 w-4" /> Open comments
+      <Section title="Omni Inbox activity" description="Facebook comments are answered together with Messenger, WhatsApp, Instagram and Web Chat.">
+        <Button asChild size="sm" style={{ backgroundColor: FB_BLUE }}>
+          <Link to="/admin/omni-inbox" search={{ channel: "facebook" }}>
+            <MessageSquare className="mr-1.5 h-4 w-4" /> Open Omni Inbox
           </Link>
         </Button>
       </Section>

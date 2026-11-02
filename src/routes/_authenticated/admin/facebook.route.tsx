@@ -1,5 +1,6 @@
 import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
 import { FeatureGate } from "@/components/admin/FeatureGate";
+import { MessageSquare } from "lucide-react";
 import { FacebookMark } from "@/components/admin/facebook/ui";
 
 export const Route = createFileRoute("/_authenticated/admin/facebook")({
@@ -12,25 +13,32 @@ export const Route = createFileRoute("/_authenticated/admin/facebook")({
 
 const TABS = [
   { to: "/admin/facebook", label: "Page Overview", exact: true },
-  { to: "/admin/facebook/comments", label: "Comment Inbox" },
   { to: "/admin/facebook/compose", label: "Create Post" },
-  { to: "/admin/facebook/posts", label: "Posts" },
+  { to: "/admin/facebook/posts", label: "Posts & Drafts" },
+  { to: "/admin/facebook/moderation", label: "Moderation" },
   { to: "/admin/facebook/settings", label: "Page Settings" },
 ];
 
 function FacebookLayout() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const wide = pathname.startsWith("/admin/facebook/comments") || pathname.startsWith("/admin/facebook/compose");
+  const wide = pathname.startsWith("/admin/facebook/compose");
   return (
     <div className={`mx-auto ${wide ? "max-w-7xl" : "max-w-5xl"} space-y-4 pb-6`}>
-      <header className="flex items-center gap-3">
+      <header className="flex flex-wrap items-center gap-3">
         <FacebookMark />
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">Facebook Page</h1>
           <p className="mt-0.5 text-xs text-muted-foreground sm:text-sm">
-            Manage your page posts, comments and moderation — separate from the Messenger AI Agent.
+            Posts, drafts, moderation and page settings. Comments are answered in Omni Inbox.
           </p>
         </div>
+        <Link
+          to="/admin/omni-inbox"
+          search={{ channel: "facebook" }}
+          className="inline-flex items-center gap-1.5 rounded-lg border bg-card px-3 py-1.5 text-xs font-medium hover:bg-muted"
+        >
+          <MessageSquare className="h-4 w-4" /> Comments → Omni Inbox
+        </Link>
       </header>
 
       <div className="-mx-3 overflow-x-auto px-3 sm:mx-0 sm:px-0">

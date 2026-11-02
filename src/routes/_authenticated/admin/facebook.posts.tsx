@@ -273,7 +273,7 @@ function PostsPage() {
                       </Button>
                     )}
                     <Button asChild size="sm" variant="outline">
-                      <Link to="/admin/facebook/comments" search={{ post: p.id }}>
+                      <Link to="/admin/omni-inbox" search={{ channel: "facebook" }}>
                         <MessageSquare className="mr-1.5 h-4 w-4" /> Comments
                       </Link>
                     </Button>
