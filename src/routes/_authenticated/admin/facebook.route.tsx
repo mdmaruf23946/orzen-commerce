@@ -39,7 +39,6 @@ function FacebookLayout() {
         >
           <MessageSquare className="h-4 w-4" /> Comments → Omni Inbox
         </Link>
-        </div>
       </header>
 
       <div className="-mx-3 overflow-x-auto px-3 sm:mx-0 sm:px-0">
