@@ -25,6 +25,8 @@ import { listFacebookComments } from "@/lib/facebook-page.functions";
 import { FacebookCommentThread, FacebookPostPanel } from "@/components/admin/OmniFacebookComment";
 
 export const Route = createFileRoute("/_authenticated/admin/omni-inbox")({
+  validateSearch: (s: Record<string, unknown>): { channel?: string } =>
+    typeof s.channel === "string" ? { channel: s.channel } : {},
   component: () => (
     <FeatureGate feature="ai_agent" anyOf={["ai_messenger", "messenger_inbox", "whatsapp"]}>
       <OmniInbox />
@@ -132,7 +134,8 @@ function OmniInbox() {
   const sendWa = useServerFn(sendWhatsapp);
   const sendWeb = useServerFn(sendWebManualMessage);
 
-  const [channel, setChannel] = useState<string>("all");
+  const initialChannel = Route.useSearch().channel;
+  const [channel, setChannel] = useState<string>(initialChannel ?? "all");
   const [folder, setFolder] = useState<OmniFolder>("all");
   const [search, setSearch] = useState("");
   const [activeId, setActiveId] = useState<string | null>(null);
