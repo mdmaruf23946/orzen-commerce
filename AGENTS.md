@@ -37,3 +37,4 @@
 - Courier COD 'amount to collect' comes only from src/lib/couriers/collect-amount.ts (grand total − advance paid; prepaid = 0); merchant can override per parcel — prevents double-charging delivery.
 - Full storefront product catalogues use store-scoped, deterministically ordered range batches; only explicit preview limits truncate results, so database request caps never hide older products.
 - Unit tests use the standalone Vitest configuration, not Vite's application RPC transforms, so server-function handlers can be tested directly with mocked boundaries.
+- AI agent core is split: types (ai-agent-types.ts), catalog helpers, prompt, tools modules; ai-agent.server.ts re-exports the public API so callers never change imports.
