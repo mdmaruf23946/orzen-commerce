@@ -10,6 +10,7 @@
     "build:dist": "PAGES_BUILD=1 vite build && PAGES_BUILD=1 bash scripts/pages-postbuild.sh",
     "deploy:production": "bash scripts/deploy-production.sh",
     "preview": "vite preview",
+    "test": "vitest run",
     "lint": "eslint .",
     "format": "prettier --write ."
   },
