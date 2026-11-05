@@ -59,82 +59,8 @@ import { isCatalogBrowseIntent } from "@/lib/catalog-browse-intent";
 import { PRODUCT_STOPWORDS, PRODUCT_SYNONYMS, stringifyField, productSearchTerms, isPhotoIntent, isProductIntent, isOrderStatusIntent, isOrderIntent, isReferenceIntent, isHowAreYouIntent, isSalamIntent, isGreetingIntent, isSmallTalkIntent, smallTalkReply, sanitizeMessengerReply } from "./messenger-intents";
 import { normalizePhone, extractPhone, normalizePaymentMethod, extractQty, isPaymentLine, extractEmail, SERIAL_RE, stripSerial, parseOrderDetailsText, parseOrderDetailsTextEx, looksLikeOrderDetails } from "./messenger-order-text";
 import type { ParseCtx } from "./messenger-order-text";
-function publicOrigin() {
-  return (process.env["PUBLIC_SITE_ORIGIN"] || "https://orzen.top").replace(/\/$/, "");
-}
-type ProductRow = {
-  id: string;
-  name: string;
-  slug: string | null;
-  brand?: string | null;
-  sku?: string | null;
-  product_code?: string | null;
-  category_id?: string | null;
-  short_description?: string | null;
-  description?: string | null;
-  price: number | string;
-  old_price?: number | string | null;
-  stock: number;
-  primary_image_url?: string | null;
-  gallery?: string[] | null;
-  features?: unknown;
-  specifications?: unknown;
-  variants?: unknown;
-  total_sold?: number | null;
-  rating?: number | null;
-  is_featured?: boolean | null;
-};
-
-type ImageAnalysis = {
-  description: string;
-  keywords: string[];
-  is_product: boolean;
-  product_type: string;
-  product_subtype: string | null;
-  category: string;
-  primary_color: string | null;
-  secondary_colors: string[];
-  material: string | null;
-  style: string | null;
-  shape: string | null;
-  pattern: string | null;
-  visible_text: string[];
-  brand: string | null;
-  model_number: string | null;
-  functions: string[];
-  connectors: string[];
-  controls: string[];
-  package_specs: string[];
-  distinctive_features: string[];
-  field_confidence: Record<string, number>;
-  visibility_warnings: string[];
-  object_boundary_confidence: number;
-  text_legibility: number;
-  recognition_status: "clear" | "uncertain";
-  inspection_passes: 1 | 2;
-  confidence: number;
-  image_data_url: string;
-};
-
-type VisualMatch = {
-  product: ProductRow;
-  confidence: number;
-  reason: string;
-  verdict: "exact" | "close";
-  evidence: string[];
-};
-
-class ImageProcessingError extends Error {
-  readonly code: string;
-  readonly retryable: boolean;
-
-  constructor(code: string, message: string, retryable: boolean) {
-    super(`IMAGE_${retryable ? "RETRYABLE" : "TERMINAL"}_${code}: ${message}`.slice(0, 450));
-    this.name = "ImageProcessingError";
-    this.code = code;
-    this.retryable = retryable;
-  }
-}
+import { publicOrigin, ImageProcessingError, type ProductRow, type ImageAnalysis, type VisualMatch } from "./messenger-types";
+import { publicImageUrl, productPageUrl, firstProductImage, productImages, productIdentityText } from "./messenger-product-helpers";
 
 const IMAGE_FETCH_HEADERS = {
   Accept: "image/avif,image/webp,image/apng,image/*,*/*;q=0.8",
@@ -322,46 +248,6 @@ async function fbSendImage(pageToken: string, recipientId: string, imageUrl: str
   return j as { message_id?: string };
 }
 
-function publicImageUrl(value: string | null | undefined) {
-  if (!value) return undefined;
-  if (/^https?:\/\//i.test(value)) return value;
-  if (value.startsWith("/api/img/")) return `${publicOrigin()}${value}`;
-  const clean = value.replace(/^\/+/, "");
-  return `${publicOrigin()}/api/img/${clean}`;
-}
-
-function productPageUrl(storeSlug: string | null | undefined, product: ProductRow) {
-  const slug = storeSlug || "store";
-  return `${publicOrigin()}/store/${slug}/product/${product.id}`;
-}
-
-function firstProductImage(product: ProductRow) {
-  if (product.primary_image_url) return publicImageUrl(product.primary_image_url);
-  const gallery = Array.isArray(product.gallery) ? product.gallery : [];
-  return publicImageUrl(gallery.find(Boolean));
-}
-
-function productImages(product: ProductRow, limit = 4) {
-  const values = [product.primary_image_url, ...(Array.isArray(product.gallery) ? product.gallery : [])]
-    .map((value) => publicImageUrl(value))
-    .filter((value): value is string => Boolean(value));
-  return Array.from(new Set(values)).slice(0, limit);
-}
-
-function productIdentityText(product: ProductRow, categoryName = "") {
-  return [
-    product.name,
-    product.brand,
-    categoryName,
-    product.sku,
-    product.product_code,
-    product.short_description,
-    product.description,
-    stringifyField(product.features),
-    stringifyField(product.specifications),
-    stringifyField(product.variants),
-  ].filter(Boolean).join(" ").replace(/\s+/g, " ").slice(0, 900);
-}
 
 async function searchDirectProducts(sb: ReturnType<typeof admin>, storeId: string, text: string, limit = 6) {
   const memory = await getStoreMemory(sb as any, storeId);
