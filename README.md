@@ -10,6 +10,22 @@
 - **Styling:** Tailwind CSS v4 via `src/styles.css`.
 - **Tests:** Vitest with standalone `vitest.config.ts`. Run `npm test` (or `bunx vitest run`).
 
+## Code Layout
+
+- `src/routes/` — pages and server routes (`src/routes/api/public/*` for webhooks/cron; verify callers inside handlers).
+- `src/lib/*.server.ts` — server-only logic; `*.functions.ts` — `createServerFn` entry points.
+- AI agent: `ai-agent.server.ts` re-exports types, catalog, prompt and tools modules.
+- Messenger webhook: `messenger-webhook.server.ts` (routing + order flow) with `messenger-intents`, `messenger-order-text`, `messenger-types`, `messenger-product-helpers`, `messenger-visual-match.server`, `messenger-graph.server`.
+
+## Database Migrations
+
+- Add every schema change as a new SQL file in `supabase/migrations/`. Never edit applied migrations.
+- `drizzle/` is a read-only mirror for typing/reference — never generate migrations from it.
+
+## CI
+
+`.github/workflows/ci.yml` runs install, tests, typecheck and build on every push and pull request.
+
 ## Original Product Specification
 
 
