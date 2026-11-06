@@ -39,4 +39,4 @@
 - Unit tests use the standalone Vitest configuration, not Vite's application RPC transforms, so server-function handlers can be tested directly with mocked boundaries.
 - AI agent core is split: types (ai-agent-types.ts), catalog helpers, prompt, tools modules; ai-agent.server.ts re-exports the public API so callers never change imports.
 - Database schema changes go only in `supabase/migrations/` (single source of truth); `drizzle/` is a read-only mirror — prevents schema drift between two migration systems.
-- Messenger webhook is split: types, intents, order-text, product-helpers, visual-match (photo matching) modules; messenger-webhook.server.ts keeps event routing and order flow — smaller files, unchanged behaviour.
+- Messenger webhook is split: types, intents, order-text, product-helpers, visual-match (photo matching), graph (signature/token/profile) modules; messenger-webhook.server.ts keeps event routing and order flow — smaller files, unchanged behaviour.
