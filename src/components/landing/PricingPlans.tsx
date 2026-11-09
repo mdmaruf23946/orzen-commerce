@@ -6,7 +6,7 @@ import {
   ArrowRight, Check, X, Camera, Globe, PhoneCall, Truck, ShieldCheck, Inbox, Sparkles,
 } from "lucide-react";
 import { getPublicPricing, computeCycleTotal } from "@/lib/billing.functions";
-import { ALWAYS_INCLUDED, FEATURE_LABELS as CORE_LABELS, formatLimit } from "@/lib/features";
+import { ALWAYS_INCLUDED, FEATURE_LABELS as CORE_LABELS, formatLimit, PLAN_DISPLAY_FEATURES, displayFeatureOn, isDisplayHidden } from "@/lib/features";
 import { useLang } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
@@ -90,7 +90,7 @@ export function PricingPlans() {
           </p>
         )}
 
-        <div className="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+        <div className="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {plans.map((p) => {
             const tier = p.plan_tier ?? "";
             const isCustom = tier === "custom";
@@ -98,27 +98,9 @@ export function PricingPlans() {
             const isPopular = !isCustom && !isFree && popularId === p.id;
             const calc = !isFree && !isCustom ? computeCycleTotal(Number(p.price), cycle, s) : null;
             const f = (p.features ?? {}) as Record<string, boolean>;
-            const any = (...ks: string[]) => isCustom || ks.some((k) => !!f[k]);
-            const items: { key: string; label: Bi; on: boolean }[] = [
-              { key: "ai_agent", label: { en: "AI Sales Agent", bn: "AI Sales Agent" }, on: any("ai_agent") },
-              { key: "messaging", label: { en: "AI Messaging", bn: "AI মেসেজিং" }, on: any("ai_messenger", "whatsapp", "messenger_inbox") },
-              { key: "facebook", label: { en: "Facebook Comment & Posts", bn: "ফেসবুক কমেন্ট ও পোস্ট" }, on: any("facebook_page") },
-              { key: "call", label: { en: "Call Center", bn: "কল সেন্টার" }, on: any("call_center") },
-              { key: "builder", label: { en: "AI Product Builder", bn: "AI প্রোডাক্ট বিল্ডার" }, on: any("ai_product_builder") },
-              { key: "lp_create", label: { en: "Landing Pages", bn: "ল্যান্ডিং পেজ" }, on: any("landing_page_create") || (f.landing_page_create === undefined && !!f.landing_pages) },
-              { key: "lp_connect", label: { en: "Website Integration", bn: "Website Integration" }, on: any("landing_page_connect") || (f.landing_page_connect === undefined && !!f.landing_pages) },
-              { key: "courier", label: { en: "Courier Integration", bn: "কুরিয়ার" }, on: any("courier") },
-              { key: "fraud", label: { en: "Fraud Checker", bn: "ফ্রড চেকার" }, on: any("fraud_checker", "duplicate_protection") },
-              { key: "pixel", label: { en: "Facebook Pixel", bn: "Facebook Pixel" }, on: any("pixel") },
-              { key: "domain", label: { en: "Custom Domain", bn: "নিজস্ব ডোমেইন" }, on: any("custom_domain") },
-              { key: "coupons", label: { en: "Coupons", bn: "কুপন" }, on: any("coupons") },
-              { key: "inventory", label: { en: "Inventory & Bulk", bn: "ইনভেন্টরি ও বাল্ক" }, on: any("inventory", "bulk_actions", "import_export", "quick_order") },
-              { key: "analytics", label: { en: "Analytics", bn: "Analytics" }, on: any("analytics") },
-              { key: "returns", label: { en: "Returns", bn: "রিটার্ন" }, on: any("returns") },
-              { key: "reviews", label: { en: "Product Reviews", bn: "প্রোডাক্ট রিভিউ" }, on: any("product_reviews") },
-              { key: "staff", label: { en: "Staff Management", bn: "স্টাফ ম্যানেজমেন্ট" }, on: any("staff") },
-            ];
-            const visible = items.filter((i) => !f[`hide_${i.key}`]);
+            const visible = PLAN_DISPLAY_FEATURES.filter((g) => !isDisplayHidden(f, g.key)).map((g) => ({
+              key: g.key, label: { en: g.label, bn: g.label } as Bi, on: isCustom || displayFeatureOn(f, g.flags),
+            }));
             const enabled = visible.filter((i) => i.on);
             return (
               <article
