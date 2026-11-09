@@ -267,14 +267,9 @@ function SubscriptionsPage() {
                     )}
                   </td>
                   <td className="p-3">
-                    <select
-                      value={s.package_id ?? ""}
-                      onChange={(e) => setPkg(s.id, e.target.value)}
-                      className="h-8 max-w-[160px] rounded-md border bg-background px-2 text-xs"
-                    >
-                      <option value="">{s.subscription_packages?.name ?? "—"}</option>
-                      {(packages ?? []).map((p: any) => <option key={p.id} value={p.id}>{p.name} — ৳{p.price}</option>)}
-                    </select>
+                    <span className="inline-flex h-8 items-center rounded-md border bg-muted/40 px-2.5 text-xs font-medium">
+                      {s.subscription_packages?.name ?? "—"}
+                    </span>
                   </td>
                   <td className="p-3 text-xs">
                     {fmtDate(s.expires_at)}
