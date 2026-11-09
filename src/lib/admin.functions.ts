@@ -114,13 +114,19 @@ export const createMyStoreWithSlug = createServerFn({ method: "POST" })
         storeName: z.string().trim().min(2).max(80),
         slug: slugSchema,
         ownerName: z.string().trim().min(2).max(80),
+        phone: z.string().trim().max(20).optional(),
       })
       .parse(d),
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId, claims } = context;
+    const { normalizeSignupPhone } = await import("@/lib/phone-validate");
+    const phone = data.phone ? normalizeSignupPhone(data.phone) : null;
+    if (data.phone && !phone) throw new Error("Invalid mobile number");
     try {
-      await supabase.auth.updateUser({ data: { owner_name: data.ownerName } });
+      await supabase.auth.updateUser({
+        data: { owner_name: data.ownerName, ...(phone ? { phone } : {}) },
+      });
     } catch {
       // Non-fatal
     }
@@ -138,6 +144,11 @@ export const createMyStoreWithSlug = createServerFn({ method: "POST" })
       },
       "*",
     );
+    const st: any = result.store;
+    if (phone && st?.id && !result.isEmployee && !st.phone) {
+      await supabase.from("stores").update({ phone, owner_name: data.ownerName } as any).eq("id", st.id);
+      st.phone = phone;
+    }
     return result.store;
   });
 

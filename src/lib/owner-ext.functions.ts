@@ -276,9 +276,17 @@ export const listPlatformUsers = createServerFn({ method: "GET" })
       arr.push(r.role);
       rolesMap.set(r.user_id, arr);
     }
+    const { data: storeRows } = await (supabaseAdmin as any)
+      .from("stores")
+      .select("owner_user_id,name,slug,phone,owner_name");
+    const storeMap = new Map<string, any>();
+    for (const s of storeRows ?? []) storeMap.set(s.owner_user_id, s);
     return all.map((u) => ({
       id: u.id,
       email: u.email ?? null,
+      phone: (u.user_metadata?.phone as string) || storeMap.get(u.id)?.phone || u.phone || null,
+      name: (u.user_metadata?.owner_name as string) || storeMap.get(u.id)?.owner_name || null,
+      store_name: storeMap.get(u.id)?.name ?? null,
       created_at: u.created_at,
       last_sign_in_at: u.last_sign_in_at ?? null,
       email_confirmed_at: u.email_confirmed_at ?? null,

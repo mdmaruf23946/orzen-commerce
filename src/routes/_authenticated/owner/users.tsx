@@ -7,6 +7,7 @@ import { Plus, ShieldCheck, ShieldOff, Search } from "lucide-react";
 import { listPlatformUsers } from "@/lib/owner-ext.functions";
 import { grantRole, revokeRole } from "@/lib/owner.functions";
 import { OwnerPageHeader } from "@/components/owner/OwnerPageHeader";
+import { ContactLinks } from "@/components/owner/ContactLinks";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -24,7 +25,11 @@ function Page() {
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<{ email: string; role: "owner" | "user" }>({ email: "", role: "owner" });
 
-  const filtered = (data as any[]).filter((u) => !q || u.email?.toLowerCase().includes(q.toLowerCase()));
+  const filtered = (data as any[]).filter((u) => {
+    if (!q) return true;
+    const t = q.toLowerCase();
+    return `${u.email ?? ""} ${u.phone ?? ""} ${u.name ?? ""} ${u.store_name ?? ""}`.toLowerCase().includes(t);
+  });
 
   async function doGrant() {
     try { await grant({ data: form }); toast.success("Granted"); setOpen(false); setForm({ email: "", role: "owner" }); qc.invalidateQueries({ queryKey: ["owner", "platUsers"] }); }
@@ -60,18 +65,22 @@ function Page() {
       />
       <div className="mb-3 flex max-w-md items-center gap-2 rounded-md border bg-card px-3">
         <Search className="h-4 w-4 text-muted-foreground" />
-        <Input className="border-0 focus-visible:ring-0" placeholder="Search email…" value={q} onChange={(e) => setQ(e.target.value)} />
+        <Input className="border-0 focus-visible:ring-0" placeholder="Search email, mobile, name…" value={q} onChange={(e) => setQ(e.target.value)} />
       </div>
 
       <div className="hidden overflow-x-auto rounded-xl border bg-card md:block">
         <table className="w-full min-w-[720px] text-sm">
           <thead className="bg-muted/40 text-xs uppercase text-muted-foreground">
-            <tr><th className="px-3 py-2 text-left">Email</th><th className="px-3 py-2 text-left">Roles</th><th className="px-3 py-2 text-left">Joined</th><th className="px-3 py-2 text-left">Last sign-in</th><th className="px-3 py-2"></th></tr>
+            <tr><th className="px-3 py-2 text-left">Account</th><th className="px-3 py-2 text-left">Contact</th><th className="px-3 py-2 text-left">Roles</th><th className="px-3 py-2 text-left">Joined</th><th className="px-3 py-2 text-left">Last sign-in</th><th className="px-3 py-2"></th></tr>
           </thead>
           <tbody>
             {filtered.map((u) => (
               <tr key={u.id} className="border-t">
-                <td className="px-3 py-2">{u.email ?? "—"}</td>
+                <td className="px-3 py-2">
+                  <div className="font-medium">{u.name ?? "—"}</div>
+                  {u.store_name && <div className="text-xs text-muted-foreground">{u.store_name}</div>}
+                </td>
+                <td className="px-3 py-2"><ContactLinks phone={u.phone} email={u.email} /></td>
                 <td className="px-3 py-2">
                   <div className="flex flex-wrap gap-1">
                     {u.roles.length === 0 ? <span className="text-xs text-muted-foreground">—</span> : u.roles.map((r: string) => (
@@ -96,7 +105,8 @@ function Page() {
       <div className="grid gap-2 md:hidden">
         {filtered.map((u) => (
           <div key={u.id} className="rounded-xl border bg-card p-3">
-            <div className="truncate font-medium">{u.email ?? "—"}</div>
+            <div className="truncate font-medium">{u.name ?? u.store_name ?? "—"}</div>
+            <div className="mt-1"><ContactLinks phone={u.phone} email={u.email} /></div>
             <div className="mt-1 flex flex-wrap gap-1">
               {u.roles.map((r: string) => <span key={r} className={"rounded-full px-2 py-0.5 text-[10px] " + (r === "owner" ? "bg-primary/10 text-primary" : "bg-muted")}>{r}</span>)}
             </div>

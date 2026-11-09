@@ -144,6 +144,7 @@ export async function ensureStoreForAccount(
         name: storeName,
         status: "active",
         ...fields,
+        ...((metadata as any).phone ? { phone: String((metadata as any).phone).slice(0, 20) } : {}),
         theme_id: themeId,
       })
       .select(columns)

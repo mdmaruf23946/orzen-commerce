@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { ownerCustomerStats } from "@/lib/owner.functions";
+import { ContactLinks } from "@/components/owner/ContactLinks";
 import { Users, UserCheck, Store as StoreIcon } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/owner/customers")({
@@ -53,7 +54,8 @@ function OwnerCustomersPage() {
               <li key={c.id} className="flex flex-col gap-1 py-2 text-sm sm:flex-row sm:items-center sm:justify-between">
                 <div className="min-w-0">
                   <div className="truncate font-medium">{c.full_name}</div>
-                  <div className="truncate text-xs text-muted-foreground">{c.email || c.phone} · {c.store_name}</div>
+                  <div className="truncate text-xs text-muted-foreground">{c.store_name}</div>
+                  <div className="mt-1"><ContactLinks phone={c.phone} email={c.email} /></div>
                 </div>
                 <span className="text-xs text-muted-foreground">{new Date(c.created_at).toLocaleString()}</span>
               </li>

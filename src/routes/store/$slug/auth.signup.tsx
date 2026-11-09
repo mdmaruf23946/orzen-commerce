@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useStoreT } from "@/lib/store-i18n";
+import { normalizeSignupPhone, PHONE_INVALID_MSG } from "@/lib/phone-validate";
 import { TurnstileWidget, turnstileConfigured, CAPTCHA_WAIT_BN } from "@/components/TurnstileWidget";
 
 
@@ -37,7 +38,8 @@ function SignupPage() {
 
   const canSubmit =
     fullName.trim().length >= 1 &&
-    (email.trim().length > 0 || phone.trim().length > 0) &&
+    email.includes("@") &&
+    normalizeSignupPhone(phone) !== null &&
     password.length >= 6 &&
     password === confirm;
 
@@ -55,8 +57,8 @@ function SignupPage() {
         data: {
           storeSlug: slug,
           fullName,
-          email: email.trim() || undefined,
-          phone: phone.trim() || undefined,
+          email: email.trim(),
+          phone: phone.trim(),
           password,
           confirmPassword: confirm,
           captcha,
@@ -93,24 +95,31 @@ function SignupPage() {
             />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="email">{t("auth.emailOptional")}</Label>
+            <Label htmlFor="email">Email *</Label>
             <Input
               id="email"
               type="email"
+              required
               autoComplete="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
             />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="phone">{t("auth.phoneOptional")}</Label>
+            <Label htmlFor="phone">{t("common.phone")} *</Label>
             <Input
               id="phone"
               type="tel"
+              required
+              inputMode="tel"
+              placeholder="01XXXXXXXXX"
               autoComplete="tel"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
             />
+            {phone.length > 0 && !normalizeSignupPhone(phone) && (
+              <p className="text-xs text-destructive">{PHONE_INVALID_MSG}</p>
+            )}
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="pw">{t("auth.password")}</Label>

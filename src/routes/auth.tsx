@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/PasswordInput";
 import { Label } from "@/components/ui/label";
+import { normalizeSignupPhone, PHONE_INVALID_MSG } from "@/lib/phone-validate";
 import { checkStoreSlugAvailable, createMyStoreWithSlug, getMyStore } from "@/lib/admin.functions";
 import { myAccountKind } from "@/lib/employees.functions";
 
@@ -68,6 +69,7 @@ function AuthPage() {
 
   // signup
   const [ownerName, setOwnerName] = useState("");
+  const [phone, setPhone] = useState("");
   const [storeName, setStoreName] = useState("");
   const [slug, setSlug] = useState("");
   const [slugTouched, setSlugTouched] = useState(false);
@@ -138,6 +140,7 @@ function AuthPage() {
     storeName.trim().length >= 2 &&
     slugStatus === "available" &&
     email.includes("@") &&
+    normalizeSignupPhone(phone) !== null &&
     passwordsMatch;
 
   /** Post-authentication steps shared by the password and 2FA paths. */
@@ -198,7 +201,9 @@ function AuthPage() {
         return;
       }
       if (mode === "signup") {
+        if (!normalizeSignupPhone(phone)) throw new Error(PHONE_INVALID_MSG);
         if (!canSubmitSignup) throw new Error("Please complete the form correctly.");
+        const phoneNorm = normalizeSignupPhone(phone)!;
         // Ask for notification permission during the signup tap (browsers require a user gesture).
         try {
           if (typeof Notification !== "undefined" && Notification.permission === "default") {
@@ -210,7 +215,7 @@ function AuthPage() {
           password,
           options: {
             emailRedirectTo: window.location.origin + next,
-            data: { owner_name: ownerName, store_name: storeName, store_slug: slug },
+            data: { owner_name: ownerName, store_name: storeName, store_slug: slug, phone: phoneNorm },
           },
         });
         if (error) throw error;
@@ -221,7 +226,7 @@ function AuthPage() {
           );
         }
         await createMyStoreWithSlug({
-          data: { storeName: storeName.trim(), slug, ownerName: ownerName.trim() },
+          data: { storeName: storeName.trim(), slug, ownerName: ownerName.trim(), phone: phoneNorm },
         });
         toast.success("Store created. Welcome!");
         navigate({ to: next, replace: true });
@@ -379,6 +384,21 @@ function AuthPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                 />
+              </Field>
+              <Field label="Mobile number" id="phone">
+                <Input
+                  id="phone"
+                  type="tel"
+                  autoComplete="tel"
+                  inputMode="tel"
+                  required
+                  placeholder="01XXXXXXXXX"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                />
+                {phone.length > 0 && !normalizeSignupPhone(phone) && (
+                  <p className="text-xs text-destructive">{PHONE_INVALID_MSG}</p>
+                )}
               </Field>
               <Field label="Password" id="password">
                 <PasswordInput

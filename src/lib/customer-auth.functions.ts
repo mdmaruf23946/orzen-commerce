@@ -4,6 +4,7 @@
 // replayed against another.
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { normalizeSignupPhone, PHONE_INVALID_MSG } from "@/lib/phone-validate";
 
 const slugSchema = z.string().min(1).max(120);
 const tokenSchema = z.string().min(16).max(128);
@@ -35,8 +36,13 @@ export const signupCustomer = createServerFn({ method: "POST" })
       .object({
         storeSlug: slugSchema,
         fullName: z.string().trim().min(1).max(120),
-        email: z.string().trim().email().max(255).optional().or(z.literal("")),
-        phone: z.string().trim().max(40).optional().or(z.literal("")),
+        email: z.string().trim().email("Valid email is required").max(255),
+        phone: z
+          .string()
+          .trim()
+          .max(40)
+          .refine((p) => normalizeSignupPhone(p) !== null, { message: PHONE_INVALID_MSG })
+          .transform((p) => normalizeSignupPhone(p)!),
         password: z.string().min(6).max(200),
         confirmPassword: z.string().min(6).max(200),
         captcha: captchaSchema,
@@ -45,9 +51,6 @@ export const signupCustomer = createServerFn({ method: "POST" })
       .refine((v) => v.password === v.confirmPassword, {
         message: "Passwords do not match",
         path: ["confirmPassword"],
-      })
-      .refine((v) => (v.email && v.email.length) || (v.phone && v.phone.length), {
-        message: "Email or phone is required",
       })
       .parse(d),
   )

@@ -16,6 +16,7 @@ import {
 import { listUsersWithoutStore, createStoreForUser } from "@/lib/owner-ext.functions";
 
 import { Button } from "@/components/ui/button";
+import { ContactLinks } from "@/components/owner/ContactLinks";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 
@@ -63,7 +64,7 @@ function OwnerStores() {
       if (status !== "all" && s.status !== status) return false;
       if (sub !== "all" && (s.subscription_status ?? "active") !== sub) return false;
       if (planId !== "all" && s.package_id !== planId) return false;
-      if (term && !(`${s.name} ${s.slug}`.toLowerCase().includes(term))) return false;
+      if (term && !(`${s.name} ${s.slug} ${s.phone ?? ""} ${s.email ?? ""} ${s.owner_name ?? ""}`.toLowerCase().includes(term))) return false;
       return true;
     });
   }, [stores, q, status, sub, planId]);
@@ -153,6 +154,7 @@ function OwnerStores() {
               <div className="min-w-0">
                 <div className="truncate text-sm font-semibold">{s.name}</div>
                 <div className="truncate font-mono text-[11px] text-muted-foreground">/{s.slug}</div>
+                <div className="mt-1"><ContactLinks phone={s.phone} email={s.email} /></div>
               </div>
               <div className="flex flex-col items-end gap-1">
                 <StatusBadge v={s.status} />
@@ -206,6 +208,7 @@ function OwnerStores() {
                 <td className="p-3">
                   <div className="font-medium">{s.name}</div>
                   <div className="font-mono text-[11px] text-muted-foreground">/{s.slug}</div>
+                  <div className="mt-1"><ContactLinks phone={s.phone} email={s.email} /></div>
                 </td>
                 <td className="p-3"><StatusBadge v={s.status} /></td>
                 <td className="p-3"><StatusBadge v={s.subscription_status ?? "active"} /></td>
@@ -302,6 +305,8 @@ function StoreDrawer({ storeId, onClose }: { storeId: string | null; onClose: ()
                 <StatusBadge v={data.store.subscription_status ?? "active"} />
               </div>
               <div className="mt-2 text-xs text-muted-foreground">
+                {data.store.owner_name && <div className="mb-1 font-medium text-foreground">{data.store.owner_name}</div>}
+                <div className="mb-2"><ContactLinks phone={data.store.phone} email={data.store.email} /></div>
                 Plan: {data.store.subscription_packages?.name ?? "None"}
                 {data.store.expires_at &&
                   ` · Expires ${new Date(data.store.expires_at).toLocaleDateString()}`}
