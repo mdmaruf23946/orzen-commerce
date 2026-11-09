@@ -40,3 +40,4 @@
 - AI agent core is split: types (ai-agent-types.ts), catalog helpers, prompt, tools modules; ai-agent.server.ts re-exports the public API so callers never change imports.
 - Database schema changes go only in `supabase/migrations/` (single source of truth); `drizzle/` is a read-only mirror — prevents schema drift between two migration systems.
 - Messenger webhook is split: types, intents, order-text, product-helpers, visual-match (photo matching), graph (signature/token/profile) modules; messenger-webhook.server.ts keeps event routing and order flow — smaller files, unchanged behaviour.
+- Winner Admin push alerts (new store, pending plan payment) use `push_outbox.audience='owner'` + `owner_push_subscriptions`, delivered only to users currently holding the `owner` role (re-checked at send time) — keeps platform alerts off merchant devices.

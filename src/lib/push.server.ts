@@ -18,7 +18,19 @@ export async function dispatchPush(limit = 30) {
   const mine = new Set((claimed ?? []).map((r: any) => r.id));
   let sent = 0;
   for (const row of rows.filter((r: any) => mine.has(r.id))) {
-    const { data: subs } = await sb.from("push_subscriptions").select("id,endpoint,p256dh,auth,failures").eq("store_id", row.store_id).limit(50);
+    const isOwner = row.audience === "owner";
+    const table = isOwner ? "owner_push_subscriptions" : "push_subscriptions";
+    let subs: any[] | null = null;
+    if (isOwner) {
+      // Only devices whose user still holds the platform 'owner' role.
+      const { data: owners } = await sb.from("user_roles").select("user_id").eq("role", "owner");
+      const ownerIds = (owners ?? []).map((o: any) => o.user_id);
+      if (!ownerIds.length) continue;
+      ({ data: subs } = await sb.from(table).select("id,endpoint,p256dh,auth,failures").in("user_id", ownerIds).limit(50));
+    } else {
+      if (!row.store_id) continue;
+      ({ data: subs } = await sb.from(table).select("id,endpoint,p256dh,auth,failures").eq("store_id", row.store_id).limit(50));
+    }
     await Promise.all((subs ?? []).map(async (s: any) => {
       try {
         const req = await buildPushHTTPRequest({

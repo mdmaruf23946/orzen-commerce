@@ -23,6 +23,21 @@ export const savePushSubscription = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+/** Registers this device for Winner Admin alerts — only for users with the 'owner' role. */
+export const saveOwnerPushSubscription = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => subSchema.omit({ store_id: true }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { data: role } = await context.supabase.from("user_roles").select("id")
+      .eq("user_id", context.userId).eq("role", "owner").maybeSingle();
+    if (!role) throw new Error("Forbidden");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await (supabaseAdmin as any).from("owner_push_subscriptions").upsert(
+      { ...data, user_id: context.userId, failures: 0 }, { onConflict: "endpoint" });
+    if (error) throw new Error("Could not save device");
+    return { ok: true };
+  });
+
 export const removePushSubscription = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => z.object({ endpoint: z.string().max(1000) }).parse(d))

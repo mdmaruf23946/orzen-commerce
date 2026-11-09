@@ -9,6 +9,7 @@ import {
   ChevronDown, ChevronRight, Globe, Palette, PhoneCall, Star, Bot, Mail,
 } from "lucide-react";
 import { amIOwner } from "@/lib/owner.functions";
+import { OwnerPushAlerts } from "@/components/owner/OwnerPushAlerts";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -166,6 +167,7 @@ function OwnerLayout() {
 
   return (
     <div className="min-h-screen bg-muted/30">
+      {data?.isOwner && <OwnerPushAlerts />}
       <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b bg-background px-4 md:hidden">
         <Link to="/owner" className="truncate font-semibold">
           <BrandMark placement="winner_header" fallbackText="Platform Owner" />
