@@ -84,6 +84,8 @@ export const assignPackage = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     await assertOwner(context.supabase, context.userId);
+    // Manual plan changes are disabled: plans activate only by approving a payment request.
+    if (data) throw new Error("Manual plan change is disabled. Approve the store's subscription request instead.");
     const { data: pkg } = await context.supabase
       .from("subscription_packages")
       .select("duration_days")

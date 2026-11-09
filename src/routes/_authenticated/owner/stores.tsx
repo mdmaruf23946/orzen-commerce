@@ -9,7 +9,6 @@ import {
   listAllStores,
   setStoreStatus,
   deleteStore,
-  assignPackage,
   listPackages,
   getStoreUsage,
 } from "@/lib/owner.functions";
@@ -45,7 +44,6 @@ function OwnerStores() {
   const list = useServerFn(listAllStores);
   const setStatus = useServerFn(setStoreStatus);
   const del = useServerFn(deleteStore);
-  const assign = useServerFn(assignPackage);
   const pkgFn = useServerFn(listPackages);
   const qc = useQueryClient();
 
@@ -80,12 +78,6 @@ function OwnerStores() {
     await del({ data: { id } });
     qc.invalidateQueries({ queryKey: ["owner", "stores"] });
     toast.success("Deleted");
-  }
-  async function setPkg(storeId: string, packageId: string) {
-    if (!packageId) return;
-    await assign({ data: { storeId, packageId } });
-    qc.invalidateQueries({ queryKey: ["owner", "stores"] });
-    toast.success("Package assigned");
   }
 
   return (
@@ -213,16 +205,9 @@ function OwnerStores() {
                 <td className="p-3"><StatusBadge v={s.status} /></td>
                 <td className="p-3"><StatusBadge v={s.subscription_status ?? "active"} /></td>
                 <td className="p-3">
-                  <select
-                    value={s.package_id ?? ""}
-                    onChange={(e) => setPkg(s.id, e.target.value)}
-                    className="h-8 rounded-md border bg-background px-2 text-xs"
-                  >
-                    <option value="">{s.subscription_packages?.name ?? "No package"}</option>
-                    {(packages ?? []).map((p: any) => (
-                      <option key={p.id} value={p.id}>{p.name}</option>
-                    ))}
-                  </select>
+                  <span className="inline-flex h-8 items-center rounded-md border bg-muted/40 px-2.5 text-xs font-medium">
+                    {s.subscription_packages?.name ?? "No package"}
+                  </span>
                 </td>
                 <td className="p-3 text-xs text-muted-foreground">
                   {s.expires_at ? new Date(s.expires_at).toLocaleDateString() : "—"}
