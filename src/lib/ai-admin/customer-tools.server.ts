@@ -56,6 +56,15 @@ export type CustomerToolCtx = {
 export function buildCustomerTools(ctx: CustomerToolCtx) {
   const empty = z.object({});
   return {
+    get_orzen_overview: {
+      description:
+        "Built-in facts about the ORZEN website: what it is, full feature list, how to get started and billing. Call this first for any question.",
+      schema: empty,
+      run: async () => {
+        const { ORZEN_KNOWLEDGE } = await import("./orzen-knowledge");
+        return ORZEN_KNOWLEDGE;
+      },
+    },
     get_public_business_info: {
       description: "Public information about the business/platform.",
       schema: empty,
