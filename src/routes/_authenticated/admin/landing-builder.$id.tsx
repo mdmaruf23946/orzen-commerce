@@ -24,7 +24,7 @@ import {
   setLandingStatus,
   setLandingSubdomain,
   updateLandingPage,
-} from "@/lib/landing-builder.functions";
+} from "@/lib/site-builder/landing-builder.functions";
 
 import {
   FORM_FIELDS,
@@ -37,7 +37,7 @@ import {
   type LandingDeliveryZone,
   type LandingFormConfig,
   type LandingTheme,
-} from "@/lib/landing-builder";
+} from "@/lib/site-builder/landing-builder";
 import {
   DescriptionEditor,
   FaqEditor,
@@ -53,9 +53,9 @@ import { GenericSectionEditor } from "@/components/admin/landing/GenericSectionE
 import { DesignPanel } from "@/components/admin/landing/DesignPanel";
 import { CodingPanel } from "@/components/admin/landing/CodingPanel";
 import { OfferBuilder, OfferTypePicker } from "@/components/admin/landing/OfferBuilder";
-import { normalizeOffer, type LandingOffer, type OfferType, defaultTiers } from "@/lib/landing-offer";
+import { normalizeOffer, type LandingOffer, type OfferType, defaultTiers } from "@/lib/site-builder/landing-offer";
 
-import { REQUIRED_SECTION_KEYS, sectionRank, sectionSpec } from "@/lib/landing-sections";
+import { REQUIRED_SECTION_KEYS, sectionRank, sectionSpec } from "@/lib/site-builder/landing-sections";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";

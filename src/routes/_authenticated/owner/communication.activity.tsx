@@ -3,7 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { Activity, CheckCircle2, Clock, XCircle } from "lucide-react";
-import { emailDeliveryStats, listEmailDeliveryLog } from "@/lib/email-ops.functions";
+import { emailDeliveryStats, listEmailDeliveryLog } from "@/lib/notifications/email-ops.functions";
 import { Input } from "@/components/ui/input";
 
 export const Route = createFileRoute("/_authenticated/owner/communication/activity")({

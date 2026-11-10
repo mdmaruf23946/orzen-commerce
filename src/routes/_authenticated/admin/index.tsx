@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { storeHref } from "@/lib/store-link";
+import { storeHref } from "@/lib/storefront/store-link";
 import {
   TrendingUp, ShoppingBag, Users, Clock, ArrowUpRight, ArrowDownRight,
   Package, PackageCheck, PackageX, AlertTriangle,
@@ -11,8 +11,8 @@ import {
   Plus, Share2, ExternalLink, Bell, Star, Sparkles, Bot, MessageSquare,
   Ticket, Image as ImageIcon,
 } from "lucide-react";
-import { myDashboardOverview } from "@/lib/admin.functions";
-import { getInboxStats } from "@/lib/messenger-inbox.functions";
+import { myDashboardOverview } from "@/lib/admin/admin.functions";
+import { getInboxStats } from "@/lib/integrations/messenger-inbox.functions";
 import { WelcomeCard } from "@/components/admin/dashboard/WelcomeCard";
 import { cn } from "@/lib/utils";
 import { QuickOrderSheet } from "@/components/admin/quick-order/QuickOrderSheet";

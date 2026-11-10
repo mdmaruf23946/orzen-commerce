@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { getStorePagePublic } from "@/lib/store-pages.functions";
-import { storePageHead, StorePageView } from "@/lib/store-page-view";
+import { getStorePagePublic } from "@/lib/storefront/store-pages.functions";
+import { storePageHead, StorePageView } from "@/lib/storefront/store-page-view";
 import { StoreErrorState } from "@/components/storefront/StoreErrorState";
 
 const PAGE_KEY = "shipping-policy";

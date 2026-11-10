@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { Activity, AlertTriangle, CheckCircle2, RefreshCw, ShieldAlert } from "lucide-react";
-import { ownerStoreHealth } from "@/lib/owner.functions";
+import { ownerStoreHealth } from "@/lib/admin/owner.functions";
 import { OwnerPageHeader } from "@/components/owner/OwnerPageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

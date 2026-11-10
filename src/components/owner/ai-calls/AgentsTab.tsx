@@ -9,8 +9,8 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { listAgents, saveAgent, deleteAgent, publishAgent, listVoices, listTones } from "@/lib/ai-call-center.functions";
-import { AI_TOOLS } from "@/lib/ai-call-center";
+import { listAgents, saveAgent, deleteAgent, publishAgent, listVoices, listTones } from "@/lib/calls/ai-call-center.functions";
+import { AI_TOOLS } from "@/lib/calls/ai-call-center";
 
 const EMPTY = {
   id: null as string | null,

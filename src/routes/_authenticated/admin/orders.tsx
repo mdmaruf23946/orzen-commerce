@@ -1,18 +1,18 @@
-import { listCheckoutDrafts, dismissCheckoutDraft, type CheckoutDraft } from "@/lib/checkout-drafts.functions";
+import { listCheckoutDrafts, dismissCheckoutDraft, type CheckoutDraft } from "@/lib/orders/checkout-drafts.functions";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Search, SlidersHorizontal, RefreshCw, ShoppingBag, TrendingUp, Wallet, Clock, Plus } from "lucide-react";
-import { listAdminOrders, type AdminOrderRow } from "@/lib/orders-admin.functions";
-import { updateOrderStatus } from "@/lib/admin.functions";
+import { listAdminOrders, type AdminOrderRow } from "@/lib/orders/orders-admin.functions";
+import { updateOrderStatus } from "@/lib/admin/admin.functions";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { FraudCheckModal } from "@/components/admin/FraudCheckModal";
 import { SendToCourierDialog } from "@/components/admin/couriers/SendToCourierDialog";
-import { getCourierOverview } from "@/lib/courier-parcels.functions";
+import { getCourierOverview } from "@/lib/couriers/courier-parcels.functions";
 import { OrderDetailsDrawer } from "@/components/admin/OrderDetailsDrawer";
 import { useFeature } from "@/components/admin/FeatureGate";
 import { OrderCard, money } from "@/components/admin/orders/OrderCard";
@@ -21,17 +21,17 @@ import {
 } from "@/components/admin/orders/TypeOrderCards";
 import { TypeFilterTabs } from "@/components/admin/page/TypeFilterTabs";
 import { useProductTypeScope } from "@/lib/product-type-scope";
-import { typeScopeCounts } from "@/lib/admin.functions";
-import type { OrderKind } from "@/lib/orders-admin.functions";
-import { confirmOrder, scheduleService, completeService, extendSubscription, cancelSubscription } from "@/lib/orders-types.functions";
-import { setDigitalAccess, resendDigitalEmail } from "@/lib/digital-admin.functions";
+import { typeScopeCounts } from "@/lib/admin/admin.functions";
+import type { OrderKind } from "@/lib/orders/orders-admin.functions";
+import { confirmOrder, scheduleService, completeService, extendSubscription, cancelSubscription } from "@/lib/orders/orders-types.functions";
+import { setDigitalAccess, resendDigitalEmail } from "@/lib/admin/digital-admin.functions";
 import { QuickOrderSheet } from "@/components/admin/quick-order/QuickOrderSheet";
 import { RouteErrorPanel } from "@/components/admin/RouteErrorPanel";
 import { useRouteErrorTracking } from "@/hooks/use-error-tracking";
 import { recoverFromChunkError } from "@/lib/chunk-recovery";
 import { useRouter, useNavigate } from "@tanstack/react-router";
 import { BulkActionsBar, BulkSummaryPanel, type BulkSummary } from "@/components/admin/orders/BulkActionsBar";
-import { isPhysical } from "@/lib/orders-bulk";
+import { isPhysical } from "@/lib/orders/orders-bulk";
 
 export const Route = createFileRoute("/_authenticated/admin/orders")({
   head: () => ({

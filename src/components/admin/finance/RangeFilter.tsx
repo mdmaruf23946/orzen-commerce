@@ -1,6 +1,6 @@
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import { RANGE_TABS, type RangeKey } from "@/lib/finance-ui";
+import { RANGE_TABS, type RangeKey } from "@/lib/analytics/finance-ui";
 
 export function RangeFilter({
   value,

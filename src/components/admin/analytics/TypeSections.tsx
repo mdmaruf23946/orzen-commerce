@@ -1,5 +1,5 @@
-import { compactMoney } from "@/lib/analytics-ui";
-import type { AnalyticsPayload } from "@/lib/analytics.server";
+import { compactMoney } from "@/lib/analytics/analytics-ui";
+import type { AnalyticsPayload } from "@/lib/analytics/analytics.server";
 
 function Panel({ title, children }: { title: string; children: React.ReactNode }) {
   return (

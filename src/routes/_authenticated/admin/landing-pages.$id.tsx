@@ -13,7 +13,7 @@ import {
   rotateLandingPageWebhookSecret,
   sendLandingPageTestOrder,
   updateLandingPageConnection,
-} from "@/lib/landing-pages.functions";
+} from "@/lib/site-builder/landing-pages.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";

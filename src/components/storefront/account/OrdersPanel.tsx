@@ -16,7 +16,7 @@ import {
   RotateCcw,
   Repeat,
 } from "lucide-react";
-import { listMyOrders, cancelMyOrder } from "@/lib/customer-account.functions";
+import { listMyOrders, cancelMyOrder } from "@/lib/accounts/customer-account.functions";
 import { ReturnStatusCard } from "@/components/storefront/order/ReturnRequestDialog";
 import { ReturnWizard } from "@/components/storefront/order/ReturnWizard";
 import {
@@ -29,7 +29,7 @@ import {
   statusTone,
   taka,
   type OrderType,
-} from "@/lib/order-display";
+} from "@/lib/orders/order-display";
 import { OrderTracker } from "@/components/storefront/account/OrderTracker";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -44,7 +44,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { EmptyState } from "./EmptyState";
-import { useStoreT } from "@/lib/store-i18n";
+import { useStoreT } from "@/lib/storefront/store-i18n";
 
 function returnStatusLabel(t: (k: string) => string, status: string) {
   const map: Record<string, string> = {

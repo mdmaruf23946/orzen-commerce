@@ -20,8 +20,8 @@ import {
 } from "lucide-react";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { useStoreUI } from "@/lib/store-ui";
-import { useCustomerSession } from "@/lib/customer-session";
-import { useStoreT } from "@/lib/store-i18n";
+import { useCustomerSession } from "@/lib/accounts/customer-session";
+import { useStoreT } from "@/lib/storefront/store-i18n";
 import { StoreLangSwitch } from "@/components/storefront/StoreLangSwitch";
 
 type Category = { id: string; name: string; parent_id: string | null };

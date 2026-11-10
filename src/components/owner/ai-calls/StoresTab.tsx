@@ -5,7 +5,7 @@ import { Link } from "@tanstack/react-router";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Settings2 } from "lucide-react";
-import { listStoreAiCallCenters } from "@/lib/ai-call-center.functions";
+import { listStoreAiCallCenters } from "@/lib/calls/ai-call-center.functions";
 
 export function StoresTab() {
   const listFn = useServerFn(listStoreAiCallCenters);

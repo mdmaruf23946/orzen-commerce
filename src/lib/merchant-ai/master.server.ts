@@ -276,7 +276,7 @@ export async function runMasterAgent(args: MasterArgs): Promise<{ reply: string;
   const executed: string[] = [];
   const tools = await buildTools(args, executed);
   const history = await threadHistory(db, storeId, threadId, 12);
-  const { routedModel } = await import("@/lib/ai-provider.server");
+  const { routedModel } = await import("@/lib/agents/ai-provider.server");
   const aiModel = await routedModel("google/gemini-3.8-flash");
 
   const { text: reply } = await generateText({

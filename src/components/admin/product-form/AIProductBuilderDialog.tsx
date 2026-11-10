@@ -10,8 +10,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { compressImage } from "@/lib/compress-image";
-import { INCLUDED_ITEMS } from "@/lib/digital";
-import { generateProductDraft, type ProductDraft } from "@/lib/ai-product-builder.functions";
+import { INCLUDED_ITEMS } from "@/lib/catalog/digital";
+import { generateProductDraft, type ProductDraft } from "@/lib/agents/ai-product-builder.functions";
 import { ProductDialog } from "./ProductDialog";
 import { ServiceProductDialog } from "./service/ServiceProductDialog";
 import { SubscriptionProductDialog } from "./subscription/SubscriptionProductDialog";

@@ -14,7 +14,7 @@ export const Route = createFileRoute("/api/public/cron/sync-parcels")({
 
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
         const { ACTIVE_STATUSES } = await import("@/lib/couriers/status");
-        const { syncOne } = await import("@/lib/courier-parcels.functions");
+        const { syncOne } = await import("@/lib/couriers/courier-parcels.functions");
 
         const { data: parcels } = await supabaseAdmin
           .from("courier_parcels")

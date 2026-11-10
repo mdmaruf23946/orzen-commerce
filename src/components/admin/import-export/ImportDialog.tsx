@@ -13,7 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Upload, FileSpreadsheet, Download, CheckCircle2, AlertCircle, XCircle, ArrowLeft, ArrowRight, Loader2 } from "lucide-react";
-import { bulkImportProducts, fetchGoogleSheetCsv } from "@/lib/business.functions";
+import { bulkImportProducts, fetchGoogleSheetCsv } from "@/lib/admin/business.functions";
 import {
   readFileAsRows, csvTextToObjects, validateRows, downloadSampleCsv, downloadSampleXlsx,
   writeErrorReport, type ValidatedRow,

@@ -1,8 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { CreditCard, CheckCircle2, XCircle, Clock, Info, Wallet } from "lucide-react";
-import { getOrderPaymentTimeline } from "@/lib/storefront.functions";
-import { isCodMethod } from "@/lib/order-display";
+import { getOrderPaymentTimeline } from "@/lib/storefront/storefront.functions";
+import { isCodMethod } from "@/lib/orders/order-display";
 
 /** Cash on delivery has no gateway: show a plain, honest status card. */
 function CodPaymentCard({ paid, refunded }: { paid: boolean; refunded: boolean }) {

@@ -1,6 +1,6 @@
 import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { bucketLabel, compactMoney } from "@/lib/analytics-ui";
-import type { AnalyticsPayload } from "@/lib/analytics.server";
+import { bucketLabel, compactMoney } from "@/lib/analytics/analytics-ui";
+import type { AnalyticsPayload } from "@/lib/analytics/analytics.server";
 
 export function CustomerInsights({
   customers,

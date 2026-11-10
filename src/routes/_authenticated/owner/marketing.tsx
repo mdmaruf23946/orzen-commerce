@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { getPixelDefaults, updatePixelDefaults } from "@/lib/owner-ext.functions";
+import { getPixelDefaults, updatePixelDefaults } from "@/lib/admin/owner-ext.functions";
 import { OwnerPageHeader } from "@/components/owner/OwnerPageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

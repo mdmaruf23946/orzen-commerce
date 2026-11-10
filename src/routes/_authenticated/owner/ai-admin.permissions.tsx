@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { listAiAdminPermissions, setAiAdminPermission } from "@/lib/ai-admin.functions";
+import { listAiAdminPermissions, setAiAdminPermission } from "@/lib/admin/ai-admin.functions";
 import { ACTIONS, ACTION_GROUPS } from "@/lib/ai-admin/catalog";
 import { OwnerPageHeader } from "@/components/owner/OwnerPageHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";

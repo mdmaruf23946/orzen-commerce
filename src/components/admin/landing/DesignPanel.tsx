@@ -8,7 +8,7 @@ import { Check, Loader2, RefreshCw, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { suggestLandingThemes } from "@/lib/landing-theme.functions";
+import { suggestLandingThemes } from "@/lib/site-builder/landing-theme.functions";
 import {
   COLOR_ROLES,
   DEFAULT_PALETTE,
@@ -19,7 +19,7 @@ import {
   themeTokens,
   type LandingPalette,
   type LandingThemePreset,
-} from "@/lib/landing-theme";
+} from "@/lib/site-builder/landing-theme";
 
 function MiniPreview({ palette }: { palette: LandingPalette }) {
   const t = themeTokens(palette) as Record<string, string>;

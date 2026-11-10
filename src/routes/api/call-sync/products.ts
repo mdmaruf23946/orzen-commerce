@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { authStore, json, preflight, unauthorized } from "@/lib/call-sync.server";
+import { authStore, json, preflight, unauthorized } from "@/lib/calls/call-sync.server";
 
 export const Route = createFileRoute("/api/call-sync/products")({
   server: {

@@ -7,7 +7,7 @@ import { Plus, Save, Trash2 } from "lucide-react";
 import {
   getAiCreditAdmin, saveAiCreditSettings, upsertAiCreditBundle, deleteAiCreditBundle,
   setPackageAiCredits, adjustStoreAiCredits,
-} from "@/lib/ai-credits.functions";
+} from "@/lib/payments/ai-credits.functions";
 import { OwnerPageHeader } from "@/components/owner/OwnerPageHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";

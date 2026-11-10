@@ -12,7 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { ImageUploader } from "@/components/admin/ImageUploader";
-import { getInvoiceProfile, saveInvoiceProfile } from "@/lib/invoice-settings.functions";
+import { getInvoiceProfile, saveInvoiceProfile } from "@/lib/invoices/invoice-settings.functions";
 import { cn } from "@/lib/utils";
 
 type Form = {

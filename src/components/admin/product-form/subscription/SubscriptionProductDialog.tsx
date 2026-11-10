@@ -1,7 +1,7 @@
 // Dedicated 15-step Subscription product form. Completely isolated from the
 // physical / digital / service forms — no stock, shipping, variants, weight,
 // digital files or booking fields. Everything lives in meta.subscription.
-import { storeHref } from "@/lib/store-link";
+import { storeHref } from "@/lib/storefront/store-link";
 import { lazy, Suspense, useMemo, useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
@@ -10,7 +10,7 @@ import {
   defaultsForType,
   mergeTags,
   resolveDefaultStatus,
-} from "@/lib/product-defaults";
+} from "@/lib/catalog/product-defaults";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";

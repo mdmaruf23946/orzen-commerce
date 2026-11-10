@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { CheckCircle2, ExternalLink, MessageSquare, PenSquare, RefreshCw, XCircle } from "lucide-react";
-import { getFacebookPage } from "@/lib/facebook-page.functions";
+import { getFacebookPage } from "@/lib/integrations/facebook-page.functions";
 import { Button } from "@/components/ui/button";
 import { Section, StatusPill, NotConnected, formatWhen, FB_BLUE } from "@/components/admin/facebook/ui";
 

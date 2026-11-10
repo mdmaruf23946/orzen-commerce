@@ -26,7 +26,7 @@ export const Route = createFileRoute("/api/public/platform-meta/track")({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const { guardRequest } = await import("@/lib/rate-limit.server");
+        const { guardRequest } = await import("@/lib/security/rate-limit.server");
         const blocked = await guardRequest("platform_meta", request).catch(() => null);
         if (blocked) return blocked;
         let body: z.infer<typeof bodySchema>;
@@ -35,7 +35,7 @@ export const Route = createFileRoute("/api/public/platform-meta/track")({
         } catch {
           return Response.json({ ok: false }, { status: 400 });
         }
-        const { BROWSER_EVENTS, sendPlatformEvent, visitorFromHeaders } = await import("@/lib/platform-meta.server");
+        const { BROWSER_EVENTS, sendPlatformEvent, visitorFromHeaders } = await import("@/lib/marketing/platform-meta.server");
         if (!BROWSER_EVENTS.has(body.event)) return Response.json({ ok: false }, { status: 400 });
         let page: URL;
         try {

@@ -5,20 +5,20 @@ import { useEffect, useState } from "react";
 import { CheckCircle2, Truck, Package, Clock, Download, ReceiptText, ShoppingBag } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { getOrder, verifyOrderPayment } from "@/lib/storefront.functions";
-import { getOrderDigitalAccess } from "@/lib/digital.functions";
+import { getOrder, verifyOrderPayment } from "@/lib/storefront/storefront.functions";
+import { getOrderDigitalAccess } from "@/lib/catalog/digital.functions";
 import { DigitalOrderAccess } from "@/components/storefront/digital/DigitalOrderAccess";
-import { fbTrack, purchaseEventId } from "@/lib/fb-track";
+import { fbTrack, purchaseEventId } from "@/lib/marketing/fb-track";
 import { PaymentTimeline } from "@/components/storefront/PaymentTimeline";
 import { ServiceOrderView } from "@/components/storefront/order/ServiceOrderView";
 import { SubscriptionOrderView } from "@/components/storefront/order/SubscriptionOrderView";
 import { ReturnRequestBlock } from "@/components/storefront/order/ReturnRequestBlock";
 import { ReturnStages } from "@/components/storefront/order/ReturnStages";
 import { OrderActions } from "@/components/storefront/order/OrderActions";
-import { paymentStatusLabel } from "@/lib/order-display";
-import { useStoreT } from "@/lib/store-i18n";
-import { useCustomerSession } from "@/lib/customer-session";
-import { readOrderContact } from "@/lib/order-proof";
+import { paymentStatusLabel } from "@/lib/orders/order-display";
+import { useStoreT } from "@/lib/storefront/store-i18n";
+import { useCustomerSession } from "@/lib/accounts/customer-session";
+import { readOrderContact } from "@/lib/orders/order-proof";
 import { OrderLockedCard } from "@/components/storefront/order/OrderLockedCard";
 
 

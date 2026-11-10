@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { handleWhatsAppVerify, handleWhatsAppWebhook } from "@/lib/whatsapp-webhook.server";
+import { handleWhatsAppVerify, handleWhatsAppWebhook } from "@/lib/integrations/whatsapp-webhook.server";
 
 export const Route = createFileRoute("/api/public/whatsapp/webhook")({
   server: {

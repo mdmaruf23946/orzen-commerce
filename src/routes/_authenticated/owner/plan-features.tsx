@@ -9,7 +9,7 @@ import {
   bulkSetPlanFeatures,
   upsertFeatureFlag,
   deleteFeatureFlag,
-} from "@/lib/owner-ext.functions";
+} from "@/lib/admin/owner-ext.functions";
 import { OwnerPageHeader } from "@/components/owner/OwnerPageHeader";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";

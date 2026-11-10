@@ -1,5 +1,5 @@
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import type { AnalyticsPayload } from "@/lib/analytics.server";
+import type { AnalyticsPayload } from "@/lib/analytics/analytics.server";
 
 const ORDER: { key: string; label: string }[] = [
   { key: "pending", label: "Pending" },

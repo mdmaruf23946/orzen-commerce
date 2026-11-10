@@ -1,7 +1,7 @@
 // Video showcase / product demo. YouTube and Vimeo URLs only.
 import { useState } from "react";
 import { Play } from "lucide-react";
-import { lpImage } from "@/lib/landing-builder";
+import { lpImage } from "@/lib/site-builder/landing-builder";
 
 /** Returns a privacy-friendly embed URL, or null when the URL is unsupported. */
 export function videoEmbedUrl(raw: string): string | null {

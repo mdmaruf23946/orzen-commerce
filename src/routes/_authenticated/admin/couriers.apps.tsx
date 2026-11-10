@@ -3,12 +3,12 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { Check, Star } from "lucide-react";
-import { getCourierOverview, setDefaultCourier } from "@/lib/courier-parcels.functions";
+import { getCourierOverview, setDefaultCourier } from "@/lib/couriers/courier-parcels.functions";
 import { COURIERS } from "@/components/admin/couriers/providers";
 import { BrandBadge } from "@/components/admin/couriers/BrandBadge";
 import { StatusBadge } from "@/components/admin/marketing/ui";
 import { Button } from "@/components/ui/button";
-import { imgSrc, useCourierBrandAssets, useCourierConnections } from "@/lib/courier-apps";
+import { imgSrc, useCourierBrandAssets, useCourierConnections } from "@/lib/couriers/courier-apps";
 
 export const Route = createFileRoute("/_authenticated/admin/couriers/apps")({
   head: () => ({

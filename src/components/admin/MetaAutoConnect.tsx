@@ -11,7 +11,7 @@ import {
   listMetaAutoConnectNumbers,
   autoConnectMessengerPage,
   autoConnectWhatsappNumber,
-} from "@/lib/meta-oauth.functions";
+} from "@/lib/integrations/meta-oauth.functions";
 
 type Props = {
   channel: "messenger" | "whatsapp";

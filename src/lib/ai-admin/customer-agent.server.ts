@@ -101,8 +101,8 @@ export async function runCustomerAgent(args: {
     ]),
   );
 
-  const { routedModel } = await import("@/lib/ai-provider.server");
-  const { replyStyleInstruction, SHORT_REPLY_RULE } = await import("@/lib/reply-language");
+  const { routedModel } = await import("@/lib/agents/ai-provider.server");
+  const { replyStyleInstruction, SHORT_REPLY_RULE } = await import("@/lib/agents/reply-language");
   const aiModel = await routedModel(model);
   const isAdButton = isFacebookAdPrompt(args.text);
   const langRule = isAdButton

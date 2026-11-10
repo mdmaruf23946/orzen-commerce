@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   listVoices, saveVoice, deleteVoice, importElevenLabsVoices, listTones, saveTone, deleteTone,
-} from "@/lib/ai-call-center.functions";
+} from "@/lib/calls/ai-call-center.functions";
 
 const EMPTY_VOICE = {
   id: null as string | null,

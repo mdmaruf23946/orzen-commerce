@@ -2,8 +2,8 @@ import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Activity, Banknote, CheckCircle2, Eye, ReceiptText, ShoppingBag, TrendingDown, TrendingUp, Users, UserCheck } from "lucide-react";
-import { getMarketingPerformance } from "@/lib/marketing.functions";
-import { analyticsRange, compareRange, compactMoney, pctChange, type AnalyticsRangeKey } from "@/lib/analytics-ui";
+import { getMarketingPerformance } from "@/lib/marketing/marketing.functions";
+import { analyticsRange, compareRange, compactMoney, pctChange, type AnalyticsRangeKey } from "@/lib/analytics/analytics-ui";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 

@@ -3,7 +3,7 @@ import { useMutation } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { CheckCircle2, XCircle, RefreshCw, Radar, AlertTriangle } from "lucide-react";
-import { checkDnsResolution } from "@/lib/domains.functions";
+import { checkDnsResolution } from "@/lib/hosting/domains.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";

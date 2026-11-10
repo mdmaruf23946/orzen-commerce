@@ -3,7 +3,7 @@ import { csvCell } from "@/lib/csv-safe";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Download, RefreshCw } from "lucide-react";
-import { ownerAiUsageReport } from "@/lib/owner.functions";
+import { ownerAiUsageReport } from "@/lib/admin/owner.functions";
 import { OwnerPageHeader } from "@/components/owner/OwnerPageHeader";
 import { Button } from "@/components/ui/button";
 

@@ -5,7 +5,7 @@ import {
   Users, Store as StoreIcon, CheckCircle2, Pause, Wallet, Sparkles,
   Clock, AlertTriangle, TrendingUp, Receipt,
 } from "lucide-react";
-import { ownerControlCenter } from "@/lib/owner.functions";
+import { ownerControlCenter } from "@/lib/admin/owner.functions";
 import { GitHubDeployment } from "@/components/owner/GitHubDeployment";
 
 export const Route = createFileRoute("/_authenticated/owner/")({

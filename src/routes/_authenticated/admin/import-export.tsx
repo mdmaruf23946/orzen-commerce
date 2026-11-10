@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Upload, Download, Package, Clock, FileSpreadsheet } from "lucide-react";
-import { getImportExportHistory } from "@/lib/business.functions";
+import { getImportExportHistory } from "@/lib/admin/business.functions";
 import { ImportDialog } from "@/components/admin/import-export/ImportDialog";
 import { ExportDialog } from "@/components/admin/import-export/ExportDialog";
 

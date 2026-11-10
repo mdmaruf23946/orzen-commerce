@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import type { ReactNode } from "react";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { getMyStore, updateMyStore } from "@/lib/admin.functions";
+import { getMyStore, updateMyStore } from "@/lib/admin/admin.functions";
 
 export const CURRENCIES = ["BDT", "USD", "EUR", "GBP", "INR", "PKR", "AED", "SAR"];
 export const LANGUAGES = [

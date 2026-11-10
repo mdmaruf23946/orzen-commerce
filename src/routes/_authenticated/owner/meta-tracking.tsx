@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { getPlatformTracking, savePlatformTracking, sendPlatformTestEvent } from "@/lib/platform-meta.functions";
+import { getPlatformTracking, savePlatformTracking, sendPlatformTestEvent } from "@/lib/marketing/platform-meta.functions";
 
 export const Route = createFileRoute("/_authenticated/owner/meta-tracking")({ component: Page });
 

@@ -1,5 +1,5 @@
 import { pgSafe } from "@/lib/pg-filter";
-import { addCalendarMonths, daysToMonths } from "@/lib/plan-period";
+import { addCalendarMonths, daysToMonths } from "@/lib/payments/plan-period";
 // Allow-listed action layer for the AI Admin Control agent.
 // The agent NEVER touches the database directly — every capability is one of
 // these handlers, each with a Zod schema, a risk level and a permission key.

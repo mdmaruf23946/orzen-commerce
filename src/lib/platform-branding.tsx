@@ -9,7 +9,7 @@ import {
   getPlatformBranding,
   type BrandingAsset,
   type PlatformBranding,
-} from "./platform-branding.functions";
+} from "@/lib/admin/platform-branding.functions";
 
 export const PLACEMENT_KEYS = [
   "winner_header",

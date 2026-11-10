@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { CheckCircle2, Github, RefreshCw, Rocket, XCircle } from "lucide-react";
-import { liveDeploymentStatus } from "@/lib/github-deploy.functions";
+import { liveDeploymentStatus } from "@/lib/hosting/github-deploy.functions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";

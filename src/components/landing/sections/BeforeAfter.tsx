@@ -1,5 +1,5 @@
 // Before & After comparison pairs. Design is system-owned.
-import { lpImage } from "@/lib/landing-builder";
+import { lpImage } from "@/lib/site-builder/landing-builder";
 
 type Item = Record<string, any>;
 

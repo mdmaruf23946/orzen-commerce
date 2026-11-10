@@ -11,8 +11,8 @@ import {
   ShieldCheck,
   Wrench,
 } from "lucide-react";
-import { listMyOrders, listMyNotifications, listMyPaymentMethods, getMyAccountSummary } from "@/lib/customer-account.functions";
-import { paymentTone, statusTone, taka } from "@/lib/order-display";
+import { listMyOrders, listMyNotifications, listMyPaymentMethods, getMyAccountSummary } from "@/lib/accounts/customer-account.functions";
+import { paymentTone, statusTone, taka } from "@/lib/orders/order-display";
 import { EmptyState } from "./EmptyState";
 
 export function ActiveServicesPanel({ slug, token }: { slug: string; token: string }) {

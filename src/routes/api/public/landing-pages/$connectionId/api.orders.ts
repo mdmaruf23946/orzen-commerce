@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { intakeLandingPageOrder } from "@/lib/landing-pages.server";
+import { intakeLandingPageOrder } from "@/lib/site-builder/landing-pages.server";
 
 export const Route = createFileRoute("/api/public/landing-pages/$connectionId/api/orders")({
   server: {
@@ -14,7 +14,7 @@ export const Route = createFileRoute("/api/public/landing-pages/$connectionId/ap
           },
         }),
       POST: async ({ request, params }) => {
-        const { guardRequest } = await import("@/lib/rate-limit.server");
+        const { guardRequest } = await import("@/lib/security/rate-limit.server");
         const blocked = await guardRequest("landing_order", request, {
           "Access-Control-Allow-Origin": "*",
         });

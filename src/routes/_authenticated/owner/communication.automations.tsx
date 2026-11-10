@@ -7,7 +7,7 @@ import {
   listEmailAutomations,
   setEmailAutomation,
   sendTestPlatformEmail,
-} from "@/lib/platform-notify.functions";
+} from "@/lib/notifications/platform-notify.functions";
 import { OwnerPageHeader } from "@/components/owner/OwnerPageHeader";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";

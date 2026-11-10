@@ -1,6 +1,6 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
-import { MARKETING_HUB_PATH, MARKETING_PLATFORMS, useMarketingConnections, type MarketingPlatform } from "@/lib/marketing-platforms";
+import { MARKETING_HUB_PATH, MARKETING_PLATFORMS, useMarketingConnections, type MarketingPlatform } from "@/lib/marketing/marketing-platforms";
 import { FacebookTab } from "./FacebookTab";
 import { GoogleTab } from "./GoogleTab";
 import { TiktokTab } from "./TiktokTab";

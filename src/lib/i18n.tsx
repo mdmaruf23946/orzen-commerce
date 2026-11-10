@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { LANDING_COPY, type CopyKey } from "./landing-copy";
+import { LANDING_COPY, type CopyKey } from "@/lib/site-builder/landing-copy";
 
 export type Lang = "en" | "bn";
 

@@ -1,8 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { PhoneIncoming, PhoneOutgoing, CheckCircle2, XCircle, Clock, Building2, Bot, Hash } from "lucide-react";
-import { aiCallOverview, listAllAiCalls } from "@/lib/ai-call-center.functions";
-import { AI_RESULT_LABEL, AI_RESULT_TONE, AI_STATUS_LABEL, AI_STATUS_TONE, formatMinutes } from "@/lib/ai-call-center";
+import { aiCallOverview, listAllAiCalls } from "@/lib/calls/ai-call-center.functions";
+import { AI_RESULT_LABEL, AI_RESULT_TONE, AI_STATUS_LABEL, AI_STATUS_TONE, formatMinutes } from "@/lib/calls/ai-call-center";
 
 function Stat({ icon: Icon, label, value, tone = "" }: { icon: any; label: string; value: string | number; tone?: string }) {
   return (

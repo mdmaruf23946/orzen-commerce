@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import { CheckCheck, Bell, ExternalLink } from "lucide-react";
-import { listMyNotifications, markNotificationRead, markAllNotificationsRead } from "@/lib/notifications-inbox.functions";
+import { listMyNotifications, markNotificationRead, markAllNotificationsRead } from "@/lib/notifications/notifications-inbox.functions";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import DOMPurify from "isomorphic-dompurify";

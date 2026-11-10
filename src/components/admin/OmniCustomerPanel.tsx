@@ -4,7 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { Link } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { Loader2, MapPin, Pencil, Phone, User, X } from "lucide-react";
-import { getOmniCustomer, updateOmniCustomer } from "@/lib/omni-inbox.functions";
+import { getOmniCustomer, updateOmniCustomer } from "@/lib/inbox/omni-inbox.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";

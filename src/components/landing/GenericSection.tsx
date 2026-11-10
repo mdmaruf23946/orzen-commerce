@@ -1,9 +1,9 @@
 // Renders any non-builtin landing-page section from the registry schema.
 // The design is system-owned: merchants only supply text and images.
 
-import type { LPFieldSpec, LPSectionSpec } from "@/lib/landing-sections";
-import { lpImage } from "@/lib/landing-builder";
-import { lpIcon } from "@/lib/landing-icons";
+import type { LPFieldSpec, LPSectionSpec } from "@/lib/site-builder/landing-sections";
+import { lpImage } from "@/lib/site-builder/landing-builder";
+import { lpIcon } from "@/lib/site-builder/landing-icons";
 import { BeforeAfter } from "@/components/landing/sections/BeforeAfter";
 import { VideoEmbed } from "@/components/landing/sections/VideoEmbed";
 import { Gallery } from "@/components/landing/sections/Gallery";

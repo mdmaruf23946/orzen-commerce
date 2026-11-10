@@ -7,7 +7,7 @@ import { Copy, ExternalLink, Eye, MapPin, MessageCircle, Printer, RefreshCw, Sen
 import { FraudSummary, STATUSES, ORDER_STATUS_TONE } from "@/components/admin/orders/OrderCard";
 import { FraudCheckModal } from "@/components/admin/FraudCheckModal";
 import { useFeature } from "@/components/admin/FeatureGate";
-import { updateOrderStatus } from "@/lib/admin.functions";
+import { updateOrderStatus } from "@/lib/admin/admin.functions";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { CallButton } from "@/components/admin/calls/CallButton";
 import { CourierLogo } from "@/components/admin/couriers/CourierLogo";
@@ -54,7 +54,7 @@ import {
   getParcelPrintData,
   getParcelLabel,
   sendOrderToCourier,
-} from "@/lib/courier-parcels.functions";
+} from "@/lib/couriers/courier-parcels.functions";
 
 export const Route = createFileRoute("/_authenticated/admin/courier-orders")({
   validateSearch: (s: Record<string, unknown>) => ({

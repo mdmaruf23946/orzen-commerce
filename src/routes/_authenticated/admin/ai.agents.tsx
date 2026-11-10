@@ -7,7 +7,7 @@ import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { FeatureGate } from "@/components/admin/FeatureGate";
 import { AgentStatusPill } from "@/components/admin/ai/AgentStatusPill";
-import { aiGetOverview, aiToggleAgent } from "@/lib/merchant-ai.functions";
+import { aiGetOverview, aiToggleAgent } from "@/lib/agents/merchant-ai.functions";
 
 export const Route = createFileRoute("/_authenticated/admin/ai/agents")({
   head: () => ({

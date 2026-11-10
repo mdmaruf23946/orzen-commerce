@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { MARKETING_PLATFORMS, useMarketingConnections } from "@/lib/marketing-platforms";
+import { MARKETING_PLATFORMS, useMarketingConnections } from "@/lib/marketing/marketing-platforms";
 import { StatusBadge } from "@/components/admin/marketing/ui";
 import { FacebookLogo, GoogleLogo, TikTokLogo } from "@/components/admin/marketing/BrandLogos";
 import { Button } from "@/components/ui/button";

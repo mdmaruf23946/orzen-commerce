@@ -43,7 +43,7 @@ async function sendMessenger(db: Db, storeId: string, psids: string[], text: str
     return;
   }
   if (!token) return;
-  const { sendText } = await import("@/lib/messenger-send.server");
+  const { sendText } = await import("@/lib/integrations/messenger-send.server");
   for (const psid of psids) {
     try {
       await sendText(token, psid, text);
@@ -69,7 +69,7 @@ async function sendWhatsapp(db: Db, storeId: string, numbers: string[], text: st
     return;
   }
   if (!token) return;
-  const { sendWaText } = await import("@/lib/whatsapp-send.server");
+  const { sendWaText } = await import("@/lib/integrations/whatsapp-send.server");
   for (const to of numbers) {
     try {
       await sendWaText(data.phone_number_id, token, to, text);

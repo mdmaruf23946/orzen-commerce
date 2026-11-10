@@ -3,13 +3,13 @@ import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { z } from "zod";
 import { toast } from "sonner";
-import { signupCustomer } from "@/lib/customer-auth.functions";
-import { useCustomerSession } from "@/lib/customer-session";
+import { signupCustomer } from "@/lib/accounts/customer-auth.functions";
+import { useCustomerSession } from "@/lib/accounts/customer-session";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useStoreT } from "@/lib/store-i18n";
-import { normalizeSignupPhone, PHONE_INVALID_MSG } from "@/lib/phone-validate";
+import { useStoreT } from "@/lib/storefront/store-i18n";
+import { normalizeSignupPhone, PHONE_INVALID_MSG } from "@/lib/accounts/phone-validate";
 import { TurnstileWidget, turnstileConfigured, CAPTCHA_WAIT_BN } from "@/components/TurnstileWidget";
 
 

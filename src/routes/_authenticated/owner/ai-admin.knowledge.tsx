@@ -4,7 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Plus, Trash2 } from "lucide-react";
-import { listKnowledgeEntries, saveKnowledgeEntry, deleteKnowledgeEntry } from "@/lib/ai-admin.functions";
+import { listKnowledgeEntries, saveKnowledgeEntry, deleteKnowledgeEntry } from "@/lib/admin/ai-admin.functions";
 import { OwnerPageHeader } from "@/components/owner/OwnerPageHeader";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";

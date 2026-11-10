@@ -6,14 +6,14 @@ import {
   getStoreBySlug,
   listStoreProducts,
   listStoreCategories,
-} from "@/lib/storefront.functions";
-import { getStorePagePublic } from "@/lib/store-pages.functions";
-import { storePageHead } from "@/lib/store-page-view";
+} from "@/lib/storefront/storefront.functions";
+import { getStorePagePublic } from "@/lib/storefront/store-pages.functions";
+import { storePageHead } from "@/lib/storefront/store-page-view";
 import { StorePageBody } from "@/components/storefront/StorePageLayout";
 import { ProductCard } from "@/components/storefront/ProductCard";
 import { StoreErrorState } from "@/components/storefront/StoreErrorState";
 import { Input } from "@/components/ui/input";
-import { resolveStoreSeo } from "@/lib/seo";
+import { resolveStoreSeo } from "@/lib/marketing/seo";
 
 const PAGE_KEY = "shop";
 const STALE = 5 * 60_000;

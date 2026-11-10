@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { StatusBadge } from "./StatusBadge";
-import type { ChannelState } from "@/lib/notify-settings";
+import type { ChannelState } from "@/lib/notifications/notify-settings";
 import { Loader2, Send } from "lucide-react";
 
 export function ChannelCard({

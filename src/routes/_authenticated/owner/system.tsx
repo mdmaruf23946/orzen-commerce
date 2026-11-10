@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { Loader2, Upload } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { compressImage } from "@/lib/compress-image";
-import { getPlatformSettings, updatePlatformSettings } from "@/lib/owner-ext.functions";
+import { getPlatformSettings, updatePlatformSettings } from "@/lib/admin/owner-ext.functions";
 import { OwnerPageHeader } from "@/components/owner/OwnerPageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

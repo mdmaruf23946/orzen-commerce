@@ -12,7 +12,7 @@ import {
   reorderCategories,
   getMyStore,
   setAllCategoryImage,
-} from "@/lib/admin.functions";
+} from "@/lib/admin/admin.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,7 +20,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ImageUploader } from "@/components/admin/ImageUploader";
 import { CategoryIconPicker } from "@/components/admin/CategoryIconPicker";
-import { getCategoryIcon } from "@/lib/category-icons";
+import { getCategoryIcon } from "@/lib/catalog/category-icons";
 import { CategoryIconCluster } from "@/components/CategoryIconCluster";
 import { cn } from "@/lib/utils";
 import { AdminPageHeader } from "@/components/admin/page/AdminPageHeader";

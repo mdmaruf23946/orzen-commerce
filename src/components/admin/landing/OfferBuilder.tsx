@@ -19,8 +19,8 @@ import {
   type OfferRole,
   type OfferType,
   type PriceBook,
-} from "@/lib/landing-offer";
-import { lpImage } from "@/lib/landing-builder";
+} from "@/lib/site-builder/landing-offer";
+import { lpImage } from "@/lib/site-builder/landing-builder";
 
 export type CatalogProduct = {
   id: string;

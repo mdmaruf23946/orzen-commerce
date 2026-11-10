@@ -13,9 +13,9 @@ export const Route = createFileRoute("/api/public/cron/subscription-renewals")({
           return new Response("Unauthorized", { status: 401 });
         }
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-        const { processRenewals } = await import("@/lib/subscriptions.server");
+        const { processRenewals } = await import("@/lib/payments/subscriptions.server");
         const stats = await processRenewals(supabaseAdmin as any);
-        const { processWalletAutoRenewals } = await import("@/lib/wallet.server");
+        const { processWalletAutoRenewals } = await import("@/lib/payments/wallet.server");
         const wallet = await processWalletAutoRenewals(supabaseAdmin as any);
         return Response.json({ ok: true, ...stats, wallet });
       },

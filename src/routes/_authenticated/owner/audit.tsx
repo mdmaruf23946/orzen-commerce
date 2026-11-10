@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { toast } from "sonner";
-import { grantRole, listRoleAuditLog, revokeRole } from "@/lib/owner.functions";
+import { grantRole, listRoleAuditLog, revokeRole } from "@/lib/admin/owner.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";

@@ -6,8 +6,8 @@ import { toast } from "sonner";
 import { Ban, Check, EyeOff, Loader2, MessageSquare, ShieldCheck, Trash2, X } from "lucide-react";
 import {
   listFacebookModeration, decideFacebookModeration, clearFacebookModeration,
-} from "@/lib/facebook-page.functions";
-import { CAP_SCOPE } from "@/lib/facebook-caps";
+} from "@/lib/integrations/facebook-page.functions";
+import { CAP_SCOPE } from "@/lib/integrations/facebook-caps";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Section, NotConnected, EmptyState, CapBadge, formatWhen, FB_BLUE } from "@/components/admin/facebook/ui";

@@ -9,7 +9,7 @@ import { Section } from "@/components/admin/payments/GatewayParts";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { gatewayStatus, isGatewayConnected, usePaymentGateways } from "@/lib/payment-gateway-apps";
+import { gatewayStatus, isGatewayConnected, usePaymentGateways } from "@/lib/payments/payment-gateway-apps";
 
 export const Route = createFileRoute("/_authenticated/admin/payment-gateways/apps")({
   head: () => ({

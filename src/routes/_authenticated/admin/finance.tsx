@@ -3,14 +3,14 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useMemo, useState } from "react";
 import { Download } from "lucide-react";
-import { listExpenses, addExpense, deleteExpense, financeSummary } from "@/lib/business.functions";
+import { listExpenses, addExpense, deleteExpense, financeSummary } from "@/lib/admin/business.functions";
 import { AdminPageHeader } from "@/components/admin/page/AdminPageHeader";
 import { RangeFilter } from "@/components/admin/finance/RangeFilter";
 import { SummaryCards, ProfitLoss, type FinanceSummary } from "@/components/admin/finance/SummaryCards";
 import { FinanceChart } from "@/components/admin/finance/FinanceChart";
 import { ExpenseForm, type ExpenseRow } from "@/components/admin/finance/ExpenseForm";
 import { ExpenseHistory } from "@/components/admin/finance/ExpenseHistory";
-import { categoryLabel, downloadCsv, iso, money, rangeFor, type RangeKey } from "@/lib/finance-ui";
+import { categoryLabel, downloadCsv, iso, money, rangeFor, type RangeKey } from "@/lib/analytics/finance-ui";
 
 export const Route = createFileRoute("/_authenticated/admin/finance")({
   head: () => ({

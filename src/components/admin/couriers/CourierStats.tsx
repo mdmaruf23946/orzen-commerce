@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { parcelStatusCounts } from "@/lib/courier-parcels.functions";
+import { parcelStatusCounts } from "@/lib/couriers/courier-parcels.functions";
 import type { CourierKey } from "./providers";
 
 export type ParcelSummary = { total: number; active: number; delivered: number; returned: number; failed: number };

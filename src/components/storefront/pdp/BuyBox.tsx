@@ -1,7 +1,7 @@
 import { Minus, Plus, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { isStockless } from "@/lib/product-stock";
-import { useStoreT } from "@/lib/store-i18n";
+import { isStockless } from "@/lib/catalog/product-stock";
+import { useStoreT } from "@/lib/storefront/store-i18n";
 
 type Props = {
   price: number;

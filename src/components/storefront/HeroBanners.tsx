@@ -1,6 +1,6 @@
 import { sizedImg, sizedSrcSet } from "@/lib/img-url";
 import { useEffect, useRef, useState } from "react";
-import { useStoreT } from "@/lib/store-i18n";
+import { useStoreT } from "@/lib/storefront/store-i18n";
 
 export type HeroBanner = {
   id: string;

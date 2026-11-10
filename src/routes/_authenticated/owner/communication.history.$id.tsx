@@ -4,7 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { RefreshCw } from "lucide-react";
-import { getCommunicationDetail, retryFailedEmail } from "@/lib/communication.functions";
+import { getCommunicationDetail, retryFailedEmail } from "@/lib/notifications/communication.functions";
 import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/_authenticated/owner/communication/history/$id")({

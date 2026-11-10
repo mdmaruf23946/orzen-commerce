@@ -3,10 +3,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { AlertTriangle, CheckCircle2, ShieldCheck, XCircle } from "lucide-react";
-import { deploymentHealth } from "@/lib/ai-admin.functions";
+import { deploymentHealth } from "@/lib/admin/ai-admin.functions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { browserSupabaseProjectId } from "@/lib/deployment-target";
+import { browserSupabaseProjectId } from "@/lib/hosting/deployment-target";
 
 function Row({ label, ok, hint }: { label: string; ok: boolean; hint?: string | null }) {
   return (

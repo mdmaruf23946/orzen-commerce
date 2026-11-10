@@ -1,5 +1,5 @@
 // Best-effort activity logging for the Merchant Panel.
-import type { StoreAccess } from "@/lib/store-access";
+import type { StoreAccess } from "@/lib/accounts/store-access";
 
 export type ActivityInput = {
   section: string;

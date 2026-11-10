@@ -18,7 +18,7 @@ import {
   updatePlatformBranding,
   type BrandingAsset,
   type PlatformBranding,
-} from "@/lib/platform-branding.functions";
+} from "@/lib/admin/platform-branding.functions";
 import {
   PLACEMENT_KEYS,
   PLACEMENT_LABELS,

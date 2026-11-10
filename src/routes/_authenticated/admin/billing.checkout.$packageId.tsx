@@ -22,12 +22,12 @@ import {
   computeCycleTotal,
   activateFreePlan,
   type CycleKey,
-} from "@/lib/billing.functions";
+} from "@/lib/payments/billing.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { getMyWallet, payPlanWithWallet } from "@/lib/wallet.functions";
+import { getMyWallet, payPlanWithWallet } from "@/lib/payments/wallet.functions";
 
 const searchSchema = z.object({
   cycle: z.enum(["monthly", "3m", "6m", "yearly"]).default("monthly").catch("monthly"),

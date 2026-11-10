@@ -3,17 +3,17 @@ import { captureServerEnv } from "./lib/server-env";
 // Loaded lazily inside the handler: the worker bundle has been observed to
 // evaluate this entry before the statically-imported tenant-host module
 // bindings are initialised ("isRewritablePath is not defined" → 500).
-type TenantHost = typeof import("./lib/tenant-host");
+type TenantHost = typeof import("@/lib/hosting/tenant-host");
 let tenantHostPromise: Promise<TenantHost> | undefined;
 function getTenantHost(): Promise<TenantHost> {
-  if (!tenantHostPromise) tenantHostPromise = import("./lib/tenant-host");
+  if (!tenantHostPromise) tenantHostPromise = import("@/lib/hosting/tenant-host");
   return tenantHostPromise;
 }
 
 
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
-import { applySecurityHeaders } from "./lib/security-headers.server";
+import { applySecurityHeaders } from "@/lib/security/security-headers.server";
 
 type ServerEntry = {
   fetch: (request: Request, env: unknown, ctx: unknown) => Promise<Response> | Response;

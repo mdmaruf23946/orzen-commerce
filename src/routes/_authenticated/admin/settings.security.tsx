@@ -8,8 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { VerifyEmailDialog } from "@/components/admin/VerifyEmailDialog";
-import { useSecurityStatus, useRefreshSecurity } from "@/lib/use-security";
-import { syncTotpStatus, regenerateBackupCodes } from "@/lib/merchant-security.functions";
+import { useSecurityStatus, useRefreshSecurity } from "@/lib/security/use-security";
+import { syncTotpStatus, regenerateBackupCodes } from "@/lib/security/merchant-security.functions";
 
 export const Route = createFileRoute("/_authenticated/admin/settings/security")({
   head: () => ({

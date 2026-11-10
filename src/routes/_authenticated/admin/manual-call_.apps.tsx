@@ -4,7 +4,7 @@ import { Pencil, Plug } from "lucide-react";
 import { ProviderLogo } from "@/components/admin/calls/ProviderLogo";
 import { AdminPageHeader } from "@/components/admin/page/AdminPageHeader";
 import { Button } from "@/components/ui/button";
-import { PROVIDERS, KIND_LABEL } from "@/lib/call-providers";
+import { PROVIDERS, KIND_LABEL } from "@/lib/calls/call-providers";
 import { ConnectProviderDialog } from "@/components/admin/calls/ConnectProviderDialog";
 import { useCallStore } from "@/components/admin/calls/useCallStore";
 

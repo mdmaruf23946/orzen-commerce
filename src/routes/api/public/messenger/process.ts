@@ -1,9 +1,9 @@
 import { runWithTrace, traceToJSON } from "@/lib/telemetry.server";
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
-import { handleMessengerWebhook } from "@/lib/messenger-webhook.server";
-import { claimInflight, releaseInflight } from "@/lib/mid-dedupe";
-import { acquireStoreSlot } from "@/lib/store-slots";
+import { handleMessengerWebhook } from "@/lib/integrations/messenger-webhook.server";
+import { claimInflight, releaseInflight } from "@/lib/integrations/mid-dedupe";
+import { acquireStoreSlot } from "@/lib/agents/store-slots";
 
 const inputSchema = z.object({
   job_id: z.string().uuid(),

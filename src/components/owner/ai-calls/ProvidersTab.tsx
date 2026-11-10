@@ -10,8 +10,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   getAiCallConfig, saveElevenLabsSettings, saveTwilioSettings, testAiProvider, listVoices, listTones,
-} from "@/lib/ai-call-center.functions";
-import { PROVIDER_STATE_LABEL, type ProviderState } from "@/lib/ai-call-center";
+} from "@/lib/calls/ai-call-center.functions";
+import { PROVIDER_STATE_LABEL, type ProviderState } from "@/lib/calls/ai-call-center";
 
 function StatusPill({ state }: { state: ProviderState }) {
   const tone =

@@ -6,7 +6,7 @@ export const Route = createFileRoute("/sitemap.xml")({
     handlers: {
       GET: async ({ request }) => {
         const { originFromRequest, slugFromHost, sitemapData, renderSitemap } = await import(
-          "@/lib/seo.server"
+          "@/lib/marketing/seo.server"
         );
         const { host, origin } = originFromRequest(request);
         const slug = await slugFromHost(host);
@@ -14,7 +14,7 @@ export const Route = createFileRoute("/sitemap.xml")({
         if (!slug) {
           // Platform site: emit the host that actually served the request
           // (published Lovable URL or orzen.top); never an ephemeral preview host.
-          const { PLATFORM_ORIGIN } = await import("@/lib/seo");
+          const { PLATFORM_ORIGIN } = await import("@/lib/marketing/seo");
           const platBase =
             host.endsWith(".lovable.app") && !host.includes("id-preview--")
               ? origin

@@ -8,7 +8,7 @@ import { Sparkles, Loader2, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { generateProductDraft, type ProductDraft } from "@/lib/ai-product-builder.functions";
+import { generateProductDraft, type ProductDraft } from "@/lib/agents/ai-product-builder.functions";
 
 type SeoValue = { title?: string; description?: string; keywords?: string; slug?: string };
 

@@ -2,14 +2,14 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { queryOptions } from "@tanstack/react-query";
 import { ChevronDown } from "lucide-react";
-import { getStoreBySlug, listStoreCategories } from "@/lib/storefront.functions";
+import { getStoreBySlug, listStoreCategories } from "@/lib/storefront/storefront.functions";
 import { CategoryIconCluster } from "@/components/CategoryIconCluster";
-import { getCategoryIcon } from "@/lib/category-icons";
+import { getCategoryIcon } from "@/lib/catalog/category-icons";
 import { useStoreUI } from "@/lib/store-ui";
-import { useStoreT } from "@/lib/store-i18n";
+import { useStoreT } from "@/lib/storefront/store-i18n";
 import { StoreErrorState } from "@/components/storefront/StoreErrorState";
-import { getRequestOrigin } from "@/lib/seo.functions";
-import { resolveStoreSeo } from "@/lib/seo";
+import { getRequestOrigin } from "@/lib/marketing/seo.functions";
+import { resolveStoreSeo } from "@/lib/marketing/seo";
 
 const stable = {
   staleTime: 5 * 60_000,

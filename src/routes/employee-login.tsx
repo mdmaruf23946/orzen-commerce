@@ -3,13 +3,13 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { Store } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { employeeSessionInfo } from "@/lib/employees.functions";
+import { employeeSessionInfo } from "@/lib/admin/employees.functions";
 import { useServerFn } from "@tanstack/react-start";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { BrandMark } from "@/lib/platform-branding";
-import { isInvalidAuthSessionError } from "@/lib/deployment-target";
+import { isInvalidAuthSessionError } from "@/lib/hosting/deployment-target";
 
 export const Route = createFileRoute("/employee-login")({
   component: EmployeeLogin,

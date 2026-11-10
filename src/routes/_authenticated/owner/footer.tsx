@@ -4,7 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Plus, Trash2 } from "lucide-react";
-import { getFooterSettings, updateFooterSettings, FOOTER_FALLBACK, type FooterSettings } from "@/lib/footer.functions";
+import { getFooterSettings, updateFooterSettings, FOOTER_FALLBACK, type FooterSettings } from "@/lib/storefront/footer.functions";
 import { OwnerPageHeader } from "@/components/owner/OwnerPageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

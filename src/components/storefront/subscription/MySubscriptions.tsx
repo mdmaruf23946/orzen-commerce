@@ -5,18 +5,18 @@ import { useServerFn } from "@tanstack/react-start";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { queryOptions } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { getStoreBySlug } from "@/lib/storefront.functions";
+import { getStoreBySlug } from "@/lib/storefront/storefront.functions";
 import {
   listMySubscriptions,
   cancelMySubscription,
   setMyAutoRenew,
   setMyReminders,
   renewMySubscription,
-} from "@/lib/subscriptions.functions";
-import { CYCLE_LABEL, STATUS_LABEL, STATUS_TONE, type SubStatus } from "@/lib/subscriptions";
+} from "@/lib/payments/subscriptions.functions";
+import { CYCLE_LABEL, STATUS_LABEL, STATUS_TONE, type SubStatus } from "@/lib/payments/subscriptions";
 import { Button } from "@/components/ui/button";
 import { RefreshCw, CalendarClock, ReceiptText, XCircle } from "lucide-react";
-import { useStoreT } from "@/lib/store-i18n";
+import { useStoreT } from "@/lib/storefront/store-i18n";
 
 const storeQuery = (slug: string) =>
   queryOptions({ queryKey: ["store", slug], queryFn: () => getStoreBySlug({ data: { slug } }) });

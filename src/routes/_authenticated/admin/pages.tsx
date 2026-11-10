@@ -1,4 +1,4 @@
-import { storeHref } from "@/lib/store-link";
+import { storeHref } from "@/lib/storefront/store-link";
 import { FeatureGate } from "@/components/admin/FeatureGate";
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
@@ -13,12 +13,12 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { STORE_PAGES } from "@/lib/store-pages";
+import { STORE_PAGES } from "@/lib/storefront/store-pages";
 import {
   listMyStorePages,
   saveMyStorePage,
   generateStarterPage,
-} from "@/lib/store-pages.functions";
+} from "@/lib/storefront/store-pages.functions";
 
 export const Route = createFileRoute("/_authenticated/admin/pages")({
   head: () => ({

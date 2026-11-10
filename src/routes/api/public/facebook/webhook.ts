@@ -131,7 +131,7 @@ export const Route = createFileRoute("/api/public/facebook/webhook")({
                 // Answer / moderate the new comment right away.
                 if (verb === "add") {
                   const token = await decrypt((integ as any).page_access_token_encrypted);
-                  const { handleIncomingComment } = await import("@/lib/facebook-ai.server");
+                  const { handleIncomingComment } = await import("@/lib/integrations/facebook-ai.server");
                   await handleIncomingComment(sb, storeId, pageId, token, {
                     comment_id: String(v.comment_id),
                     message: String(v.message ?? ""),

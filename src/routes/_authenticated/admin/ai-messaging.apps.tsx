@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { AI_MESSAGING_APPS, useAiMessagingConnections } from "@/lib/ai-messaging-apps";
+import { AI_MESSAGING_APPS, useAiMessagingConnections } from "@/lib/agents/ai-messaging-apps";
 import { StatusBadge } from "@/components/admin/marketing/ui";
 import { MessengerMark } from "@/components/admin/brand/MessengerMark";
 import { WhatsAppMark } from "@/components/admin/brand/WhatsAppMark";

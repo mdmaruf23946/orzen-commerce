@@ -1,6 +1,6 @@
 // Product cards for Recommended / Related / Recently Viewed sections.
 // Products come from the store catalogue and open on the storefront.
-import { lpImage } from "@/lib/landing-builder";
+import { lpImage } from "@/lib/site-builder/landing-builder";
 
 export type LandingProductCard = {
   id: string;

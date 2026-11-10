@@ -2,26 +2,26 @@ import { StoreErrorState } from "@/components/storefront/StoreErrorState";
 import { createFileRoute, useNavigate, notFound, Link } from "@tanstack/react-router";
 import { queryOptions, useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { fbTrack } from "@/lib/fb-track";
-import { isStockless } from "@/lib/product-stock";
-import { getRequestOrigin } from "@/lib/seo.functions";
+import { fbTrack } from "@/lib/marketing/fb-track";
+import { isStockless } from "@/lib/catalog/product-stock";
+import { getRequestOrigin } from "@/lib/marketing/seo.functions";
 import {
   resolveStoreSeo,
   absUrl,
   jsonLdScript,
   productJsonLd,
   breadcrumbJsonLd,
-} from "@/lib/seo";
+} from "@/lib/marketing/seo";
 
 import { toast } from "sonner";
-import { readVariants, variantPrice, variantLabel } from "@/lib/product-variants";
+import { readVariants, variantPrice, variantLabel } from "@/lib/catalog/product-variants";
 import {
   getProduct,
   getStoreBySlug,
   listRelatedProducts,
   listStoreCategories,
-} from "@/lib/storefront.functions";
-import { addToCart } from "@/lib/cart";
+} from "@/lib/storefront/storefront.functions";
+import { addToCart } from "@/lib/storefront/cart";
 import { ProductGallery } from "@/components/storefront/pdp/ProductGallery";
 import { BuyBox } from "@/components/storefront/pdp/BuyBox";
 import { InfoTabs } from "@/components/storefront/pdp/InfoTabs";

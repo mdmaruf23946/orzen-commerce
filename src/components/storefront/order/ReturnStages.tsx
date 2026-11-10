@@ -2,9 +2,9 @@
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { CheckCircle2, RotateCcw, Repeat, Banknote } from "lucide-react";
-import { listMyOrderReturns } from "@/lib/returns.functions";
-import { useCustomerSession } from "@/lib/customer-session";
-import { useStoreT } from "@/lib/store-i18n";
+import { listMyOrderReturns } from "@/lib/orders/returns.functions";
+import { useCustomerSession } from "@/lib/accounts/customer-session";
+import { useStoreT } from "@/lib/storefront/store-i18n";
 
 const LABEL_KEY: Record<string, string> = {
   requested: "return.stage.requested",

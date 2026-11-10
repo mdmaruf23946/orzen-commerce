@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import {
   listPlatformPaymentGateways,
   togglePlatformPaymentGateway,
-} from "@/lib/store-payments.functions";
+} from "@/lib/payments/store-payments.functions";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 

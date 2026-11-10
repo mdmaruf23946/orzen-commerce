@@ -6,10 +6,10 @@ export const Route = createFileRoute("/api/public/cron/product-image-embeddings"
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const { verifyCronRequest } = await import("@/lib/cron-auth.server");
+        const { verifyCronRequest } = await import("@/lib/security/cron-auth.server");
         if (!(await verifyCronRequest(request))) return new Response("Unauthorized", { status: 401 });
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-        const { syncProductImageEmbeddings } = await import("@/lib/product-image-embeddings.server");
+        const { syncProductImageEmbeddings } = await import("@/lib/catalog/product-image-embeddings.server");
         try {
           // Only stores that actually use photo matching (connected Messenger/WhatsApp,
           // active store) are scanned — idle/unconnected stores cost nothing.

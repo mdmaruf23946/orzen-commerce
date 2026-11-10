@@ -1,4 +1,4 @@
-import { CAP_LABEL } from "@/lib/facebook-caps";
+import { CAP_LABEL } from "@/lib/integrations/facebook-caps";
 import { createFileRoute } from "@tanstack/react-router";
 import { FeatureGate } from "@/components/admin/FeatureGate";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -16,7 +16,7 @@ import {
   updateMessengerAiFlags,
   listMessengerRecentPsids,
   clearMessengerLastError,
-} from "@/lib/ai.functions";
+} from "@/lib/agents/ai.functions";
 import { MessengerMark } from "@/components/admin/brand/MessengerMark";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

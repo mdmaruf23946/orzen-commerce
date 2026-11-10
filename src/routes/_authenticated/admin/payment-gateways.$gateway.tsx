@@ -15,8 +15,8 @@ import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { setActiveStorePaymentGateway, toggleStorePaymentGateway } from "@/lib/store-payments.functions";
-import { PAYMENT_SECTIONS, gatewayStatus, isGatewayConnected, usePaymentGateways } from "@/lib/payment-gateway-apps";
+import { setActiveStorePaymentGateway, toggleStorePaymentGateway } from "@/lib/payments/store-payments.functions";
+import { PAYMENT_SECTIONS, gatewayStatus, isGatewayConnected, usePaymentGateways } from "@/lib/payments/payment-gateway-apps";
 import { cn } from "@/lib/utils";
 
 const search = z.object({ section: z.enum(["overview", "integration", "settings"]).optional() });

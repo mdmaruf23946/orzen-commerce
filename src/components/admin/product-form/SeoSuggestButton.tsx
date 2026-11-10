@@ -3,7 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { Sparkles, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { suggestProductSeo } from "@/lib/merchant-seo.functions";
+import { suggestProductSeo } from "@/lib/marketing/merchant-seo.functions";
 
 type Draft = { title: string; description: string; keywords: string; alt: string };
 

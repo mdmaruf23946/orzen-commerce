@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { noDataChatReply } from "../fast-path-replies";
+import { noDataChatReply } from "@/lib/agents/fast-path-replies";
 import { allowedToolsFor } from "./specialists";
 
 describe("no-data chat agent (0 tokens)", () => {

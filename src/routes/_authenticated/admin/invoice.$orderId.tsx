@@ -7,7 +7,7 @@ import { Copy, MessageCircle, Printer, Send } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { InvoiceRenderer } from "@/components/invoice/InvoiceRenderer";
-import { getInvoicePayload } from "@/lib/invoice-templates.functions";
+import { getInvoicePayload } from "@/lib/invoices/invoice-templates.functions";
 import { DEFAULT_BRAND, EMPTY_CANVAS } from "@/lib/invoice-template/types";
 
 export const Route = createFileRoute("/_authenticated/admin/invoice/$orderId")({

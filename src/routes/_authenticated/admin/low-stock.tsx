@@ -6,7 +6,7 @@ import { useEffect } from "react";
 import { toast } from "sonner";
 import { AlertTriangle, Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { listLowStockAlerts, resolveLowStockAlert } from "@/lib/ai-review.functions";
+import { listLowStockAlerts, resolveLowStockAlert } from "@/lib/agents/ai-review.functions";
 import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/_authenticated/admin/low-stock")({

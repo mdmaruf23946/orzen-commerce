@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import {
   disconnectOrzenCall, getOrzenCallSettings, saveOrzenCallSettings, sendOrzenTestPing,
   regenerateOrzenSecret, syncAllOrzenProducts, syncPendingOrzenOrders,
-} from "@/lib/orzen-call.functions";
+} from "@/lib/calls/orzen-call.functions";
 
 type Busy = "save" | "disc" | "ping" | "secret" | "products" | "orders" | null;
 type OutcomeMap = { confirm: "confirmed" | "processing"; cancel: "cancelled" | "on_hold"; no_answer: "no_response" | "on_hold" | "none" };

@@ -14,11 +14,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Stat } from "@/components/admin/calls/AiVoiceAgentPanel";
 import { OrzenCallSettings } from "@/components/admin/calls/OrzenCallSettings";
-import { CALL_SMS_PROVIDERS } from "@/lib/call-sms-providers";
-import { STATUS_LABEL, STATUS_TONE, RESULT_LABEL, type CallStatus, type CallResult } from "@/lib/call-center";
+import { CALL_SMS_PROVIDERS } from "@/lib/calls/call-sms-providers";
+import { STATUS_LABEL, STATUS_TONE, RESULT_LABEL, type CallStatus, type CallResult } from "@/lib/calls/call-center";
 import {
   getOrzenCallOverview, listOrzenCalls, getOrzenSyncStatus, syncAllOrzenProducts, resendOrzenOrder, getOrzenCallSettings,
-} from "@/lib/orzen-call.functions";
+} from "@/lib/calls/orzen-call.functions";
 
 export const Route = createFileRoute("/_authenticated/admin/call-sms/orzen-call")({
   component: OrzenCallPage,

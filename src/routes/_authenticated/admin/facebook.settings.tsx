@@ -8,7 +8,7 @@ import {
   getFacebookPage, reverifyFacebookPage, recheckFacebookPermissions,
   setFacebookWebhookEnabled, facebookWebhookSubscription,
   getFacebookAiSettings, saveFacebookAiSettings,
-} from "@/lib/facebook-page.functions";
+} from "@/lib/integrations/facebook-page.functions";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,7 +16,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Section, StatusPill, formatWhen, FB_BLUE, PermissionsGrid } from "@/components/admin/facebook/ui";
-import { CAP_LABEL, CAP_SCOPE } from "@/lib/facebook-caps";
+import { CAP_LABEL, CAP_SCOPE } from "@/lib/integrations/facebook-caps";
 
 export const Route = createFileRoute("/_authenticated/admin/facebook/settings")({
   component: SettingsPage,

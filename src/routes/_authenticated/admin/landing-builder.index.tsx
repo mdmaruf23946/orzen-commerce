@@ -16,10 +16,10 @@ import {
   listLandingPages,
   listLandingProducts,
   setLandingStatus,
-} from "@/lib/landing-builder.functions";
-import { lpImage } from "@/lib/landing-builder";
+} from "@/lib/site-builder/landing-builder.functions";
+import { lpImage } from "@/lib/site-builder/landing-builder";
 import { OfferBuilder, OfferTypePicker } from "@/components/admin/landing/OfferBuilder";
-import { defaultTiers, emptyOffer, type LandingOffer, type OfferType } from "@/lib/landing-offer";
+import { defaultTiers, emptyOffer, type LandingOffer, type OfferType } from "@/lib/site-builder/landing-offer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {

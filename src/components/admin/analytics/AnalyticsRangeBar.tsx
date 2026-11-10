@@ -6,7 +6,7 @@ import {
   type AnalyticsRangeKey,
   type CompareKey,
   type DateRange,
-} from "@/lib/analytics-ui";
+} from "@/lib/analytics/analytics-ui";
 
 export function AnalyticsRangeBar({
   rangeKey,

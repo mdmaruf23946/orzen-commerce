@@ -6,7 +6,7 @@ export const Route = createFileRoute("/api/public/push/dispatch")({
   server: {
     handlers: {
       POST: async () => {
-        const { dispatchPush } = await import("@/lib/push.server");
+        const { dispatchPush } = await import("@/lib/notifications/push.server");
         const r = await dispatchPush(30);
         return Response.json({ ok: true, ...r });
       },

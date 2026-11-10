@@ -13,7 +13,7 @@ import {
   moveGlobalGeminiKey,
   testGlobalGeminiKey,
   listAiKeyUsage,
-} from "@/lib/owner.functions";
+} from "@/lib/admin/owner.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";

@@ -10,10 +10,10 @@ import {
   deleteCustomerAddress,
   updateCustomerProfile,
   changeCustomerPassword,
-} from "@/lib/customer-auth.functions";
-import { useCustomerSession } from "@/lib/customer-session";
-import { getMyAccountSummary } from "@/lib/customer-account.functions";
-import { readWishlist } from "@/lib/wishlist";
+} from "@/lib/accounts/customer-auth.functions";
+import { useCustomerSession } from "@/lib/accounts/customer-session";
+import { getMyAccountSummary } from "@/lib/accounts/customer-account.functions";
+import { readWishlist } from "@/lib/storefront/wishlist";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -39,7 +39,7 @@ import {
   ShieldCheck,
   LifeBuoy,
 } from "lucide-react";
-import { useStoreT } from "@/lib/store-i18n";
+import { useStoreT } from "@/lib/storefront/store-i18n";
 import { AccountShell } from "@/components/storefront/AccountShell";
 import { MyDownloads } from "@/components/storefront/digital/MyDownloads";
 import { MySubscriptions } from "@/components/storefront/subscription/MySubscriptions";

@@ -1,8 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
 import { OrderTracker } from "@/components/storefront/account/OrderTracker";
-import { getStorePagePublic } from "@/lib/store-pages.functions";
-import { storePageHead } from "@/lib/store-page-view";
+import { getStorePagePublic } from "@/lib/storefront/store-pages.functions";
+import { storePageHead } from "@/lib/storefront/store-page-view";
 import { StorePageBody } from "@/components/storefront/StorePageLayout";
 
 const PAGE_KEY = "track-order";

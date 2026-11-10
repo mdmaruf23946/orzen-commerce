@@ -4,7 +4,7 @@ import { getRequest } from '@tanstack/react-start/server'
 import { createClient } from '@supabase/supabase-js'
 import type { Database } from './types'
 import { serverEnv } from '@/lib/server-env'
-import { supabaseProjectIdFromUrl } from '@/lib/deployment-target'
+import { supabaseProjectIdFromUrl } from '@/lib/hosting/deployment-target'
 
 
 

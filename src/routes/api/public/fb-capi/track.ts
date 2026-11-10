@@ -3,7 +3,7 @@
 // service-role client (needed to read fb_capi_token), and forwards to Graph.
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
-import { sendFbEvents, extractClientIp, type FbEventInput } from "@/lib/fb-capi.server";
+import { sendFbEvents, extractClientIp, type FbEventInput } from "@/lib/marketing/fb-capi.server";
 
 const bodySchema = z.object({
   store_slug: z.string().min(1).max(120),
@@ -37,7 +37,7 @@ export const Route = createFileRoute("/api/public/fb-capi/track")({
         if (!srcHost || (srcHost !== host && srcHost !== fwdHost)) {
           return Response.json({ ok: true, skipped: true });
         }
-        const { checkRateLimit, clientIp } = await import("@/lib/rate-limit.server");
+        const { checkRateLimit, clientIp } = await import("@/lib/security/rate-limit.server");
         const rl = await checkRateLimit("platform_meta", `fbcapi:${clientIp(request)}`);
         if (!rl.allowed) return Response.json({ ok: true, skipped: true });
         let payload: z.infer<typeof bodySchema>;
@@ -62,7 +62,7 @@ export const Route = createFileRoute("/api/public/fb-capi/track")({
         let testCode = (m.fb_test_event_code as string | undefined) || null;
 
         if (payload.landing_page_id) {
-          const { readTrackingTargets } = await import("@/lib/marketing.server");
+          const { readTrackingTargets } = await import("@/lib/marketing/marketing.server");
           const t: any = readTrackingTargets(m)[payload.landing_page_id];
           if (t?.facebook) {
             pixelId = t.facebook.pixel_id || undefined;

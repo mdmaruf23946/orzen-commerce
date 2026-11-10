@@ -1,5 +1,5 @@
 import { useEffect, useState, type RefObject } from "react";
-import { useStoreT } from "@/lib/store-i18n";
+import { useStoreT } from "@/lib/storefront/store-i18n";
 
 export function StickyMobileBar({
   price,

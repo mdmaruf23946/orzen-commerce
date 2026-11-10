@@ -24,7 +24,7 @@ import {
   checkSubdomainAvailable,
   checkDnsResolution,
   provisionMySubdomain,
-} from "@/lib/domains.functions";
+} from "@/lib/hosting/domains.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";

@@ -7,7 +7,7 @@ import {
   listStoreCustomers,
   exportStoreCustomers,
   setCustomerBlocked,
-} from "@/lib/customers-admin.functions";
+} from "@/lib/admin/customers-admin.functions";
 import { AdminPageHeader } from "@/components/admin/page/AdminPageHeader";
 import { AdminToolbar } from "@/components/admin/page/AdminToolbar";
 import { CustomerProfileSheet } from "@/components/admin/customers/CustomerProfileSheet";
@@ -23,7 +23,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { taka } from "@/lib/order-display";
+import { taka } from "@/lib/orders/order-display";
 import {
   Users, UserPlus, Repeat, Crown, Wallet, Receipt, MoreHorizontal, Download,
   FileSpreadsheet, Printer, Phone, Mail, MessageSquare, Ban, CheckCircle2, ChevronLeft, ChevronRight,

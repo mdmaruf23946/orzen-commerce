@@ -7,7 +7,7 @@ import { useRouterState } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-import { getPlatformPixelPublic, trackAccountConversions } from "@/lib/platform-meta.functions";
+import { getPlatformPixelPublic, trackAccountConversions } from "@/lib/marketing/platform-meta.functions";
 
 const NOTICE_VERSION = "2026-09-28";
 const CONSENT_COUNTRIES = new Set(

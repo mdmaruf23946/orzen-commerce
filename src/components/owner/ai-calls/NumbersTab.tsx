@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import {
   listPhoneNumbers, savePhoneNumber, setPhoneNumberStatus, releasePhoneNumber, importTwilioNumbers,
   listAgents, listStoreAiCallCenters,
-} from "@/lib/ai-call-center.functions";
+} from "@/lib/calls/ai-call-center.functions";
 
 const EMPTY = {
   id: null as string | null,

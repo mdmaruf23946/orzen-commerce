@@ -1,6 +1,6 @@
 import { Package } from "lucide-react";
-import { compactMoney } from "@/lib/analytics-ui";
-import type { AnalyticsPayload } from "@/lib/analytics.server";
+import { compactMoney } from "@/lib/analytics/analytics-ui";
+import type { AnalyticsPayload } from "@/lib/analytics/analytics.server";
 
 type Row = AnalyticsPayload["products"]["top"][number];
 

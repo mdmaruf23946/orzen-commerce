@@ -18,7 +18,7 @@ import {
   selectStoreTheme,
   saveStoreThemeCustomization,
   resetStoreTheme,
-} from "@/lib/themes.functions";
+} from "@/lib/site-builder/themes.functions";
 import {
   ANIMATION_LEVELS,
   ANIMATIONS,

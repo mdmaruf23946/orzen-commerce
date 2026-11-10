@@ -10,7 +10,7 @@ import {
   replyToCustomer,
   setCustomerThreadMode,
   closeSupportRequest,
-} from "@/lib/ai-admin.functions";
+} from "@/lib/admin/ai-admin.functions";
 import { OwnerPageHeader } from "@/components/owner/OwnerPageHeader";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";

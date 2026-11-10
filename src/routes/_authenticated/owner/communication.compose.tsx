@@ -8,7 +8,7 @@ import {
   previewCommunication, sendCommunication,
   listOwnerTemplates, saveOwnerTemplate, getGmailStatus,
   generateCommunicationDraft,
-} from "@/lib/communication.functions";
+} from "@/lib/notifications/communication.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";

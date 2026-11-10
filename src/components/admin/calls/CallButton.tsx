@@ -2,14 +2,14 @@ import { useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { getProviderOverview } from "@/lib/voice-provider.functions";
+import { getProviderOverview } from "@/lib/calls/voice-provider.functions";
 import { Phone } from "lucide-react";
 import { toast } from "sonner";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { startCall } from "@/lib/call-center.functions";
+import { startCall } from "@/lib/calls/call-center.functions";
 import { CallResultDialog } from "@/components/admin/calls/CallResultDialog";
 
 type Props = {

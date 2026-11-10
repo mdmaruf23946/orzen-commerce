@@ -9,7 +9,7 @@ import {
   saveMetaAppConfig,
   testMetaAppConfig,
   clearMetaAppConfig,
-} from "@/lib/owner-meta-app.functions";
+} from "@/lib/admin/owner-meta-app.functions";
 import { OwnerPageHeader } from "@/components/owner/OwnerPageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

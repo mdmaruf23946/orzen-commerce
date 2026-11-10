@@ -3,11 +3,11 @@ import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Download } from "lucide-react";
 import { Link } from "@tanstack/react-router";
-import { inventorySubscription, subscriptionSubscribers } from "@/lib/inventory.functions";
+import { inventorySubscription, subscriptionSubscribers } from "@/lib/catalog/inventory.functions";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { KpiStrip, Pill, ItemCard, Facts, EmptyBox, money, exportCsv, fmtDate } from "./kit";
-import { CYCLE_LABEL, STATUS_LABEL, type SubCycle, type SubStatus } from "@/lib/subscriptions";
+import { CYCLE_LABEL, STATUS_LABEL, type SubCycle, type SubStatus } from "@/lib/payments/subscriptions";
 
 export function SubscriptionInventory({ search }: { search: string }) {
   const listFn = useServerFn(inventorySubscription);

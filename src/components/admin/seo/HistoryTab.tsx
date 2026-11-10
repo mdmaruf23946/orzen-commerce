@@ -4,7 +4,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { listSeoHistory, rollbackSeo } from "@/lib/seo-history.functions";
+import { listSeoHistory, rollbackSeo } from "@/lib/marketing/seo-history.functions";
 
 const SOURCE_LABEL: Record<string, string> = {
   manual_edit: "Manual edit",

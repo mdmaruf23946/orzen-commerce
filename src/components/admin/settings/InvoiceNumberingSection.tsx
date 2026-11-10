@@ -14,7 +14,7 @@ import {
   computeInvoicePreview,
   ORDER_TYPES,
   type InvoiceOrderType,
-} from "@/lib/invoice-settings.functions";
+} from "@/lib/invoices/invoice-settings.functions";
 import { Section, Field } from "./shared";
 
 const TABS: readonly { key: InvoiceOrderType; label: string }[] = [

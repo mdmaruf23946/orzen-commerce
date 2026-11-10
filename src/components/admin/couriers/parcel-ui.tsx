@@ -32,7 +32,7 @@ import {
   requestPickup,
   listPickupHistory,
   listCourierLogs,
-} from "@/lib/courier-parcels.functions";
+} from "@/lib/couriers/courier-parcels.functions";
 
 export const money = (n: unknown) => `৳${Number(n ?? 0).toLocaleString("en-BD")}`;
 

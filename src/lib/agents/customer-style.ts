@@ -1,7 +1,7 @@
 // Customer Style Memory + Universal Persona layer.
 // Derives a stable style profile from the customer's own recent messages so
 // every agent/drawer replies in ONE consistent voice. Pure, no I/O, no tokens.
-import { detectReplyStyle, type ReplyStyle } from "../reply-language";
+import { detectReplyStyle, type ReplyStyle } from "@/lib/agents/reply-language";
 
 export type AddressTerm = "bhaiya" | "apu" | "sir" | "madam" | "neutral";
 export type Formality = "respectful" | "casual";

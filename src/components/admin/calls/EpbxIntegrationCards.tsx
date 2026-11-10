@@ -6,7 +6,7 @@ import { Copy, PhoneOutgoing, ShieldCheck, Link2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { sendEpbxTestCall } from "@/lib/voice.functions";
+import { sendEpbxTestCall } from "@/lib/calls/voice.functions";
 
 import { useVoiceConnection } from "@/components/admin/calls/VoicePanels";
 const API_BASE = "https://epbx.bd/api/v1";

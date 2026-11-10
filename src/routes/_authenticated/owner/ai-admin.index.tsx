@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Activity, AlertTriangle, Bot, CheckCircle2, Clock, MessageCircle, XCircle } from "lucide-react";
-import { aiAdminOverview } from "@/lib/ai-admin.functions";
+import { aiAdminOverview } from "@/lib/admin/ai-admin.functions";
 import { OwnerPageHeader } from "@/components/owner/OwnerPageHeader";
 import { DeploymentHealth } from "@/components/owner/DeploymentHealth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";

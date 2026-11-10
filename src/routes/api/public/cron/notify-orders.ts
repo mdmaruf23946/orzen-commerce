@@ -12,7 +12,7 @@ export const Route = createFileRoute("/api/public/cron/notify-orders")({
         if (!secret || auth !== `Bearer ${secret}`) {
           return new Response("Unauthorized", { status: 401 });
         }
-        const { drainOutbox } = await import("@/lib/messenger-notify.server");
+        const { drainOutbox } = await import("@/lib/integrations/messenger-notify.server");
         return Response.json({ ok: true, ...(await drainOutbox({ latestPerOrder: true })) });
       },
     },

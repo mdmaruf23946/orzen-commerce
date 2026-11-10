@@ -1,4 +1,4 @@
-import { formatDuration, timeAgo, type CallRow } from "@/lib/call-center";
+import { formatDuration, timeAgo, type CallRow } from "@/lib/calls/call-center";
 import { CallResultBadge, CallStatusBadge } from "@/components/admin/calls/CallStatusBadge";
 
 /** Compact call history used inside the order drawer and customer sheet. */

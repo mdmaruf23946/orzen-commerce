@@ -12,7 +12,7 @@ import {
   deleteLandingPageConnection,
   updateLandingPageConnection,
   sendLandingPageTestOrder,
-} from "@/lib/landing-pages.functions";
+} from "@/lib/site-builder/landing-pages.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";

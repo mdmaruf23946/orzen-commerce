@@ -25,11 +25,11 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { ReturnWizard } from "@/components/storefront/order/ReturnWizard";
-import { createMyReturnRequest, getReturnContext, listMyOrderReturns } from "@/lib/returns.functions";
-import { cancelMyOrder } from "@/lib/customer-account.functions";
-import { useCustomerSession } from "@/lib/customer-session";
-import { addToCart } from "@/lib/cart";
-import { useStoreT } from "@/lib/store-i18n";
+import { createMyReturnRequest, getReturnContext, listMyOrderReturns } from "@/lib/orders/returns.functions";
+import { cancelMyOrder } from "@/lib/accounts/customer-account.functions";
+import { useCustomerSession } from "@/lib/accounts/customer-session";
+import { addToCart } from "@/lib/storefront/cart";
+import { useStoreT } from "@/lib/storefront/store-i18n";
 
 const DEFAULT_WINDOW_DAYS = 7;
 

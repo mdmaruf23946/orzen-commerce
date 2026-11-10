@@ -5,8 +5,8 @@ import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { listProductReviews, submitProductReview } from "@/lib/storefront.functions";
-import { useStoreT } from "@/lib/store-i18n";
+import { listProductReviews, submitProductReview } from "@/lib/storefront/storefront.functions";
+import { useStoreT } from "@/lib/storefront/store-i18n";
 
 type Props = {
   rating?: number | null;

@@ -3,15 +3,15 @@ import { createFileRoute, Link, Outlet, notFound, useRouterState } from "@tansta
 import { queryOptions, useSuspenseQuery, useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ShoppingCart, Menu, User, ChevronDown } from "lucide-react";
-import { getStoreBySlug, listStoreCategories, listStoreProducts } from "@/lib/storefront.functions";
-import { getRequestOrigin } from "@/lib/seo.functions";
+import { getStoreBySlug, listStoreCategories, listStoreProducts } from "@/lib/storefront/storefront.functions";
+import { getRequestOrigin } from "@/lib/marketing/seo.functions";
 import {
   resolveStoreSeo,
   storeHeadMeta,
   jsonLdScript,
   organizationJsonLd,
   websiteJsonLd,
-} from "@/lib/seo";
+} from "@/lib/marketing/seo";
 import { DEFAULT_THEME, mergeTheme, themeCssVars } from "@/lib/theme/definition";
 import { ThemeStyle, THEME_SCOPE } from "@/lib/theme/ThemeStyle";
 import {
@@ -22,14 +22,14 @@ import {
 } from "@/lib/theme/context";
 
 
-import { getStoreAgentPublic } from "@/lib/ai.functions";
-import { cartCount } from "@/lib/cart";
+import { getStoreAgentPublic } from "@/lib/agents/ai.functions";
+import { cartCount } from "@/lib/storefront/cart";
 import { StoreUIProvider, useStoreUI } from "@/lib/store-ui";
-import { StoreLangProvider, useStoreT } from "@/lib/store-i18n";
+import { StoreLangProvider, useStoreT } from "@/lib/storefront/store-i18n";
 import { StoreLangSwitch } from "@/components/storefront/StoreLangSwitch";
 
 import { AIChatLauncher } from "@/components/storefront/AIChatLauncher";
-import { useCustomerSession } from "@/lib/customer-session";
+import { useCustomerSession } from "@/lib/accounts/customer-session";
 import { SearchBar } from "@/components/storefront/SearchBar";
 import { MobileDrawer } from "@/components/storefront/MobileDrawer";
 import { BottomNav } from "@/components/storefront/BottomNav";
@@ -37,7 +37,7 @@ import { StoreBranding } from "@/components/storefront/StoreBranding";
 import { StoreFooter } from "@/components/storefront/StoreFooter";
 import { GlobalHeaderBanner } from "@/components/storefront/GlobalHeaderBanner";
 
-import { resolveStoreIcon, resolveStoreFavicon, resolveStoreAppIcon } from "@/lib/store-icon";
+import { resolveStoreIcon, resolveStoreFavicon, resolveStoreAppIcon } from "@/lib/storefront/store-icon";
 import { useRouteErrorTracking } from "@/hooks/use-error-tracking";
 
 export const storeQuery = (slug: string) =>
@@ -116,7 +116,7 @@ function StoreLayout() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const search = useRouterState({ select: (s) => s.location.search as Record<string, unknown> });
   useEffect(() => {
-    import("@/lib/marketing-attribution").then((m) => m.recordPageView(slug)).catch(() => {});
+    import("@/lib/marketing/marketing-attribution").then((m) => m.recordPageView(slug)).catch(() => {});
   }, [slug, pathname]);
   const isPreview = String(search?.[THEME_PREVIEW_PARAM] ?? "") === "1";
   const previewTheme = useThemePreviewListener(isPreview);
@@ -279,7 +279,7 @@ function TrackingScripts({ marketing, slug }: { marketing: any; slug: string }) 
       );
     }
     if (fbOn || ga4On || ga4Server || ttOn || ttServer) {
-      import("@/lib/fb-track").then(({ track }) => track("PageView"));
+      import("@/lib/marketing/fb-track").then(({ track }) => track("PageView"));
     }
     return () => {
       for (const s of added) s.remove();

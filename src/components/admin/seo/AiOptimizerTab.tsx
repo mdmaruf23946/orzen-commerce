@@ -14,7 +14,7 @@ import {
   generateBulkSeo,
   approveSeoRecommendations,
   rejectSeoRecommendations,
-} from "@/lib/merchant-seo.functions";
+} from "@/lib/marketing/merchant-seo.functions";
 
 type Edit = { title: string; description: string; keywords: string; alt: string };
 

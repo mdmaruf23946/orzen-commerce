@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { saveOwnerPushSubscription } from "@/lib/push.functions";
+import { saveOwnerPushSubscription } from "@/lib/notifications/push.functions";
 
 const VAPID_PUBLIC = "BCSPM69GqCsDrsA92VbGIwST3KZFbbcuywYsPHVy56nYiekIkai2q20jPixoJLWqCnoolgYyERVDmDZLQ1Gmdmg";
 

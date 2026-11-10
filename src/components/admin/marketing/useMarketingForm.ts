@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { getMyStore } from "@/lib/admin.functions";
+import { getMyStore } from "@/lib/admin/admin.functions";
 
 /** Loads stores.marketing and keeps a local form for one platform namespace. */
 export function useMarketingForm<T extends Record<string, any>>(

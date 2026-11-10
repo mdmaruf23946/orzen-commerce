@@ -3,10 +3,10 @@ import { Mail, Phone, MapPin, Clock } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { useStoreT } from "@/lib/store-i18n";
+import { useStoreT } from "@/lib/storefront/store-i18n";
 import { useStoreTheme } from "@/lib/theme/context";
-import { resolveStoreIcon } from "@/lib/store-icon";
-import { subscribeToStoreOffers } from "@/lib/newsletter.functions";
+import { resolveStoreIcon } from "@/lib/storefront/store-icon";
+import { subscribeToStoreOffers } from "@/lib/notifications/newsletter.functions";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {

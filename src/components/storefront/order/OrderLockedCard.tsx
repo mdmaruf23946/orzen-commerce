@@ -4,8 +4,8 @@
 import { useState } from "react";
 import { Lock } from "lucide-react";
 import { Link } from "@tanstack/react-router";
-import { writeOrderContact } from "@/lib/order-proof";
-import { useStoreT } from "@/lib/store-i18n";
+import { writeOrderContact } from "@/lib/orders/order-proof";
+import { useStoreT } from "@/lib/storefront/store-i18n";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 

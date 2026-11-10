@@ -7,13 +7,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/PasswordInput";
 import { Label } from "@/components/ui/label";
-import { normalizeSignupPhone, PHONE_INVALID_MSG } from "@/lib/phone-validate";
-import { checkStoreSlugAvailable, createMyStoreWithSlug, getMyStore } from "@/lib/admin.functions";
-import { myAccountKind } from "@/lib/employees.functions";
+import { normalizeSignupPhone, PHONE_INVALID_MSG } from "@/lib/accounts/phone-validate";
+import { checkStoreSlugAvailable, createMyStoreWithSlug, getMyStore } from "@/lib/admin/admin.functions";
+import { myAccountKind } from "@/lib/admin/employees.functions";
 
 import { CheckCircle2, XCircle, Loader2, AlertCircle, UserCog } from "lucide-react";
 import { BrandMark } from "@/lib/platform-branding";
-import { isInvalidAuthSessionError } from "@/lib/deployment-target";
+import { isInvalidAuthSessionError } from "@/lib/hosting/deployment-target";
 import { TurnstileWidget, turnstileConfigured, CAPTCHA_WAIT_BN } from "@/components/TurnstileWidget";
 
 export const Route = createFileRoute("/auth")({
@@ -155,7 +155,7 @@ function AuthPage() {
     // Email-confirmed merchants may not have completed store creation yet.
     await ensureMyStore();
     try {
-      const { notifySignIn } = await import("@/lib/platform-notify.functions");
+      const { notifySignIn } = await import("@/lib/notifications/platform-notify.functions");
       void notifySignIn({ data: { device: navigator.userAgent.slice(0, 180) } });
     } catch {
       /* ignore */
@@ -192,7 +192,7 @@ function AuthPage() {
         if (!email.includes("@"))
           throw new Error("Please enter the email address of your account.");
         if (turnstileConfigured() && !captcha) throw new Error(CAPTCHA_WAIT_BN);
-        const { requestPasswordResetCode } = await import("@/lib/merchant-security.functions");
+        const { requestPasswordResetCode } = await import("@/lib/security/merchant-security.functions");
         await requestPasswordResetCode({ data: { email: email.trim(), captcha } });
         setResetSent(true);
         toast.success("We sent a 6-digit reset code to your email.");

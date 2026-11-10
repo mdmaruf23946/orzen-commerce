@@ -12,9 +12,9 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import type { CourierOverview, CourierRow } from "@/lib/ops-analytics.server";
+import type { CourierOverview, CourierRow } from "@/lib/analytics/ops-analytics.server";
 import { COURIERS } from "@/components/admin/couriers/providers";
-import { bucketLabel, compactMoney, pctChange } from "@/lib/analytics-ui";
+import { bucketLabel, compactMoney, pctChange } from "@/lib/analytics/analytics-ui";
 import { ComparisonTable, rateTone, type ColumnDef } from "./ComparisonTable";
 import { OpsKpiRow } from "./OpsKpi";
 

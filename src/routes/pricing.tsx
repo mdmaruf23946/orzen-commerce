@@ -1,8 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { listPublicPlans } from "@/lib/billing.functions";
-import { getPlatformSeoOverrides } from "@/lib/platform-seo-pages.functions";
-import { effectiveSeo } from "@/lib/platform-seo-pages";
-import { platformHead, ORG_NODE, WEBSITE_NODE, softwareAppNode, faqNode } from "@/lib/platform-seo";
+import { listPublicPlans } from "@/lib/payments/billing.functions";
+import { getPlatformSeoOverrides } from "@/lib/marketing/platform-seo-pages.functions";
+import { effectiveSeo } from "@/lib/marketing/platform-seo-pages";
+import { platformHead, ORG_NODE, WEBSITE_NODE, softwareAppNode, faqNode } from "@/lib/marketing/platform-seo";
 import { PlatformFaq } from "@/components/platform/PlatformFaq";
 
 const TITLE = "Pricing — ORZEN eCommerce Plans";

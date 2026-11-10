@@ -1,7 +1,7 @@
 // Two-way human-support relay: the owner talks to the AI in Messenger and the
 // AI speaks to the customer on the connected Page, in the owner's words.
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
-import { sendText } from "@/lib/messenger-send.server";
+import { sendText } from "@/lib/integrations/messenger-send.server";
 import { loadMessengerConnection, readMessengerCreds } from "./messenger.server";
 import { appendCustomerMessage } from "./support.server";
 

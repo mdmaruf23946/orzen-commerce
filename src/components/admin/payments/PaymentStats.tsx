@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { getPaymentGatewayStats, type GatewayStat } from "@/lib/payment-gateway-stats.functions";
+import { getPaymentGatewayStats, type GatewayStat } from "@/lib/payments/payment-gateway-stats.functions";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 

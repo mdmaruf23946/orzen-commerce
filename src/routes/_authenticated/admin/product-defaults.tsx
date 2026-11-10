@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { getMyStore, updateProductDefaults } from "@/lib/admin.functions";
+import { getMyStore, updateProductDefaults } from "@/lib/admin/admin.functions";
 import {
   PRODUCT_TYPE_KEYS,
   PRODUCT_TYPE_LABELS,
@@ -11,7 +11,7 @@ import {
   supportsWarranty,
   type ProductDefaults,
   type ProductTypeKey,
-} from "@/lib/product-defaults";
+} from "@/lib/catalog/product-defaults";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";

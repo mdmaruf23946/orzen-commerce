@@ -3,7 +3,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { ImageUploader } from "@/components/admin/ImageUploader";
-import { resolveStoreSeo } from "@/lib/seo";
+import { resolveStoreSeo } from "@/lib/marketing/seo";
 import { SeoCard, SaveBar, Counter, type TabProps } from "./shared";
 import { GooglePreview } from "./Previews";
 

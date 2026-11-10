@@ -11,7 +11,7 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-import { getCallScriptContext, type VoiceSettings } from "@/lib/voice.functions";
+import { getCallScriptContext, type VoiceSettings } from "@/lib/calls/voice.functions";
 import { TTS_TAGS, fillTemplate } from "@/lib/voice/types";
 
 type Set = <K extends keyof VoiceSettings>(k: K, v: VoiceSettings[K]) => void;

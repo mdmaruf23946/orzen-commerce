@@ -8,7 +8,7 @@ import {
   defaultsForType,
   mergeTags,
   resolveDefaultStatus,
-} from "@/lib/product-defaults";
+} from "@/lib/catalog/product-defaults";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";

@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useState } from "react";
 import { Bot, MessageCircle, X } from "lucide-react";
-import { useStoreT } from "@/lib/store-i18n";
+import { useStoreT } from "@/lib/storefront/store-i18n";
 import { Button } from "@/components/ui/button";
 import { MessengerMark } from "@/components/admin/brand/MessengerMark";
 import { WhatsAppMark } from "@/components/admin/brand/WhatsAppMark";

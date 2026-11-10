@@ -1,6 +1,6 @@
-import { platformHead, ORG_NODE, WEBSITE_NODE, softwareAppNode, faqNode } from "@/lib/platform-seo";
-import { getPlatformSeoOverrides } from "@/lib/platform-seo-pages.functions";
-import { effectiveSeo } from "@/lib/platform-seo-pages";
+import { platformHead, ORG_NODE, WEBSITE_NODE, softwareAppNode, faqNode } from "@/lib/marketing/platform-seo";
+import { getPlatformSeoOverrides } from "@/lib/marketing/platform-seo-pages.functions";
+import { effectiveSeo } from "@/lib/marketing/platform-seo-pages";
 import { createFileRoute, Link, redirect, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 
@@ -47,16 +47,16 @@ import {
 } from "@/components/ui/accordion";
 import { useCountUp, useReveal } from "@/hooks/use-reveal";
 import { cn } from "@/lib/utils";
-import { resolveHost } from "@/lib/domains.functions";
+import { resolveHost } from "@/lib/hosting/domains.functions";
 import { BrandMark } from "@/lib/platform-branding";
 
 import { LangProvider, useLang } from "@/lib/i18n";
-import { FAQ_COPY, FEATURE_COPY, STEP_COPY, WHY_COPY } from "@/lib/landing-copy";
+import { FAQ_COPY, FEATURE_COPY, STEP_COPY, WHY_COPY } from "@/lib/site-builder/landing-copy";
 import { SiteFooter } from "@/components/landing/SiteFooter";
 import { TestimonialsMarquee } from "@/components/landing/TestimonialsMarquee";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { getPublicShowcase, type ShowcaseRow } from "@/lib/showcase.functions";
+import { getPublicShowcase, type ShowcaseRow } from "@/lib/site-builder/showcase.functions";
 import { PricingPlans, PlatformHighlights } from "@/components/landing/PricingPlans";
 
 export const Route = createFileRoute("/")({

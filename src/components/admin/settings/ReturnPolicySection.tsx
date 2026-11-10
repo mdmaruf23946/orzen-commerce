@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-import { getReturnSettings, saveReturnSettings } from "@/lib/returns-admin.functions";
+import { getReturnSettings, saveReturnSettings } from "@/lib/orders/returns-admin.functions";
 import {
   DEFAULT_AUTO_WORKFLOW,
   DEFAULT_EXCHANGE_RULES,
@@ -19,7 +19,7 @@ import {
   type AutoWorkflow,
   type ExchangeRules,
   type ShippingMode,
-} from "@/lib/returns-pricing";
+} from "@/lib/orders/returns-pricing";
 
 type RefundMethod = "original" | "store_credit" | "manual" | "cod_adjust";
 

@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { toast } from "sonner";
-import { listTickets, updateTicket, deleteTicket, listContactRequests, updateContactRequest, listFeedback } from "@/lib/owner-ext.functions";
+import { listTickets, updateTicket, deleteTicket, listContactRequests, updateContactRequest, listFeedback } from "@/lib/admin/owner-ext.functions";
 import { OwnerPageHeader } from "@/components/owner/OwnerPageHeader";
 import { Trash2, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";

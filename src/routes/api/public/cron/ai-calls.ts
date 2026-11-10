@@ -12,7 +12,7 @@ export const Route = createFileRoute("/api/public/cron/ai-calls")({
           return new Response("Unauthorized", { status: 401 });
         }
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-        const { drainCallQueue } = await import("@/lib/ai-call-provision.server");
+        const { drainCallQueue } = await import("@/lib/calls/ai-call-provision.server");
         return Response.json({ ok: true, ...(await drainCallQueue(supabaseAdmin, 10)) });
       },
     },

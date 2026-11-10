@@ -9,8 +9,8 @@ import {
   getAdminSubscriptionByOrder,
   adminSubscriptionAction,
   markSubscriptionInvoicePaid,
-} from "@/lib/subscriptions-admin.functions";
-import { CYCLES, CYCLE_LABEL, STATUS_LABEL, STATUS_TONE, type SubCycle, type SubStatus } from "@/lib/subscriptions";
+} from "@/lib/payments/subscriptions-admin.functions";
+import { CYCLES, CYCLE_LABEL, STATUS_LABEL, STATUS_TONE, type SubCycle, type SubStatus } from "@/lib/payments/subscriptions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";

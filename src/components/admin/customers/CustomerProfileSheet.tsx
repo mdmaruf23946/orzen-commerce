@@ -9,14 +9,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
-import { getCustomerProfile } from "@/lib/customers-admin.functions";
-import { upsertCustomerNote, getCustomerNote } from "@/lib/business.functions";
+import { getCustomerProfile } from "@/lib/admin/customers-admin.functions";
+import { upsertCustomerNote, getCustomerNote } from "@/lib/admin/business.functions";
 import { FeatureGate } from "@/components/admin/FeatureGate";
-import { taka } from "@/lib/order-display";
+import { taka } from "@/lib/orders/order-display";
 import { Ban, CheckCircle2, MapPin, Phone, Mail, Clock } from "lucide-react";
 import { CallButton } from "@/components/admin/calls/CallButton";
 import { CallHistoryList } from "@/components/admin/calls/CallHistoryList";
-import { getCallsForPhone } from "@/lib/call-center.functions";
+import { getCallsForPhone } from "@/lib/calls/call-center.functions";
 
 const TAG_PRESETS = ["Trusted Customer", "Frequent Buyer", "High Return Rate", "Call Before Delivery", "VIP"];
 

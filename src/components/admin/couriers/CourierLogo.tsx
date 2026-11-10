@@ -1,5 +1,5 @@
 import { COURIERS } from "./providers";
-import { imgSrc, useCourierBrandAssets } from "@/lib/courier-apps";
+import { imgSrc, useCourierBrandAssets } from "@/lib/couriers/courier-apps";
 
 /** Small courier logo (uploaded platform logo, else brand-colour initials). */
 export function CourierLogo({ courierKey, className = "h-6 w-6" }: { courierKey: string; className?: string }) {

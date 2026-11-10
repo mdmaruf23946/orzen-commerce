@@ -20,7 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { F, Two, courierLabel, money } from "@/components/admin/couriers/parcel-ui";
-import { sendOrderToCourier } from "@/lib/courier-parcels.functions";
+import { sendOrderToCourier } from "@/lib/couriers/courier-parcels.functions";
 import type { CourierKey } from "@/components/admin/couriers/providers";
 
 type ConnectedCourier = {

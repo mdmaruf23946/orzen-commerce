@@ -6,7 +6,7 @@ import {
   parseIconNames,
   parseIconStyle,
   type CategoryIconStyle,
-} from "@/lib/category-icons";
+} from "@/lib/catalog/category-icons";
 import { cn } from "@/lib/utils";
 
 export function CategoryIconCluster({

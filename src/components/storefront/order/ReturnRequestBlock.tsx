@@ -4,12 +4,12 @@ import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { RotateCcw, Repeat } from "lucide-react";
-import { listMyOrderReturns } from "@/lib/returns.functions";
-import { useCustomerSession } from "@/lib/customer-session";
+import { listMyOrderReturns } from "@/lib/orders/returns.functions";
+import { useCustomerSession } from "@/lib/accounts/customer-session";
 import { Button } from "@/components/ui/button";
 import { ReturnStatusCard } from "@/components/storefront/order/ReturnRequestDialog";
 import { ReturnWizard } from "@/components/storefront/order/ReturnWizard";
-import { useStoreT } from "@/lib/store-i18n";
+import { useStoreT } from "@/lib/storefront/store-i18n";
 
 const WINDOW_DAYS = 7;
 

@@ -3,8 +3,8 @@ import { PhoneCall, MessageSquare, CheckCircle2, Circle } from "lucide-react";
 import { AdminPageHeader } from "@/components/admin/page/AdminPageHeader";
 import { Button } from "@/components/ui/button";
 import { FeatureGate } from "@/components/admin/FeatureGate";
-import { CALL_SMS_PROVIDERS } from "@/lib/call-sms-providers";
-import { useProviderConnections } from "@/lib/use-call-sms-connections";
+import { CALL_SMS_PROVIDERS } from "@/lib/calls/call-sms-providers";
+import { useProviderConnections } from "@/lib/calls/use-call-sms-connections";
 
 export const Route = createFileRoute("/_authenticated/admin/call-sms/apps")({
   component: AppsHub,

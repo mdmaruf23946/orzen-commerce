@@ -1,6 +1,6 @@
 import { Lightbulb } from "lucide-react";
-import { compactMoney } from "@/lib/analytics-ui";
-import type { AnalyticsPayload } from "@/lib/analytics.server";
+import { compactMoney } from "@/lib/analytics/analytics-ui";
+import type { AnalyticsPayload } from "@/lib/analytics/analytics.server";
 
 export function ProfitPanel({ finance }: { finance: AnalyticsPayload["finance"] }) {
   const rows = [

@@ -5,7 +5,7 @@ import { Copy, Wallet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { CourierLogo } from "./CourierLogo";
-import { getCourierFinance, markCourierPaid, getCourierBalances } from "@/lib/courier-parcels.functions";
+import { getCourierFinance, markCourierPaid, getCourierBalances } from "@/lib/couriers/courier-parcels.functions";
 import { courierLabel, money } from "@/components/admin/couriers/parcel-ui";
 
 export function CourierFinancePanel() {

@@ -1,10 +1,10 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Heart, ShoppingCart } from "lucide-react";
-import { addToCart } from "@/lib/cart";
-import { isInWishlist, toggleWishlist } from "@/lib/wishlist";
-import { isStockless } from "@/lib/product-stock";
-import { useStoreT } from "@/lib/store-i18n";
+import { addToCart } from "@/lib/storefront/cart";
+import { isInWishlist, toggleWishlist } from "@/lib/storefront/wishlist";
+import { isStockless } from "@/lib/catalog/product-stock";
+import { useStoreT } from "@/lib/storefront/store-i18n";
 import { sizedImg, sizedSrcSet } from "@/lib/img-url";
 import { useReveal } from "@/hooks/use-reveal";
 

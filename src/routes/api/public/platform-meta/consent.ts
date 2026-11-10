@@ -12,7 +12,7 @@ export const Route = createFileRoute("/api/public/platform-meta/consent")({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const { guardRequest } = await import("@/lib/rate-limit.server");
+        const { guardRequest } = await import("@/lib/security/rate-limit.server");
         const blocked = await guardRequest("platform_consent", request).catch(() => null);
         if (blocked) return blocked;
         let body: z.infer<typeof bodySchema>;

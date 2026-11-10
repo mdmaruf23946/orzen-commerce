@@ -15,7 +15,7 @@ import {
   SHOWCASE_LABELS,
   type ShowcaseKey,
   type ShowcaseRow,
-} from "@/lib/showcase.functions";
+} from "@/lib/site-builder/showcase.functions";
 
 export const Route = createFileRoute("/_authenticated/owner/showcase")({
   component: ShowcasePage,

@@ -5,7 +5,7 @@ export const Route = createFileRoute("/store/$slug/sitemap.xml")({
   server: {
     handlers: {
       GET: async ({ request, params }) => {
-        const { originFromRequest, sitemapData, renderSitemap } = await import("@/lib/seo.server");
+        const { originFromRequest, sitemapData, renderSitemap } = await import("@/lib/marketing/seo.server");
         const { origin } = originFromRequest(request);
         const data = await sitemapData(params.slug);
         if (!data) return new Response("Not found", { status: 404 });

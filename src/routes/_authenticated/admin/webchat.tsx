@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Globe, Loader2, Inbox } from "lucide-react";
 import { FeatureGate } from "@/components/admin/FeatureGate";
-import { getWebchatSettings, updateWebchatSettings } from "@/lib/webchat-inbox.functions";
+import { getWebchatSettings, updateWebchatSettings } from "@/lib/inbox/webchat-inbox.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";

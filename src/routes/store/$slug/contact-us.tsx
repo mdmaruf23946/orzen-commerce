@@ -1,8 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { Send } from "lucide-react";
-import { getStorePagePublic } from "@/lib/store-pages.functions";
-import { storePageHead, StorePageView } from "@/lib/store-page-view";
+import { getStorePagePublic } from "@/lib/storefront/store-pages.functions";
+import { storePageHead, StorePageView } from "@/lib/storefront/store-page-view";
 import { StoreErrorState } from "@/components/storefront/StoreErrorState";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";

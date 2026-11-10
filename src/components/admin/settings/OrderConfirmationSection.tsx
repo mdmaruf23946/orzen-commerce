@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import {
   getOrderConfirmationSettings,
   setOrderConfirmationSettings,
-} from "@/lib/orders-types.functions";
+} from "@/lib/orders/orders-types.functions";
 
 type Mode = "auto" | "manual";
 type Form = { digital: Mode; service: Mode; subscription: Mode };

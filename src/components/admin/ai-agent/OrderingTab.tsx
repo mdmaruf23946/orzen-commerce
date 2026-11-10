@@ -8,7 +8,7 @@ import {
   ORDER_FIELD_LABELS,
   type OrderFieldKey,
   type OrderFlowConfig,
-} from "@/lib/messenger-order-flow";
+} from "@/lib/integrations/messenger-order-flow";
 
 const LOCKED: OrderFieldKey[] = ["customer_name", "phone"];
 

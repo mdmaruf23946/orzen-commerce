@@ -2,7 +2,7 @@
 // Renders the real store in an iframe at a fixed device width (desktop,
 // tablet or mobile) and scales it to fit, so the merchant sees the actual
 // responsive layout for each device instead of the panel's own width.
-import { storeHref } from "@/lib/store-link";
+import { storeHref } from "@/lib/storefront/store-link";
 import { useLayoutEffect, useRef, useState } from "react";
 import { ExternalLink, Loader2, Monitor, RefreshCw, Smartphone, Tablet } from "lucide-react";
 import { Button } from "@/components/ui/button";

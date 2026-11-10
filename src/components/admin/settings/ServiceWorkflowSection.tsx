@@ -13,11 +13,11 @@ import {
   SERVICE_STAGES,
   SERVICE_STAGE_LABEL,
   type ServiceWorkflowSettings,
-} from "@/lib/service-workflow";
+} from "@/lib/orders/service-workflow";
 import {
   getServiceWorkflowSettings,
   saveServiceWorkflowSettings,
-} from "@/lib/service-order-admin.functions";
+} from "@/lib/orders/service-order-admin.functions";
 
 const CHANNELS: { key: string; label: string }[] = [
   { key: "whatsapp", label: "WhatsApp" },

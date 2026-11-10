@@ -8,7 +8,7 @@ import {
   UserCog, BarChart3, LifeBuoy, FileText, KeyRound, Webhook, Terminal, HardDrive,
   ChevronDown, ChevronRight, Globe, Palette, PhoneCall, Star, Bot, Mail,
 } from "lucide-react";
-import { amIOwner } from "@/lib/owner.functions";
+import { amIOwner } from "@/lib/admin/owner.functions";
 import { OwnerPushAlerts } from "@/components/owner/OwnerPushAlerts";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";

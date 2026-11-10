@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Star } from "lucide-react";
-import { getPublicReviews, REVIEWS_FALLBACK, type PlatformReview } from "@/lib/reviews.functions";
+import { getPublicReviews, REVIEWS_FALLBACK, type PlatformReview } from "@/lib/catalog/reviews.functions";
 
 function initials(name: string) {
   return name

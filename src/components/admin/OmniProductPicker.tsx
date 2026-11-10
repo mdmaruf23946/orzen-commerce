@@ -6,8 +6,8 @@ import { ArrowLeft, Check, Loader2, Package, Search, Send } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { searchOmniProducts, sendOmniProduct } from "@/lib/omni-products.functions";
-import { optionLabelBn, parseVariants, selectedVariant } from "@/lib/messenger-variants";
+import { searchOmniProducts, sendOmniProduct } from "@/lib/inbox/omni-products.functions";
+import { optionLabelBn, parseVariants, selectedVariant } from "@/lib/integrations/messenger-variants";
 import { cn } from "@/lib/utils";
 
 type Props = { open: boolean; onOpenChange: (v: boolean) => void; conversationId: string; onSent: () => void };

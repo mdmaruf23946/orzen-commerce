@@ -8,7 +8,7 @@ import { CheckCircle2, Loader2 } from "lucide-react";
 import { FeatureGate } from "@/components/admin/FeatureGate";
 import { InstagramMark } from "@/components/admin/brand/InstagramMark";
 import { Button } from "@/components/ui/button";
-import { connectInstagram, disconnectInstagram, getInstagramIntegration } from "@/lib/instagram.functions";
+import { connectInstagram, disconnectInstagram, getInstagramIntegration } from "@/lib/integrations/instagram.functions";
 
 export const Route = createFileRoute("/_authenticated/admin/instagram")({
   head: () => ({

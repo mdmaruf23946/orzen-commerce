@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { Pencil, Trash2, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { EXPENSE_CATEGORIES, categoryLabel, money } from "@/lib/finance-ui";
+import { EXPENSE_CATEGORIES, categoryLabel, money } from "@/lib/analytics/finance-ui";
 import type { ExpenseRow } from "./ExpenseForm";
 
 export function ExpenseHistory({

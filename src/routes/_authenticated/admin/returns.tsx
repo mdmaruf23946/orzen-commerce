@@ -7,12 +7,12 @@ import { Package, Image as ImageIcon, Settings, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { ReturnPolicySection } from "@/components/admin/settings/ReturnPolicySection";
-import { listReturnRequests } from "@/lib/returns-admin.functions";
+import { listReturnRequests } from "@/lib/orders/returns-admin.functions";
 import { TypeFilterTabs } from "@/components/admin/page/TypeFilterTabs";
 import { AdminPageHeader } from "@/components/admin/page/AdminPageHeader";
 import { ReturnDrawer, img } from "@/components/admin/returns/ReturnDrawer";
 import { ManualReturnWizard } from "@/components/admin/returns/ManualReturnWizard";
-import { KIND_LABEL, STATUS_LABEL } from "@/lib/returns-pricing";
+import { KIND_LABEL, STATUS_LABEL } from "@/lib/orders/returns-pricing";
 
 export const Route = createFileRoute("/_authenticated/admin/returns")({
   head: () => ({

@@ -12,17 +12,17 @@ export const Route = createFileRoute("/manifest.webmanifest")({
   server: {
     handlers: {
       GET: async ({ request }) => {
-        const { originFromRequest, hostTargetFromHost } = await import("@/lib/seo.server");
+        const { originFromRequest, hostTargetFromHost } = await import("@/lib/marketing/seo.server");
         const { host, origin } = originFromRequest(request);
         const target = await hostTargetFromHost(host);
         if (target?.kind === "store") {
           // Store domain: serve that store's own installable manifest.
-          const { storeManifestResponse } = await import("@/lib/store-manifest.server");
+          const { storeManifestResponse } = await import("@/lib/storefront/store-manifest.server");
           return storeManifestResponse(target.slug, origin, "/");
         }
         if (target?.kind === "landing") {
           // Landing-page domain: serve that page's own installable manifest.
-          const { landingManifestResponse } = await import("@/lib/landing-manifest.server");
+          const { landingManifestResponse } = await import("@/lib/site-builder/landing-manifest.server");
           return landingManifestResponse(target.slug, origin, "/");
         }
 

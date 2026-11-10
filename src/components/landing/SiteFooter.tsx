@@ -3,7 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import {
   Facebook, Linkedin, Youtube, Mail, Instagram, Twitter, Phone, MapPin, Send, Globe,
 } from "lucide-react";
-import { getFooterSettings, FOOTER_FALLBACK, type FooterSettings } from "@/lib/footer.functions";
+import { getFooterSettings, FOOTER_FALLBACK, type FooterSettings } from "@/lib/storefront/footer.functions";
 import { BrandMark } from "@/lib/platform-branding";
 import { useLang } from "@/lib/i18n";
 

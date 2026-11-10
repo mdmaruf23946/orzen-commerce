@@ -11,7 +11,7 @@ import {
   updateBanner,
   deleteBanner,
   getMyStore,
-} from "@/lib/admin.functions";
+} from "@/lib/admin/admin.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";

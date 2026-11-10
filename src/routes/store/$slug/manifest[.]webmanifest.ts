@@ -6,8 +6,8 @@ export const Route = createFileRoute("/store/$slug/manifest.webmanifest")({
   server: {
     handlers: {
       GET: async ({ request, params }) => {
-        const { originFromRequest, slugFromHost } = await import("@/lib/seo.server");
-        const { storeManifestResponse } = await import("@/lib/store-manifest.server");
+        const { originFromRequest, slugFromHost } = await import("@/lib/marketing/seo.server");
+        const { storeManifestResponse } = await import("@/lib/storefront/store-manifest.server");
         const { origin, host } = originFromRequest(request);
         const hostSlug = await slugFromHost(host);
         // On a store's own domain the app should install at the domain root.

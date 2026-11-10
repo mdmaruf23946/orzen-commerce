@@ -44,7 +44,7 @@ export const Route = createFileRoute("/api/public/tiktok/track")({
         let token = t.access_token as string | undefined;
         let enabled = !!t.events_api_enabled;
         if (payload.landing_page_id) {
-          const { readTrackingTargets } = await import("@/lib/marketing.server");
+          const { readTrackingTargets } = await import("@/lib/marketing/marketing.server");
           const tt: any = readTrackingTargets(marketing)[payload.landing_page_id];
           if (tt?.tiktok) {
             pixelId = tt.tiktok.pixel_id || undefined;
@@ -56,7 +56,7 @@ export const Route = createFileRoute("/api/public/tiktok/track")({
           return Response.json({ ok: true, skipped: true });
         }
 
-        const { sendTiktokEvents, extractIp } = await import("@/lib/tiktok-events.server");
+        const { sendTiktokEvents, extractIp } = await import("@/lib/marketing/tiktok-events.server");
         const matchOn = t.match_enabled !== false;
         const result = await sendTiktokEvents({
           pixelCode: pixelId,

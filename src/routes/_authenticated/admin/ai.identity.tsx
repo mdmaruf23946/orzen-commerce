@@ -14,7 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { FeatureGate } from "@/components/admin/FeatureGate";
-import { aiAddIdentity, aiGetOverview, aiRemoveIdentity } from "@/lib/merchant-ai.functions";
+import { aiAddIdentity, aiGetOverview, aiRemoveIdentity } from "@/lib/agents/merchant-ai.functions";
 
 export const Route = createFileRoute("/_authenticated/admin/ai/identity")({
   head: () => ({

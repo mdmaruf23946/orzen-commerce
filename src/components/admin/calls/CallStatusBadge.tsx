@@ -1,4 +1,4 @@
-import { STATUS_LABEL, STATUS_TONE, RESULT_LABEL, type CallResult, type CallStatus } from "@/lib/call-center";
+import { STATUS_LABEL, STATUS_TONE, RESULT_LABEL, type CallResult, type CallStatus } from "@/lib/calls/call-center";
 
 export function CallStatusBadge({ status }: { status: CallStatus }) {
   return (

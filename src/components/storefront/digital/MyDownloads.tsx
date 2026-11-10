@@ -4,11 +4,11 @@ import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { Download, KeyRound, Copy, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { getStoreBySlug } from "@/lib/storefront.functions";
-import { listMyDigitalPurchases, requestDigitalDownload } from "@/lib/digital.functions";
-import { formatBytes, LICENSE_LABELS, type LicenseType } from "@/lib/digital";
+import { getStoreBySlug } from "@/lib/storefront/storefront.functions";
+import { listMyDigitalPurchases, requestDigitalDownload } from "@/lib/catalog/digital.functions";
+import { formatBytes, LICENSE_LABELS, type LicenseType } from "@/lib/catalog/digital";
 import { getDeviceId } from "@/lib/fingerprint";
-import { useStoreT } from "@/lib/store-i18n";
+import { useStoreT } from "@/lib/storefront/store-i18n";
 
 const FILTERS = ["all", "active", "expired"] as const;
 type Filter = (typeof FILTERS)[number];

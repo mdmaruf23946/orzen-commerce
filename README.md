@@ -13,9 +13,12 @@
 ## Code Layout
 
 - `src/routes/` — pages and server routes (`src/routes/api/public/*` for webhooks/cron; verify callers inside handlers).
-- `src/lib/*.server.ts` — server-only logic; `*.functions.ts` — `createServerFn` entry points.
-- AI agent: `ai-agent.server.ts` re-exports types, catalog, prompt and tools modules.
-- Messenger webhook: `messenger-webhook.server.ts` (routing + order flow) with `messenger-intents`, `messenger-order-text`, `messenger-types`, `messenger-product-helpers`, `messenger-visual-match.server`, `messenger-graph.server`.
+- `src/lib/<domain>/*.server.ts` — server-only logic; `*.functions.ts` — `createServerFn` entry points. Explicit module imports preserve browser/server boundaries; no umbrella barrels.
+- `agents/`, `integrations/`, `inbox/` — AI response logic, messaging/website connections, and unified inbox access. AI's `agents/ai-agent.server.ts` and Messenger's `integrations/messenger-webhook.server.ts` retain their public exports.
+- `orders/`, `payments/`, `couriers/`, `invoices/` — order processing, billing/gateways, parcel providers, and invoice configuration.
+- `accounts/`, `admin/`, `calls/`, `catalog/`, `notifications/`, `security/`, `analytics/` — account access, administration, calls, products, alerts, security, and reporting.
+- `hosting/`, `marketing/`, `site-builder/`, `storefront/` — domain hosting, tracking/SEO, page builders, and customer shopping.
+- Existing specialized folders (`ai-admin/`, `merchant-ai/`, `voice/`, `notify/`, `subscription-pay/`, `custom-gateway/`, `crypto/`, `mcp/`, invoice templates) remain intact. Global UI helpers, caches and telemetry stay at the library root. Tests stay beside their modules.
 
 ## Database Migrations
 

@@ -2,7 +2,7 @@ import { createStart, createMiddleware } from "@tanstack/react-start";
 
 import { renderErrorPage } from "./lib/error-page";
 import { attachSupabaseAuth } from "@/integrations/supabase/auth-attacher";
-import { ACTIVE_STORE_HEADER, getActiveStoreId } from "@/lib/active-store";
+import { ACTIVE_STORE_HEADER, getActiveStoreId } from "@/lib/accounts/active-store";
 
 const errorMiddleware = createMiddleware().server(async ({ next, request }) => {
   const url = new URL(request.url);

@@ -3,8 +3,8 @@
 // per-page overrides from the Footer editor. Empty values never render.
 import { Phone, Mail, MapPin, Clock, Globe } from "lucide-react";
 import { resolveSocials } from "@/lib/landing-social";
-import { STORE_PAGES } from "@/lib/store-pages";
-import { lpImage, type LandingContent } from "@/lib/landing-builder";
+import { STORE_PAGES } from "@/lib/storefront/store-pages";
+import { lpImage, type LandingContent } from "@/lib/site-builder/landing-builder";
 
 export type FooterStore = {
   name?: string | null;

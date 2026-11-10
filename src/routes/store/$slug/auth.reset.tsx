@@ -3,11 +3,11 @@ import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { z } from "zod";
 import { toast } from "sonner";
-import { resetCustomerPassword } from "@/lib/customer-auth.functions";
+import { resetCustomerPassword } from "@/lib/accounts/customer-auth.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useStoreT } from "@/lib/store-i18n";
+import { useStoreT } from "@/lib/storefront/store-i18n";
 
 export const Route = createFileRoute("/store/$slug/auth/reset")({
   validateSearch: (s: Record<string, unknown>) =>

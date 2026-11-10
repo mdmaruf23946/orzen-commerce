@@ -11,7 +11,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { getStoreTemplate, updateStoreTemplate } from "@/lib/owner.functions";
+import { getStoreTemplate, updateStoreTemplate } from "@/lib/admin/owner.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -21,7 +21,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { ImageUploader } from "@/components/admin/ImageUploader";
 import { CategoryIconPicker } from "@/components/admin/CategoryIconPicker";
 import { CategoryIconCluster } from "@/components/CategoryIconCluster";
-import { getCategoryIcon } from "@/lib/category-icons";
+import { getCategoryIcon } from "@/lib/catalog/category-icons";
 import { ProductDialog } from "@/components/admin/product-form/ProductDialog";
 import { AdminPageHeader } from "@/components/admin/page/AdminPageHeader";
 import { AdminToolbar } from "@/components/admin/page/AdminToolbar";

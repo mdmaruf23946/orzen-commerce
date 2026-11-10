@@ -10,7 +10,7 @@ import {
   listAiBlacklist,
   addAiBlacklist,
   removeAiBlacklist,
-} from "@/lib/ai-review.functions";
+} from "@/lib/agents/ai-review.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 

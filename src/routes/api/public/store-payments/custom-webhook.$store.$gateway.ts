@@ -187,11 +187,11 @@ export const Route = createFileRoute("/api/public/store-payments/custom-webhook/
                     .eq("id", ord.id)
                     .neq("payment_status", "paid");
                   try {
-                    const { handlePaymentConfirmed } = await import("@/lib/orders-confirm.server");
+                    const { handlePaymentConfirmed } = await import("@/lib/orders/orders-confirm.server");
                     await handlePaymentConfirmed(supabaseAdmin as any, ord.id);
                   } catch { /* non-fatal */ }
                   try {
-                    const { notifyConversationalOrder } = await import("@/lib/conversational-checkout.server");
+                    const { notifyConversationalOrder } = await import("@/lib/orders/conversational-checkout.server");
                     await notifyConversationalOrder(ord.id, true);
                   } catch { /* non-fatal */ }
 

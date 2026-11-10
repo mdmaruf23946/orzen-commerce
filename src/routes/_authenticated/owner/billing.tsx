@@ -8,7 +8,7 @@ import {
   listPayments,
   verifyPayment,
   retryEmailLog,
-} from "@/lib/owner.functions";
+} from "@/lib/admin/owner.functions";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,

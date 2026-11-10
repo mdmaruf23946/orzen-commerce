@@ -61,7 +61,7 @@ export const Route = createFileRoute("/api/public/ai-calls/tool")({
             // Inbound call: the caller ID is checked first, so a customer calling
             // from the number they ordered with is never asked for it again.
             const { lookupOrders, extractPhone, TRACKING_GUIDE } = await import(
-              "@/lib/order-lookup.server"
+              "@/lib/orders/order-lookup.server"
             );
             const given = String(params["phone"] ?? "").trim();
             const caller = String(params["caller_phone"] ?? params["from"] ?? "").trim();

@@ -1,6 +1,6 @@
 // Shared read-only view of a submitted return / exchange request.
-import { STATUS_LABEL, KIND_LABEL } from "@/lib/returns-pricing";
-import { useStoreT } from "@/lib/store-i18n";
+import { STATUS_LABEL, KIND_LABEL } from "@/lib/orders/returns-pricing";
+import { useStoreT } from "@/lib/storefront/store-i18n";
 
 function img(p?: string | null) {
   if (!p) return null;

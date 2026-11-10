@@ -5,11 +5,11 @@ import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { getCall, updateCallOutcome } from "@/lib/call-center.functions";
-import { formatDuration } from "@/lib/call-center";
+import { getCall, updateCallOutcome } from "@/lib/calls/call-center.functions";
+import { formatDuration } from "@/lib/calls/call-center";
 import {
   CALL_RESULTS, RESULT_LABEL, STATUS_LABEL, type CallResult, type CallStatus,
-} from "@/lib/call-center";
+} from "@/lib/calls/call-center";
 
 const MANUAL_STATUSES: CallStatus[] = ["completed", "answered", "missed", "busy", "no_answer", "failed"];
 

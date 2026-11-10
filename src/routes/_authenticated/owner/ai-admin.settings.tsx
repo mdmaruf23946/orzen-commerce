@@ -4,7 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Save } from "lucide-react";
-import { getAiAdminSettings, saveAiAdminSettings } from "@/lib/ai-admin.functions";
+import { getAiAdminSettings, saveAiAdminSettings } from "@/lib/admin/ai-admin.functions";
 import { OwnerPageHeader } from "@/components/owner/OwnerPageHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";

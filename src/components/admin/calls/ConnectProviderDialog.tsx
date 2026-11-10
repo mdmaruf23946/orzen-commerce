@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { KIND_LABEL, getConfigs, getProfile, saveConfig, validateConfig, type CallExtension, type FieldKey, type ProviderConfig } from "@/lib/call-providers";
+import { KIND_LABEL, getConfigs, getProfile, saveConfig, validateConfig, type CallExtension, type FieldKey, type ProviderConfig } from "@/lib/calls/call-providers";
 
 const BASE_LABEL: Record<FieldKey, string> = {
   host: "SIP Server / Domain", username: "SIP Username", password: "SIP Password / Secret", callerId: "Caller ID",

@@ -9,10 +9,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   getProviderOverview, listProviderCallLog, listProviderExtensions, listAutomatedOrderCalls, cancelQueuedCall,
-} from "@/lib/voice-provider.functions";
-import { startCall } from "@/lib/call-center.functions";
-import { saveVoiceExtensions } from "@/lib/voice.functions";
-import { formatDuration } from "@/lib/call-center";
+} from "@/lib/calls/voice-provider.functions";
+import { startCall } from "@/lib/calls/call-center.functions";
+import { saveVoiceExtensions } from "@/lib/calls/voice.functions";
+import { formatDuration } from "@/lib/calls/call-center";
 import { CallResultDialog } from "@/components/admin/calls/CallResultDialog";
 
 export const NOT_AVAILABLE = "Not available through the current ePBX API access.";

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getConfigs, getHistory, getSettings } from "@/lib/call-providers";
+import { getConfigs, getHistory, getSettings } from "@/lib/calls/call-providers";
 
 export function useCallStore() {
   const snap = () => ({ configs: getConfigs(), history: getHistory(), settings: getSettings() });

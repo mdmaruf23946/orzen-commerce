@@ -1,12 +1,12 @@
 import { PushNotificationButton } from "@/components/admin/PushNotificationButton";
 import { COURIERS } from "@/components/admin/couriers/providers";
-import { useCourierConnections, type CourierConnectionMap } from "@/lib/courier-apps";
-import { MARKETING_PLATFORMS, useMarketingConnections, type MarketingConnectionMap } from "@/lib/marketing-platforms";
-import { CALL_SMS_PROVIDERS, CALL_SMS_HUB_PATH, type ProviderConnectionMap } from "@/lib/call-sms-providers";
-import { useProviderConnections } from "@/lib/use-call-sms-connections";
+import { useCourierConnections, type CourierConnectionMap } from "@/lib/couriers/courier-apps";
+import { MARKETING_PLATFORMS, useMarketingConnections, type MarketingConnectionMap } from "@/lib/marketing/marketing-platforms";
+import { CALL_SMS_PROVIDERS, CALL_SMS_HUB_PATH, type ProviderConnectionMap } from "@/lib/calls/call-sms-providers";
+import { useProviderConnections } from "@/lib/calls/use-call-sms-connections";
 import { isBetaPath, isBetaTester } from "@/lib/beta-features";
-import { PAYMENT_SECTIONS, usePaymentGatewayConnections } from "@/lib/payment-gateway-apps";
-import { AI_MESSAGING_APPS, useAiMessagingConnections, type AiMessagingConnectionMap } from "@/lib/ai-messaging-apps";
+import { PAYMENT_SECTIONS, usePaymentGatewayConnections } from "@/lib/payments/payment-gateway-apps";
+import { AI_MESSAGING_APPS, useAiMessagingConnections, type AiMessagingConnectionMap } from "@/lib/agents/ai-messaging-apps";
 import { createFileRoute, Link, Outlet, useNavigate, useRouter, useRouterState } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -19,7 +19,7 @@ import {
   Radar, ShieldCheck, FileText, PhoneCall, Sparkles, AlertTriangle, UserCog, Palette,
   ChevronDown, ChevronsLeft, ChevronsRight, Moon, Sun, ExternalLink, LayoutTemplate, X,
   Gauge, PackageCheck, Headphones, LayoutGrid, Inbox as InboxIcon, Plug as PlugIcon, Store, SlidersHorizontal, LifeBuoy, UserRound, Instagram } from "lucide-react";
-import { amIOwner } from "@/lib/owner.functions";
+import { amIOwner } from "@/lib/admin/owner.functions";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { SubscriptionStatusBanner } from "@/components/admin/SubscriptionStatusBanner";
@@ -29,19 +29,19 @@ import { StoreBrandMark } from "@/components/admin/StoreBrandMark";
 import { StoreSwitcher, DelegatedStoreBanner } from "@/components/admin/access/StoreSwitcher";
 import { AdminGlobalSearch } from "@/components/admin/AdminGlobalSearch";
 import { CountBadge } from "@/components/admin/CountBadge";
-import { useBadgeCounts, useMarkSeen } from "@/lib/use-badge-counts";
-import { getMyStore } from "@/lib/admin.functions";
-import { resolveStoreIcon, resolveStoreBrandLogo } from "@/lib/store-icon";
+import { useBadgeCounts, useMarkSeen } from "@/lib/inbox/use-badge-counts";
+import { getMyStore } from "@/lib/admin/admin.functions";
+import { resolveStoreIcon, resolveStoreBrandLogo } from "@/lib/storefront/store-icon";
 import { recoverFromChunkError } from "@/lib/chunk-recovery";
-import { StoreAccessProvider, useStoreAccess } from "@/lib/use-store-access";
+import { StoreAccessProvider, useStoreAccess } from "@/lib/accounts/use-store-access";
 import { ReadOnlyGuard } from "@/components/admin/ReadOnlyGuard";
 import { PlanLockGate } from "@/components/admin/PlanLockGate";
 import { EmailVerifyBanner, EmailVerifyGate } from "@/components/admin/EmailVerifyGate";
 import { sectionForPath, DELEGATE_ROLES } from "@/lib/panel-sections";
-import { getAccountProfile } from "@/lib/account-profile.functions";
+import { getAccountProfile } from "@/lib/accounts/account-profile.functions";
 import { AccountAvatar } from "@/components/admin/AccountAvatar";
-import { getMyWallet } from "@/lib/wallet.functions";
-import { getMyAiCredits } from "@/lib/ai-credit-purchase.functions";
+import { getMyWallet } from "@/lib/payments/wallet.functions";
+import { getMyAiCredits } from "@/lib/payments/ai-credit-purchase.functions";
 
 function AiCreditsChip() {
   const fn = useServerFn(getMyAiCredits);

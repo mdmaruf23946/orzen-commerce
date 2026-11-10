@@ -6,8 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ImageUploader } from "@/components/admin/ImageUploader";
-import { lpImage } from "@/lib/landing-builder";
-import type { LPFieldSpec, LPSectionSpec } from "@/lib/landing-sections";
+import { lpImage } from "@/lib/site-builder/landing-builder";
+import type { LPFieldSpec, LPSectionSpec } from "@/lib/site-builder/landing-sections";
 import { SectionShell } from "./section-editors";
 
 type BlockData = Record<string, any>;

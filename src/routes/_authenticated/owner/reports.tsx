@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { getOwnerReports } from "@/lib/owner-ext.functions";
+import { getOwnerReports } from "@/lib/admin/owner-ext.functions";
 import { OwnerPageHeader } from "@/components/owner/OwnerPageHeader";
 
 export const Route = createFileRoute("/_authenticated/owner/reports")({ component: Page });

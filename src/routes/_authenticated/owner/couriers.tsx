@@ -4,7 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Pencil, Truck, Palette } from "lucide-react";
-import { listCouriers, upsertCourier } from "@/lib/owner-ext.functions";
+import { listCouriers, upsertCourier } from "@/lib/admin/owner-ext.functions";
 import { OwnerPageHeader } from "@/components/owner/OwnerPageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

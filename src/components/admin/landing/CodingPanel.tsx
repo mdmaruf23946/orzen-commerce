@@ -8,9 +8,9 @@ import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { AlertTriangle, Check, Loader2, RotateCcw, Save, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { fixLandingDesignCode, setLandingDesignCode } from "@/lib/landing-builder.functions";
-import { defaultDesignCode, designHooks, repairDesignCode, validateDesignCode } from "@/lib/landing-code";
-import type { LandingContent } from "@/lib/landing-builder";
+import { fixLandingDesignCode, setLandingDesignCode } from "@/lib/site-builder/landing-builder.functions";
+import { defaultDesignCode, designHooks, repairDesignCode, validateDesignCode } from "@/lib/site-builder/landing-code";
+import type { LandingContent } from "@/lib/site-builder/landing-builder";
 
 export const LP_DRAFT_CODE_KEY = (slug: string) => `lp-draft-code:${slug}`;
 

@@ -4,7 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Plus, Pencil, Trash2, UserCog } from "lucide-react";
-import { listStaff, upsertStaff, deleteStaff } from "@/lib/staff.functions";
+import { listStaff, upsertStaff, deleteStaff } from "@/lib/accounts/staff.functions";
 import { FeatureGate } from "@/components/admin/FeatureGate";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

@@ -7,7 +7,7 @@ import { Bot, Send, ShieldCheck, Activity, CheckCircle2, Clock } from "lucide-re
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { FeatureGate } from "@/components/admin/FeatureGate";
-import { aiGetOverview, aiGetThread, aiSendCommand } from "@/lib/merchant-ai.functions";
+import { aiGetOverview, aiGetThread, aiSendCommand } from "@/lib/agents/merchant-ai.functions";
 import { AgentStatusPill } from "@/components/admin/ai/AgentStatusPill";
 
 export const Route = createFileRoute("/_authenticated/admin/ai/")({

@@ -24,7 +24,7 @@ import {
   DELIVERABLE_KINDS,
   ASSIGNEE_ROLES,
   type ServiceStage,
-} from "@/lib/service-workflow";
+} from "@/lib/orders/service-workflow";
 import {
   getServiceOrderAdmin,
   setServiceStage,
@@ -35,7 +35,7 @@ import {
   deleteServiceDeliverable,
   respondServiceRevision,
   grantServiceRevisions,
-} from "@/lib/service-order-admin.functions";
+} from "@/lib/orders/service-order-admin.functions";
 
 function Block({ icon: Icon, title, children }: { icon: any; title: string; children: React.ReactNode }) {
   return (

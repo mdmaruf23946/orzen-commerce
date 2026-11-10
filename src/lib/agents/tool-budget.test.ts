@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { allowedToolsFor } from "./specialists";
-import { checkPersonName } from "../slot-validate";
+import { checkPersonName } from "@/lib/agents/slot-validate";
 
 describe("token budget", () => {
   it("product question gets at most 6 tools", () => {

@@ -5,8 +5,8 @@ export const Route = createFileRoute("/llms.txt")({
   server: {
     handlers: {
       GET: async () => {
-        const { PLATFORM_ORIGIN } = await import("@/lib/seo");
-        const { PLATFORM_FAQ } = await import("@/lib/platform-seo");
+        const { PLATFORM_ORIGIN } = await import("@/lib/marketing/seo");
+        const { PLATFORM_FAQ } = await import("@/lib/marketing/platform-seo");
         const o = PLATFORM_ORIGIN;
         const body = `# ORZEN
 

@@ -5,8 +5,8 @@ import { toast } from "sonner";
 import { Sparkles, Lock, Wallet, Smartphone, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { getMyAiCredits, buyAiCreditsWithWallet, submitAiCreditPayment } from "@/lib/ai-credit-purchase.functions";
-import { getEnabledPaymentMethods } from "@/lib/billing.functions";
+import { getMyAiCredits, buyAiCreditsWithWallet, submitAiCreditPayment } from "@/lib/payments/ai-credit-purchase.functions";
+import { getEnabledPaymentMethods } from "@/lib/payments/billing.functions";
 
 const REASON: Record<string, string> = {
   trial: "Free trial-এ AI credit কেনা যায় না।",

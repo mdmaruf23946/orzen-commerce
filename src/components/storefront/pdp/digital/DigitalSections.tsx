@@ -1,6 +1,6 @@
 import { useState } from "react";
 import DOMPurify from "isomorphic-dompurify";
-import { useStoreT } from "@/lib/store-i18n";
+import { useStoreT } from "@/lib/storefront/store-i18n";
 import {
   FileArchive, FileText, Code2, Image as ImageIcon, Figma, Palette, Video, Music,
   LayoutTemplate, Type, ShieldCheck, BookOpen, Gift, Check, ChevronDown,
@@ -14,7 +14,7 @@ import {
   type DigitalFaq,
   type DigitalRequirements,
   type LicenseType,
-} from "@/lib/digital";
+} from "@/lib/catalog/digital";
 
 /* ------------------------------------------------------------------ preview */
 

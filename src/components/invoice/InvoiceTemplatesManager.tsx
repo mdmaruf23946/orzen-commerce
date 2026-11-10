@@ -35,7 +35,7 @@ import {
   saveInvoiceTemplate,
   setDefaultInvoiceTemplate,
   setInvoiceTemplateVisibility,
-} from "@/lib/invoice-templates.functions";
+} from "@/lib/invoices/invoice-templates.functions";
 import { DEFAULT_BRAND, EMPTY_CANVAS, type Brand, type InvoiceCanvas } from "@/lib/invoice-template/types";
 import { SAMPLE_INVOICE } from "@/lib/invoice-template/data";
 

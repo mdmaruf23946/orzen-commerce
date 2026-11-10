@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { useStoreT } from "@/lib/store-i18n";
+import { useStoreT } from "@/lib/storefront/store-i18n";
 import { CheckCircle2, RefreshCw, CalendarClock, ReceiptText, ShoppingBag } from "lucide-react";
 
 function Row({ label, value }: { label: string; value?: React.ReactNode }) {

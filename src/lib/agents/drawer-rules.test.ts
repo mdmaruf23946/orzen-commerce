@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { drawerBoundRules } from "../ai-agent.server";
+import { drawerBoundRules } from "@/lib/agents/ai-agent.server";
 
 const joined = (t: string, o: Record<string, any> = {}) => drawerBoundRules({ text: t, ...o }).join("\n");
 

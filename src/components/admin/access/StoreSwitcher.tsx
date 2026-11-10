@@ -10,9 +10,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { listMyStores, switchStore } from "@/lib/delegated-access.functions";
-import { getActiveStoreId, setActiveStoreId } from "@/lib/active-store";
-import { resolveStoreIcon } from "@/lib/store-icon";
+import { listMyStores, switchStore } from "@/lib/accounts/delegated-access.functions";
+import { getActiveStoreId, setActiveStoreId } from "@/lib/accounts/active-store";
+import { resolveStoreIcon } from "@/lib/storefront/store-icon";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 

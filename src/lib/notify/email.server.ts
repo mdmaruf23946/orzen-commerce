@@ -1,8 +1,8 @@
 // Store notification email sender.
 // Platform (ORZEN) email is merchant-inbox only. Customer email always goes
 // through the merchant's own provider/server.
-import { enqueueEmail } from "@/lib/emails.server";
-import type { EmailProvider } from "@/lib/notify-settings";
+import { enqueueEmail } from "@/lib/notifications/emails.server";
+import type { EmailProvider } from "@/lib/notifications/notify-settings";
 
 export type SendNotifyEmailArgs = {
   provider: EmailProvider;

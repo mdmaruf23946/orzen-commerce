@@ -3,9 +3,9 @@ import { DefaultChatTransport, type UIMessage } from "ai";
 import { useEffect, useRef, useState } from "react";
 import { Send, X, LifeBuoy, ExternalLink } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
-import { getWebChatHistory, escalateWebChat } from "@/lib/ai-web-chat.functions";
-import { useStoreT } from "@/lib/store-i18n";
-import { readToken } from "@/lib/customer-session";
+import { getWebChatHistory, escalateWebChat } from "@/lib/agents/ai-web-chat.functions";
+import { useStoreT } from "@/lib/storefront/store-i18n";
+import { readToken } from "@/lib/accounts/customer-session";
 
 type WebProduct = {
   id: string;

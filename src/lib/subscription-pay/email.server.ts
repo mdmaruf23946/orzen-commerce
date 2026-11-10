@@ -2,7 +2,7 @@
 // RESEND_API_KEY + LOVABLE_API_KEY env vars are present; otherwise
 // silently no-ops so the payment flow never fails on email issues.
 
-import { emailInfoRows, escapeHtml, renderPlatformEmail } from "@/lib/brevo.server";
+import { emailInfoRows, escapeHtml, renderPlatformEmail } from "@/lib/notifications/brevo.server";
 
 const GATEWAY = "https://connector-gateway.lovable.dev/resend";
 

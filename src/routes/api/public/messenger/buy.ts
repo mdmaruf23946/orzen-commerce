@@ -16,7 +16,7 @@ export const Route = createFileRoute("/api/public/messenger/buy")({
         const tokenParam = new URL(request.url).searchParams.get("token");
         if (!tokenParam) return resultPage("লিংকটি সঠিক নয়", false);
 
-        const { readMessengerBuyLink } = await import("@/lib/messenger-buy-link.server");
+        const { readMessengerBuyLink } = await import("@/lib/integrations/messenger-buy-link.server");
         const payload = readMessengerBuyLink(tokenParam);
         if (!payload) return resultPage("এই অর্ডার লিংকটির মেয়াদ শেষ হয়েছে", false);
 
@@ -52,7 +52,7 @@ export const Route = createFileRoute("/api/public/messenger/buy")({
         }
         if (!pageToken) return resultPage("অর্ডারটি এখন শুরু করা যাচ্ছে না", false, (integration as any).page_id);
 
-        const { handleBuyPostback } = await import("@/lib/messenger-webhook.server");
+        const { handleBuyPostback } = await import("@/lib/integrations/messenger-webhook.server");
         const handled = await handleBuyPostback({
           sb: supabaseAdmin as any,
           storeId: payload.storeId,

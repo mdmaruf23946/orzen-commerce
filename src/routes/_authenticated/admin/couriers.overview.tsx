@@ -3,7 +3,7 @@ import { COURIERS, type CourierMeta } from "@/components/admin/couriers/provider
 import { BrandBadge } from "@/components/admin/couriers/BrandBadge";
 import { StatGrid, summarize, useCourierCounts, type ParcelSummary } from "@/components/admin/couriers/CourierStats";
 import { Button } from "@/components/ui/button";
-import { useCourierBrandAssets, useCourierConnections } from "@/lib/courier-apps";
+import { useCourierBrandAssets, useCourierConnections } from "@/lib/couriers/courier-apps";
 
 export const Route = createFileRoute("/_authenticated/admin/couriers/overview")({
   head: () => ({

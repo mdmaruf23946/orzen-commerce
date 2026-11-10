@@ -19,8 +19,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import {
   searchQuickOrderCustomers, getQuickOrderCustomerContext,
   searchQuickOrderProducts, createQuickOrder,
-} from "@/lib/quick-order.functions";
-import { listDeliveryZones } from "@/lib/admin.functions";
+} from "@/lib/orders/quick-order.functions";
+import { listDeliveryZones } from "@/lib/admin/admin.functions";
 
 const money = (n: number) => `৳${Math.round(Number(n) || 0).toLocaleString("en-US")}`;
 

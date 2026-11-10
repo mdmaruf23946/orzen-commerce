@@ -11,7 +11,7 @@ import {
   saveAiAdminSettings,
   sendAiAdminTestEvent,
   runAiAdminCommand,
-} from "@/lib/ai-admin.functions";
+} from "@/lib/admin/ai-admin.functions";
 import { NOTIFICATION_EVENTS } from "@/lib/ai-admin/catalog";
 import { OwnerPageHeader } from "@/components/owner/OwnerPageHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";

@@ -1,7 +1,7 @@
 // Shows what changed when the local cart is reconciled with live product data.
 import { AlertCircle } from "lucide-react";
-import type { CartNotice } from "@/lib/cart-reconcile";
-import { useStoreT } from "@/lib/store-i18n";
+import type { CartNotice } from "@/lib/storefront/cart-reconcile";
+import { useStoreT } from "@/lib/storefront/store-i18n";
 
 export function CartNotices({ notices }: { notices: CartNotice[] }) {
   const { t } = useStoreT();

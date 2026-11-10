@@ -7,9 +7,9 @@ import { BrandBadge } from "@/components/admin/couriers/BrandBadge";
 import { CourierIntegration } from "@/components/admin/couriers/CourierIntegration";
 import { StatGrid, summarize, useCourierCounts } from "@/components/admin/couriers/CourierStats";
 import { StatusBadge } from "@/components/admin/marketing/ui";
-import { listParcels } from "@/lib/courier-parcels.functions";
+import { listParcels } from "@/lib/couriers/courier-parcels.functions";
 import { STATUS_LABEL, type ParcelStatus } from "@/lib/couriers/status";
-import { COURIER_SECTIONS, useCourierBrandAssets, useCourierConnections } from "@/lib/courier-apps";
+import { COURIER_SECTIONS, useCourierBrandAssets, useCourierConnections } from "@/lib/couriers/courier-apps";
 import { cn } from "@/lib/utils";
 
 const search = z.object({ section: z.enum(["overview", "integration"]).optional() });

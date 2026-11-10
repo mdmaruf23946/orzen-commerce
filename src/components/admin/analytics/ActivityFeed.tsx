@@ -1,6 +1,6 @@
 import { CheckCircle2, ShoppingBag, Wallet, XCircle } from "lucide-react";
-import { compactMoney, relativeTime } from "@/lib/analytics-ui";
-import type { AnalyticsPayload } from "@/lib/analytics.server";
+import { compactMoney, relativeTime } from "@/lib/analytics/analytics-ui";
+import type { AnalyticsPayload } from "@/lib/analytics/analytics.server";
 
 const ICONS: Record<string, typeof ShoppingBag> = {
   order: ShoppingBag,

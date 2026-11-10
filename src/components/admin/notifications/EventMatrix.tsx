@@ -1,4 +1,4 @@
-import { NOTIFY_EVENTS, type EventMap } from "@/lib/notify-settings";
+import { NOTIFY_EVENTS, type EventMap } from "@/lib/notifications/notify-settings";
 import { Checkbox } from "@/components/ui/checkbox";
 
 export function EventMatrix({

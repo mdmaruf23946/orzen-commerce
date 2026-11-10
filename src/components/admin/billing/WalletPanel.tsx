@@ -20,7 +20,7 @@ import {
   setWalletAutoRenew,
   getWalletTopupOptions,
   submitWalletTopupManual,
-} from "@/lib/wallet.functions";
+} from "@/lib/payments/wallet.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -33,7 +33,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import type { CycleKey } from "@/lib/billing.functions";
+import type { CycleKey } from "@/lib/payments/billing.functions";
 import {
   MethodTabs,
   BrandCopyRow,

@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { listManualGateways, saveManualGateway, deleteManualGateway } from "@/lib/manual-call.functions";
+import { listManualGateways, saveManualGateway, deleteManualGateway } from "@/lib/calls/manual-call.functions";
 
 export const Route = createFileRoute("/_authenticated/owner/manual-call-gateways")({
   component: GatewaysPage,

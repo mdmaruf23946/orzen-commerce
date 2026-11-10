@@ -5,11 +5,11 @@ import { toast } from "sonner";
 import { Download, KeyRound, Copy, Clock, FileDown, LifeBuoy, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { getOrderDigitalAccess, requestDigitalDownload } from "@/lib/digital.functions";
-import { formatBytes, LICENSE_LABELS, type LicenseType } from "@/lib/digital";
+import { getOrderDigitalAccess, requestDigitalDownload } from "@/lib/catalog/digital.functions";
+import { formatBytes, LICENSE_LABELS, type LicenseType } from "@/lib/catalog/digital";
 import { getDeviceId } from "@/lib/fingerprint";
-import { readToken } from "@/lib/customer-session";
-import { useStoreT } from "@/lib/store-i18n";
+import { readToken } from "@/lib/accounts/customer-session";
+import { useStoreT } from "@/lib/storefront/store-i18n";
 
 const contactKey = (orderId: string) => `orzen_order_contact__${orderId}`;
 

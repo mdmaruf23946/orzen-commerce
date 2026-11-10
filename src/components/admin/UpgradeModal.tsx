@@ -6,7 +6,7 @@ import { Lock, Sparkles, ArrowRight } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { myBillingStatus, listPublicPlans } from "@/lib/billing.functions";
+import { myBillingStatus, listPublicPlans } from "@/lib/payments/billing.functions";
 import { FEATURE_LABELS, type FeatureKey } from "@/lib/features";
 
 const FEATURE_DESCRIPTIONS: Partial<Record<FeatureKey, string>> = {

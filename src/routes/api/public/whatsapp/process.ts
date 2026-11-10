@@ -1,8 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
 import { runWithTrace, traceToJSON } from "@/lib/telemetry.server";
-import { acquireStoreSlot } from "@/lib/store-slots";
-import { processWhatsAppJob, sendWhatsAppFallback, type WaJobRow } from "@/lib/whatsapp-webhook.server";
+import { acquireStoreSlot } from "@/lib/agents/store-slots";
+import { processWhatsAppJob, sendWhatsAppFallback, type WaJobRow } from "@/lib/integrations/whatsapp-webhook.server";
 
 const inputSchema = z.object({ job_id: z.string().uuid(), wake_token: z.string().uuid() });
 const BACKOFF = [5, 15, 45, 120, 300];

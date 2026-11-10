@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Plus, Trash2, Save } from "lucide-react";
-import { listOwnerTemplates, saveOwnerTemplate, deleteOwnerTemplate } from "@/lib/communication.functions";
+import { listOwnerTemplates, saveOwnerTemplate, deleteOwnerTemplate } from "@/lib/notifications/communication.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";

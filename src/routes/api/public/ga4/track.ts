@@ -38,7 +38,7 @@ export const Route = createFileRoute("/api/public/ga4/track")({
         let enabled = !!g.ga4_enabled;
         const apiSecret = g.ga4_api_secret as string | undefined;
         if (payload.landing_page_id) {
-          const { readTrackingTargets } = await import("@/lib/marketing.server");
+          const { readTrackingTargets } = await import("@/lib/marketing/marketing.server");
           const t: any = readTrackingTargets(marketing)[payload.landing_page_id];
           if (t?.google) {
             const tag = String(t.google.tag_id ?? "");
@@ -50,7 +50,7 @@ export const Route = createFileRoute("/api/public/ga4/track")({
           return Response.json({ ok: true, skipped: true });
         }
 
-        const { sendGa4Events } = await import("@/lib/ga4-mp.server");
+        const { sendGa4Events } = await import("@/lib/marketing/ga4-mp.server");
         const params: Record<string, unknown> = {
           ...(payload.custom_data ?? {}),
           engagement_time_msec: 100,

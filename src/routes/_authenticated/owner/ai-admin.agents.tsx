@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { Bot, CheckCircle2, ShieldCheck, Users, XCircle } from "lucide-react";
-import { aiAgentsOverview, setCustomerAgentEnabled } from "@/lib/ai-admin.functions";
+import { aiAgentsOverview, setCustomerAgentEnabled } from "@/lib/admin/ai-admin.functions";
 import { OwnerPageHeader } from "@/components/owner/OwnerPageHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";

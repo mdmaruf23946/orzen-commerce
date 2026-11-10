@@ -6,14 +6,14 @@ import { FeatureGate } from "@/components/admin/FeatureGate";
 import { AdminPageHeader } from "@/components/admin/page/AdminPageHeader";
 import { TypeFilterTabs } from "@/components/admin/page/TypeFilterTabs";
 import { useProductTypeScope, scopeTabs } from "@/lib/product-type-scope";
-import { storeAnalytics } from "@/lib/analytics.functions";
+import { storeAnalytics } from "@/lib/analytics/analytics.functions";
 import {
   analyticsRange,
   compareRange,
   type AnalyticsRangeKey,
   type CompareKey,
   type DateRange,
-} from "@/lib/analytics-ui";
+} from "@/lib/analytics/analytics-ui";
 import { AnalyticsRangeBar } from "@/components/admin/analytics/AnalyticsRangeBar";
 import { KpiGrid } from "@/components/admin/analytics/KpiGrid";
 import { RevenueChart } from "@/components/admin/analytics/RevenueChart";
@@ -27,7 +27,7 @@ import { ActivityFeed } from "@/components/admin/analytics/ActivityFeed";
 import { Insights, ProfitPanel } from "@/components/admin/analytics/ProfitPanel";
 import { CourierOverviewPanel } from "@/components/admin/analytics/CourierOverviewPanel";
 import { PaymentOverviewPanel } from "@/components/admin/analytics/PaymentOverviewPanel";
-import { courierOverview, paymentOverview } from "@/lib/ops-analytics.functions";
+import { courierOverview, paymentOverview } from "@/lib/analytics/ops-analytics.functions";
 
 export const Route = createFileRoute("/_authenticated/admin/analytics")({
   head: () => ({

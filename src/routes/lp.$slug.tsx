@@ -4,27 +4,27 @@
 import { createFileRoute, notFound } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { Check, Star, Loader2, ChevronDown } from "lucide-react";
-import { LP_ICONS } from "@/lib/landing-icons";
+import { LP_ICONS } from "@/lib/site-builder/landing-icons";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { getPublicLanding, getLandingStoreProducts, type PublicLandingPage } from "@/lib/landing-public.functions";
+import { getPublicLanding, getLandingStoreProducts, type PublicLandingPage } from "@/lib/site-builder/landing-public.functions";
 import type { LandingProductCard } from "@/components/landing/sections/ProductGrid";
-import { readRecent } from "@/lib/recently-viewed";
+import { readRecent } from "@/lib/storefront/recently-viewed";
 import { LandingBranding } from "@/components/landing/LandingBranding";
 import { GenericSection } from "@/components/landing/GenericSection";
 import { LandingFooter } from "@/components/landing/LandingFooter";
 import { LandingPixels } from "@/components/landing/LandingPixels";
-import { sectionSpec } from "@/lib/landing-sections";
-import { normalizePalette, themeTokens } from "@/lib/landing-theme";
-import { safeDesignCss } from "@/lib/landing-code";
-import { LP_BASE_CSS, wrapUserLayer } from "@/lib/landing-base-css";
-import { computeOfferPrices, normalizeOffer, offerIsUsable } from "@/lib/landing-offer";
-import { purchaseEventId, track } from "@/lib/fb-track";
-import { getLandingPreviewBySlug } from "@/lib/landing-builder.functions";
+import { sectionSpec } from "@/lib/site-builder/landing-sections";
+import { normalizePalette, themeTokens } from "@/lib/site-builder/landing-theme";
+import { safeDesignCss } from "@/lib/site-builder/landing-code";
+import { LP_BASE_CSS, wrapUserLayer } from "@/lib/site-builder/landing-base-css";
+import { computeOfferPrices, normalizeOffer, offerIsUsable } from "@/lib/site-builder/landing-offer";
+import { purchaseEventId, track } from "@/lib/marketing/fb-track";
+import { getLandingPreviewBySlug } from "@/lib/site-builder/landing-builder.functions";
 import {
   lpImage, normalizeContent, normalizeDeliveryZones,
   type LandingContent, type LandingFormConfig, type LandingDeliveryZone,
-} from "@/lib/landing-builder";
+} from "@/lib/site-builder/landing-builder";
 
 export const Route = createFileRoute("/lp/$slug")({
   validateSearch: (search: Record<string, unknown>) => {

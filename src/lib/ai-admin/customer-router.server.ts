@@ -1,7 +1,7 @@
 // Customer branch of the shared Messenger webhook: rate limit -> human-mode
 // check -> Customer AI Agent -> reply. Admin tools are never reachable here.
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
-import { sendText } from "@/lib/messenger-send.server";
+import { sendText } from "@/lib/integrations/messenger-send.server";
 import {
   appendCustomerMessage,
   ensureCustomerThread,

@@ -5,7 +5,7 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { ACTION_BY_KEY } from "./catalog";
 import { TOOLS, TOOL_BY_KEY, loadPermissions, logAction } from "./tools.server";
 import { loadSettings } from "./connection.server";
-import { detectReplyStyle } from "@/lib/reply-language";
+import { detectReplyStyle } from "@/lib/agents/reply-language";
 
 export type AgentResult = { reply: string; actions: string[] };
 
@@ -275,7 +275,7 @@ export async function runAdminAgent(args: {
     executed,
   );
 
-  const { routedModel } = await import("@/lib/ai-provider.server");
+  const { routedModel } = await import("@/lib/agents/ai-provider.server");
   const aiModel = await routedModel(model);
   const { text } = await generateText({
     model: aiModel,

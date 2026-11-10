@@ -10,26 +10,26 @@ import {
   placeOrder,
   startOnlineCheckout,
   validateCoupon,
-} from "@/lib/storefront.functions";
+} from "@/lib/storefront/storefront.functions";
 import {
   getPublicServiceCheckoutConfig,
   uploadServiceFile,
   removeServiceFile,
-} from "@/lib/service-checkout.functions";
+} from "@/lib/payments/service-checkout.functions";
 import {
   CONTACT_CHANNELS,
   CONTACT_TIMES,
   SERVICE_MANUAL_METHODS,
   advanceAmount,
   type ServiceIntakeField,
-} from "@/lib/service-checkout";
-import { removeSelected, type CartItem } from "@/lib/cart";
+} from "@/lib/payments/service-checkout";
+import { removeSelected, type CartItem } from "@/lib/storefront/cart";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
-import { useCustomerSession } from "@/lib/customer-session";
+import { useCustomerSession } from "@/lib/accounts/customer-session";
 import { computeFingerprint, getDeviceId } from "@/lib/fingerprint";
 import {
   BriefcaseBusiness,
@@ -42,7 +42,7 @@ import {
   Trash2,
   X,
 } from "lucide-react";
-import { useStoreT } from "@/lib/store-i18n";
+import { useStoreT } from "@/lib/storefront/store-i18n";
 
 export type ServiceCartInfo = Record<
   string,

@@ -1,5 +1,5 @@
 import { CheckCircle2, AlertTriangle, XCircle } from "lucide-react";
-import type { HealthItem } from "@/lib/seo";
+import type { HealthItem } from "@/lib/marketing/seo";
 
 export function SeoHealth({ items }: { items: HealthItem[] }) {
   const score = Math.round(

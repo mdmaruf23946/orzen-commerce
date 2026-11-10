@@ -1,8 +1,8 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Home, LayoutGrid, Heart, Truck, MessageCircle } from "lucide-react";
-import { wishlistCount } from "@/lib/wishlist";
-import { useStoreT } from "@/lib/store-i18n";
+import { wishlistCount } from "@/lib/storefront/wishlist";
+import { useStoreT } from "@/lib/storefront/store-i18n";
 
 export function BottomNav({ slug, whatsapp }: { slug: string; whatsapp?: string | null }) {
   const { t } = useStoreT();

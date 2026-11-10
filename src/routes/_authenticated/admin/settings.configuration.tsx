@@ -8,7 +8,7 @@ import { Switch } from "@/components/ui/switch";
 import {
   adminGetRequireCustomerLogin,
   adminSetRequireCustomerLogin,
-} from "@/lib/admin.functions";
+} from "@/lib/admin/admin.functions";
 import { InvoiceNumberingSection } from "@/components/admin/settings/InvoiceNumberingSection";
 import {
   Section,

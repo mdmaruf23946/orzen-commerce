@@ -14,8 +14,8 @@ import {
   Loader2,
   XCircle,
 } from "lucide-react";
-import { trackOrderPublic } from "@/lib/storefront.functions";
-import { taka } from "@/lib/order-display";
+import { trackOrderPublic } from "@/lib/storefront/storefront.functions";
+import { taka } from "@/lib/orders/order-display";
 
 const STAGE_META: Record<string, { label: string; icon: any }> = {
   placed: { label: "Placed", icon: ClipboardList },

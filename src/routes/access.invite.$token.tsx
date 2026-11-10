@@ -5,8 +5,8 @@ import { toast } from "sonner";
 import { ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-import { getInvite, respondInvite, switchStore } from "@/lib/delegated-access.functions";
-import { setActiveStoreId } from "@/lib/active-store";
+import { getInvite, respondInvite, switchStore } from "@/lib/accounts/delegated-access.functions";
+import { setActiveStoreId } from "@/lib/accounts/active-store";
 import { VerifyEmailDialog } from "@/components/admin/VerifyEmailDialog";
 
 export const Route = createFileRoute("/access/invite/$token")({

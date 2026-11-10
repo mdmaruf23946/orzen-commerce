@@ -12,15 +12,15 @@ import {
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import type { AdminOrderRow } from "@/lib/orders-admin.functions";
-import { confirmOrder } from "@/lib/orders-types.functions";
-import { updateOrderStatus } from "@/lib/admin.functions";
-import { bulkSendParcels, getParcelLabel } from "@/lib/courier-parcels.functions";
+import type { AdminOrderRow } from "@/lib/orders/orders-admin.functions";
+import { confirmOrder } from "@/lib/orders/orders-types.functions";
+import { updateOrderStatus } from "@/lib/admin/admin.functions";
+import { bulkSendParcels, getParcelLabel } from "@/lib/couriers/courier-parcels.functions";
 import { openPrintWindow } from "@/components/admin/couriers/parcel-ui";
 import {
   canCancel, canConfirm, canSendToCourier, downloadCsv, orderLabel, ordersToCsv,
   orderToPrintParcel, splitForCourier, type CourierIssue,
-} from "@/lib/orders-bulk";
+} from "@/lib/orders/orders-bulk";
 
 const STATUSES = ["pending", "confirmed", "processing", "delivered", "cancelled"] as const;
 

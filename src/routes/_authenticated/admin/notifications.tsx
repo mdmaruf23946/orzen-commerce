@@ -9,8 +9,8 @@ import {
   getNotificationSettings,
   saveNotificationChannel,
   testNotificationChannel,
-} from "@/lib/notify-settings.functions";
-import { computeState, defaultSettings, EMAIL_PROVIDERS, type EventMap } from "@/lib/notify-settings";
+} from "@/lib/notifications/notify-settings.functions";
+import { computeState, defaultSettings, EMAIL_PROVIDERS, type EventMap } from "@/lib/notifications/notify-settings";
 import { ChannelCard } from "@/components/admin/notifications/ChannelCard";
 import { EventMatrix } from "@/components/admin/notifications/EventMatrix";
 import { Input } from "@/components/ui/input";

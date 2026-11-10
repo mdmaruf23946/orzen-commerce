@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { ExternalLink, Eye, EyeOff, Globe, Loader2, MessageCircle, Send, Trash2, X } from "lucide-react";
 import {
   replyFacebookComment, privateReplyFacebookComment, setFacebookCommentHidden, deleteFacebookComment,
-} from "@/lib/facebook-page.functions";
+} from "@/lib/integrations/facebook-page.functions";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";

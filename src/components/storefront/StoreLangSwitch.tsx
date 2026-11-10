@@ -1,4 +1,4 @@
-import { useStoreT } from "@/lib/store-i18n";
+import { useStoreT } from "@/lib/storefront/store-i18n";
 
 /**
  * Compact EN | বাংলা toggle for the storefront header / drawer.

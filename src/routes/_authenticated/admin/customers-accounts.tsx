@@ -9,8 +9,8 @@ import {
   adminListCustomerAccounts,
   adminGetCustomerAccount,
   adminSetCustomerActive,
-} from "@/lib/admin.functions";
-import { getCustomerNote, upsertCustomerNote } from "@/lib/business.functions";
+} from "@/lib/admin/admin.functions";
+import { getCustomerNote, upsertCustomerNote } from "@/lib/admin/business.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";

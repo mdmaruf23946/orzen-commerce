@@ -15,9 +15,9 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import type { PaymentOverview, PaymentRow } from "@/lib/ops-analytics.server";
+import type { PaymentOverview, PaymentRow } from "@/lib/analytics/ops-analytics.server";
 import { getBrand } from "@/components/admin/payments/providers";
-import { bucketLabel, compactMoney, pctChange } from "@/lib/analytics-ui";
+import { bucketLabel, compactMoney, pctChange } from "@/lib/analytics/analytics-ui";
 import { ComparisonTable, rateTone, type ColumnDef } from "./ComparisonTable";
 import { OpsKpiRow } from "./OpsKpi";
 

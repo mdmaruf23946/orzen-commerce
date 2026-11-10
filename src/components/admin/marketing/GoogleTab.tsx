@@ -9,8 +9,8 @@ import {
   sendGa4TestEvent,
   sendGoogleAdsTestConversion,
   verifyGtmInstallation,
-} from "@/lib/marketing.functions";
-import { googleDefaults, GA4_ID_RE, ADS_ID_RE, GTM_ID_RE } from "@/lib/marketing.schema";
+} from "@/lib/marketing/marketing.functions";
+import { googleDefaults, GA4_ID_RE, ADS_ID_RE, GTM_ID_RE } from "@/lib/marketing/marketing.schema";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, Row, StatusBadge, TestResult, type StatusKind } from "./ui";

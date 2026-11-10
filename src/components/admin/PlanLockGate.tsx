@@ -5,7 +5,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { Lock, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { myBillingStatus, listPublicPlans, activateFreePlan } from "@/lib/billing.functions";
+import { myBillingStatus, listPublicPlans, activateFreePlan } from "@/lib/payments/billing.functions";
 
 /** Statuses where the store has no usable plan at all. */
 const LOCKED = ["expired", "cancelled", "suspended", "past_due"];

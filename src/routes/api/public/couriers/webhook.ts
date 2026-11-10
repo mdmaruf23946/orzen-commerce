@@ -22,7 +22,7 @@ export const Route = createFileRoute("/api/public/couriers/webhook")({
         const { parseCourierWebhook } = await import("@/lib/couriers/webhook-parse");
         const update = parseCourierWebhook(body);
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-        const { applyCourierUpdate } = await import("@/lib/courier-parcels.functions");
+        const { applyCourierUpdate } = await import("@/lib/couriers/courier-parcels.functions");
         try {
           const r = await applyCourierUpdate(supabaseAdmin, storeId, update, "webhook");
           return Response.json({ ok: true, matched: r.matched }, { status: 202 });

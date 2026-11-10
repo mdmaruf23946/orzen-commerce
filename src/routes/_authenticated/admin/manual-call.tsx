@@ -11,9 +11,9 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { addHistory, patchHistory, getSettings, withinHours, providerName, removeConfig, saveConfig, saveSettings, type CallLog, type CallSettings, type ProviderConfig , sipLogin, lineName } from "@/lib/call-providers";
+import { addHistory, patchHistory, getSettings, withinHours, providerName, removeConfig, saveConfig, saveSettings, type CallLog, type CallSettings, type ProviderConfig , sipLogin, lineName } from "@/lib/calls/call-providers";
 import { supabase } from "@/integrations/supabase/client";
-import { listManualLines, listManualCalls, saveCallLog } from "@/lib/manual-call.functions";
+import { listManualLines, listManualCalls, saveCallLog } from "@/lib/calls/manual-call.functions";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 function Recording({ row }: { row: CallLog }) {
@@ -142,7 +142,7 @@ function Dialer({ list, record }: { list: ProviderConfig[]; record: boolean }) {
     callId.current = id;
     setState("connecting"); setSecs(0);
     try {
-      const { placeCall } = await import("@/lib/manual-call-phone");
+      const { placeCall } = await import("@/lib/calls/manual-call-phone");
       phone.current = await placeCall(
         { wss_url: cfg.wsUrl || `wss://${cfg.host}`, sip_domain: cfg.host, ...sipLogin(cfg, ext), caller_number: cfg.callerId, record },
         `${cfg.prefix ?? ""}${num}`,

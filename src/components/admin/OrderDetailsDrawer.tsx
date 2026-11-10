@@ -8,13 +8,13 @@ import {
   LayoutGrid, Clock, Check, PhoneCall,
 } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { formatDuration } from "@/lib/call-center";
+import { formatDuration } from "@/lib/calls/call-center";
 import { Link } from "@tanstack/react-router";
-import { getOrderDetails, addInternalNote, deleteInternalNote } from "@/lib/business.functions";
-import { updateOrderCourierInfo } from "@/lib/ai-review.functions";
-import { setOrderAllowDuplicate, updateOrderStatus } from "@/lib/admin.functions";
-import { getOrderCustomerStats, getStoreBrand, listCourierBrands } from "@/lib/orders-admin.functions";
-import { getCachedFraudCheck, ensureAutoFraudCheck } from "@/lib/fraud.functions";
+import { getOrderDetails, addInternalNote, deleteInternalNote } from "@/lib/admin/business.functions";
+import { updateOrderCourierInfo } from "@/lib/agents/ai-review.functions";
+import { setOrderAllowDuplicate, updateOrderStatus } from "@/lib/admin/admin.functions";
+import { getOrderCustomerStats, getStoreBrand, listCourierBrands } from "@/lib/orders/orders-admin.functions";
+import { getCachedFraudCheck, ensureAutoFraudCheck } from "@/lib/orders/fraud.functions";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,7 +22,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { FraudCheckModal, RiskBadge } from "@/components/admin/FraudCheckModal";
 import { ServiceWorkflowPanel } from "@/components/admin/service/ServiceWorkflowPanel";
 import { SubscriptionOrderPanel } from "@/components/admin/subscriptions/SubscriptionOrderPanel";
-import { getOrderCallDetails } from "@/lib/call-center.functions";
+import { getOrderCallDetails } from "@/lib/calls/call-center.functions";
 
 import { toast } from "sonner";
 import { nextStatuses } from "@/components/admin/orders/OrderCard";

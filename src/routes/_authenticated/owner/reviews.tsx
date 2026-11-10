@@ -21,7 +21,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { compressImage } from "@/lib/compress-image";
 import {
   listReviewsAdmin, upsertReview, deleteReview, type PlatformReview,
-} from "@/lib/reviews.functions";
+} from "@/lib/catalog/reviews.functions";
 
 export const Route = createFileRoute("/_authenticated/owner/reviews")({
   component: ReviewsPage,

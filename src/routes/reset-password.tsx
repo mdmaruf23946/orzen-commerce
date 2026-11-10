@@ -11,8 +11,8 @@ import {
   confirmPasswordResetCode,
   RESEND_COOLDOWN_SEC,
   MAX_SENDS_PER_WINDOW,
-} from "@/lib/merchant-security.functions";
-import { useResendTimer, CODE_INBOX_HINT } from "@/lib/use-resend-timer";
+} from "@/lib/security/merchant-security.functions";
+import { useResendTimer, CODE_INBOX_HINT } from "@/lib/accounts/use-resend-timer";
 import { TurnstileWidget, turnstileConfigured, CAPTCHA_WAIT_BN } from "@/components/TurnstileWidget";
 
 export const Route = createFileRoute("/reset-password")({

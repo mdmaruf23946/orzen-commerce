@@ -1,4 +1,4 @@
-import { PLATFORM_FAQ } from "@/lib/platform-seo";
+import { PLATFORM_FAQ } from "@/lib/marketing/platform-seo";
 
 export function PlatformFaq() {
   return (

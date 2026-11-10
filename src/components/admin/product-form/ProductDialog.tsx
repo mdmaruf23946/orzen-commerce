@@ -7,14 +7,14 @@ import { Star, Trash2, Crop, Plus, X, Youtube, Facebook } from "lucide-react";
 import {
   upsertCategory,
   listMyProducts,
-} from "@/lib/admin.functions";
+} from "@/lib/admin/admin.functions";
 import {
   applyDescriptionFooter,
   defaultsForType,
   mergeTags,
   resolveDefaultStatus,
   type ProductTypeKey,
-} from "@/lib/product-defaults";
+} from "@/lib/catalog/product-defaults";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";

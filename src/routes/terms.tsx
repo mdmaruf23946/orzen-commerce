@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { PLATFORM_OG_IMAGE } from "@/lib/platform-seo";
-import { getLegalPagePublic } from "@/lib/legal.functions";
+import { PLATFORM_OG_IMAGE } from "@/lib/marketing/platform-seo";
+import { getLegalPagePublic } from "@/lib/storefront/legal.functions";
 import { LegalPage, LegalPageMissing } from "@/components/storefront/LegalPage";
 
 const PAGE_KEY = "terms";

@@ -9,13 +9,13 @@ import {
   listStoreOnlineGateways,
   startOnlineCheckout,
   placeOrder,
-} from "@/lib/storefront.functions";
-import { getPublicSubscriptionSettings } from "@/lib/subscriptions.functions";
-import { removeSelected, type CartItem } from "@/lib/cart";
-import { useCustomerSession } from "@/lib/customer-session";
-import { writeOrderContact } from "@/lib/order-proof";
+} from "@/lib/storefront/storefront.functions";
+import { getPublicSubscriptionSettings } from "@/lib/payments/subscriptions.functions";
+import { removeSelected, type CartItem } from "@/lib/storefront/cart";
+import { useCustomerSession } from "@/lib/accounts/customer-session";
+import { writeOrderContact } from "@/lib/orders/order-proof";
 import { computeFingerprint, getDeviceId } from "@/lib/fingerprint";
-import { billingSummary, CYCLE_LABEL, nextBillingDate, type SubCycle } from "@/lib/subscriptions";
+import { billingSummary, CYCLE_LABEL, nextBillingDate, type SubCycle } from "@/lib/payments/subscriptions";
 import {
   findPlan,
   planDays,
@@ -27,7 +27,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { RefreshCw, ShieldCheck, CalendarClock, Sparkles, CheckCircle2, ChevronDown } from "lucide-react";
-import { useStoreT } from "@/lib/store-i18n";
+import { useStoreT } from "@/lib/storefront/store-i18n";
 
 export type SubscriptionCartInfo = Record<string, any | null>;
 

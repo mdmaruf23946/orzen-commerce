@@ -7,8 +7,8 @@ import { useServerFn } from "@tanstack/react-start";
 import { Download, Pause, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { getCallAnalytics, listCallLogs } from "@/lib/voice-analytics.functions";
-import { formatDuration } from "@/lib/call-center";
+import { getCallAnalytics, listCallLogs } from "@/lib/calls/voice-analytics.functions";
+import { formatDuration } from "@/lib/calls/call-center";
 
 type RangeKey = "today" | "7d" | "30d" | "custom";
 

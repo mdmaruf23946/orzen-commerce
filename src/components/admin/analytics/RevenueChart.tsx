@@ -9,8 +9,8 @@ import {
   YAxis,
 } from "recharts";
 import { cn } from "@/lib/utils";
-import { bucketLabel, compactMoney } from "@/lib/analytics-ui";
-import type { AnalyticsPayload } from "@/lib/analytics.server";
+import { bucketLabel, compactMoney } from "@/lib/analytics/analytics-ui";
+import type { AnalyticsPayload } from "@/lib/analytics/analytics.server";
 
 const METRICS = [
   { key: "revenue", label: "Revenue", money: true },

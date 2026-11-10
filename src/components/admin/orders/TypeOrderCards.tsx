@@ -6,7 +6,7 @@ import {
   CalendarClock, CalendarCheck, RefreshCw, XCircle, Download, Phone,
 } from "lucide-react";
 import { toast } from "sonner";
-import type { AdminOrderRow, OrderKind } from "@/lib/orders-admin.functions";
+import type { AdminOrderRow, OrderKind } from "@/lib/orders/orders-admin.functions";
 import { Thumb, PaymentBadge, money } from "@/components/admin/orders/OrderCard";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,

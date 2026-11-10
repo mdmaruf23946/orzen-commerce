@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FeatureGate } from "@/components/admin/FeatureGate";
-import { aiDecideAction, aiGetOverview } from "@/lib/merchant-ai.functions";
+import { aiDecideAction, aiGetOverview } from "@/lib/agents/merchant-ai.functions";
 
 export const Route = createFileRoute("/_authenticated/admin/ai/approvals")({
   head: () => ({

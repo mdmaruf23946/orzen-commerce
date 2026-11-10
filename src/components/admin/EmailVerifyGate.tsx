@@ -2,7 +2,7 @@ import { useState, type ReactNode } from "react";
 import { ShieldAlert, MailCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { VerifyEmailDialog } from "@/components/admin/VerifyEmailDialog";
-import { useSecurityStatus, isSensitivePath } from "@/lib/use-security";
+import { useSecurityStatus, isSensitivePath } from "@/lib/security/use-security";
 
 /** Small banner shown on every merchant page until the email is verified. */
 export function EmailVerifyBanner() {

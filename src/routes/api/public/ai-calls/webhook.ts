@@ -8,7 +8,7 @@ export const Route = createFileRoute("/api/public/ai-calls/webhook")({
       POST: async ({ request }) => {
         const raw = await request.text();
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-        const { readCreds, verifyElevenLabsSignature } = await import("@/lib/ai-call-center.server");
+        const { readCreds, verifyElevenLabsSignature } = await import("@/lib/calls/ai-call-center.server");
 
         const { data: cfg } = await supabaseAdmin
           .from("ai_call_config")

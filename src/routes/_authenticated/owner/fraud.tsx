@@ -11,7 +11,7 @@ import {
 import {
   getFraudSettingsAdmin, updateFraudSettings, testFraudConnection, fraudAnalytics,
   addFraudApiKey, updateFraudApiKey, deleteFraudApiKey, moveFraudApiKey,
-} from "@/lib/fraud.functions";
+} from "@/lib/orders/fraud.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";

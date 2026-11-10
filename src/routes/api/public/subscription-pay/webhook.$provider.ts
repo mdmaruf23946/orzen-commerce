@@ -44,7 +44,7 @@ export const Route = createFileRoute("/api/public/subscription-pay/webhook/$prov
             .eq("invoice_id", (inv as any).id);
 
           if (result.status === "paid" && (inv as any).purpose === "wallet_topup") {
-            const { creditTopupInvoice } = await import("@/lib/wallet.server");
+            const { creditTopupInvoice } = await import("@/lib/payments/wallet.server");
             await creditTopupInvoice(supabaseAdmin as any, inv);
             await supabaseAdmin
               .from("subscription_invoices")
@@ -65,7 +65,7 @@ export const Route = createFileRoute("/api/public/subscription-pay/webhook/$prov
           }
           if (result.status === "paid") {
             // Main-website Meta Purchase after verified payment (idempotent per invoice).
-            const { trackVerifiedPayment } = await import("@/lib/platform-meta.server");
+            const { trackVerifiedPayment } = await import("@/lib/marketing/platform-meta.server");
             await trackVerifiedPayment({
               invoiceId: (inv as any).id,
               userId: (inv as any).user_id,

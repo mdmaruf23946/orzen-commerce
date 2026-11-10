@@ -1,8 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { PLAN_DISPLAY_FEATURES } from "@/lib/features";
-import { getPlatformSeoOverrides } from "@/lib/platform-seo-pages.functions";
-import { effectiveSeo } from "@/lib/platform-seo-pages";
-import { platformHead, ORG_NODE, WEBSITE_NODE, softwareAppNode, faqNode } from "@/lib/platform-seo";
+import { getPlatformSeoOverrides } from "@/lib/marketing/platform-seo-pages.functions";
+import { effectiveSeo } from "@/lib/marketing/platform-seo-pages";
+import { platformHead, ORG_NODE, WEBSITE_NODE, softwareAppNode, faqNode } from "@/lib/marketing/platform-seo";
 import { PlatformFaq } from "@/components/platform/PlatformFaq";
 
 const TITLE = "Features — ORZEN AI eCommerce Platform";

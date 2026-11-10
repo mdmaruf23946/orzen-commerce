@@ -3,8 +3,8 @@
 import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { getLandingTracking } from "@/lib/marketing.functions";
-import { track } from "@/lib/fb-track";
+import { getLandingTracking } from "@/lib/marketing/marketing.functions";
+import { track } from "@/lib/marketing/fb-track";
 
 export function LandingPixels({ pageId }: { pageId: string }) {
   const fetchTracking = useServerFn(getLandingTracking);
@@ -22,7 +22,7 @@ export function LandingPixels({ pageId }: { pageId: string }) {
   const slug = data?.store_slug ?? "";
 
   useEffect(() => {
-    if (slug) import("@/lib/marketing-attribution").then((m) => m.recordPageView(slug)).catch(() => {});
+    if (slug) import("@/lib/marketing/marketing-attribution").then((m) => m.recordPageView(slug)).catch(() => {});
   }, [slug]);
 
   useEffect(() => {

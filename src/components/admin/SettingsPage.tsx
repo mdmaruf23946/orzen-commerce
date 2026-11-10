@@ -2,7 +2,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState, type ReactNode } from "react";
 import { toast } from "sonner";
-import { getMyStore } from "@/lib/admin.functions";
+import { getMyStore } from "@/lib/admin/admin.functions";
 import { Button } from "@/components/ui/button";
 
 /**

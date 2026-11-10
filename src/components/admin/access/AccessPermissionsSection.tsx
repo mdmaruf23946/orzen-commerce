@@ -20,7 +20,7 @@ import {
   revokeAccess,
   switchStore,
   updateAccess,
-} from "@/lib/delegated-access.functions";
+} from "@/lib/accounts/delegated-access.functions";
 import {
   DELEGATE_ROLES,
   GRANTABLE_SECTIONS,
@@ -29,7 +29,7 @@ import {
   type DelegateRole,
   type PermissionMap,
 } from "@/lib/panel-sections";
-import { setActiveStoreId } from "@/lib/active-store";
+import { setActiveStoreId } from "@/lib/accounts/active-store";
 
 const roleLabel = (r: string) => DELEGATE_ROLES.find((x) => x.value === r)?.label ?? r;
 const fmt = (d?: string | null) => (d ? new Date(d).toLocaleDateString() : "—");

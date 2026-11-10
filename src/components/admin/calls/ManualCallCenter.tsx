@@ -9,10 +9,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { CallButton } from "@/components/admin/calls/CallButton";
 import { CallResultBadge, CallStatusBadge } from "@/components/admin/calls/CallStatusBadge";
-import { getCallCenterOverview, listCalls, deleteCall } from "@/lib/call-center.functions";
+import { getCallCenterOverview, listCalls, deleteCall } from "@/lib/calls/call-center.functions";
 import {
   formatDuration, LIVE_STATUSES, type CallRow,
-} from "@/lib/call-center";
+} from "@/lib/calls/call-center";
 
 const FILTERS = [
   { key: "all", label: "All" },

@@ -9,7 +9,7 @@ import {
   ownerSetDefaultTheme,
   ownerSetThemeStatus,
   ownerUpdateThemeMeta,
-} from "@/lib/themes.functions";
+} from "@/lib/site-builder/themes.functions";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";

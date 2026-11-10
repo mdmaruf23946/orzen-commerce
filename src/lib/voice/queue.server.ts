@@ -274,7 +274,7 @@ export async function handleEpbxWebhook(admin: any, callId: string, body: any) {
 /** Optional confirmation SMS through the store's own SMS settings. Never throws. */
 async function sendConfirmSms(admin: any, storeId: string, order: any) {
   try {
-    const { loadSettings, readSecret } = await import("@/lib/notify-settings.server");
+    const { loadSettings, readSecret } = await import("@/lib/notifications/notify-settings.server");
     const [{ data: row }, settings] = await Promise.all([
       admin.from("stores").select("name").eq("id", storeId).maybeSingle(),
       loadSettings(admin, storeId),

@@ -3,8 +3,8 @@ import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { AlertTriangle, CheckCircle2, Mail, Send, XCircle } from "lucide-react";
-import { getEmailConfigStatus } from "@/lib/email-ops.functions";
-import { sendTestPlatformEmail } from "@/lib/platform-notify.functions";
+import { getEmailConfigStatus } from "@/lib/notifications/email-ops.functions";
+import { sendTestPlatformEmail } from "@/lib/notifications/platform-notify.functions";
 import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/_authenticated/owner/communication/settings")({

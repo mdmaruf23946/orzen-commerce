@@ -3,7 +3,7 @@ import { useState } from "react";
 import { BrandMark } from "@/components/admin/payments/BrandMark";
 import { getBrand } from "@/components/admin/payments/providers";
 import { PaymentKpis, RangePicker, sumStats, taka, usePaymentStats } from "@/components/admin/payments/PaymentStats";
-import { isGatewayConnected, usePaymentGateways } from "@/lib/payment-gateway-apps";
+import { isGatewayConnected, usePaymentGateways } from "@/lib/payments/payment-gateway-apps";
 
 export const Route = createFileRoute("/_authenticated/admin/payment-gateways/overview")({
   head: () => ({

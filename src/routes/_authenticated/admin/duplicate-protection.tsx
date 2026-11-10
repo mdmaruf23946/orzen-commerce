@@ -17,7 +17,7 @@ import {
   addExcludedProduct,
   removeExcludedProduct,
   listStoreProductsForPicker,
-} from "@/lib/duplicate-protection.functions";
+} from "@/lib/orders/duplicate-protection.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";

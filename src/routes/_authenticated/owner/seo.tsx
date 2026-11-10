@@ -10,14 +10,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import { PLATFORM_ORIGIN } from "@/lib/seo";
+import { PLATFORM_ORIGIN } from "@/lib/marketing/seo";
 import { PageSpeedPanel, SearchConsoleCard } from "@/components/owner/PageSpeedPanel";
 import {
   PLATFORM_PAGES, effectiveSeo, scorePageSeo, type PageSeo, type PlatformPageKey,
-} from "@/lib/platform-seo-pages";
+} from "@/lib/marketing/platform-seo-pages";
 import {
   generatePlatformSeoDraft, getPlatformSeoAdmin, savePlatformPageSeo,
-} from "@/lib/platform-seo-pages.functions";
+} from "@/lib/marketing/platform-seo-pages.functions";
 
 export const Route = createFileRoute("/_authenticated/owner/seo")({
   component: OwnerSeoPage,

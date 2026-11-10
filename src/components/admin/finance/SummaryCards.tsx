@@ -1,4 +1,4 @@
-import { money } from "@/lib/finance-ui";
+import { money } from "@/lib/analytics/finance-ui";
 import { cn } from "@/lib/utils";
 
 export type FinanceSummary = {

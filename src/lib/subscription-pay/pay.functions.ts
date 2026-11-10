@@ -3,7 +3,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
-import { CYCLE_MONTHS, type CycleKey } from "@/lib/billing.functions";
+import { CYCLE_MONTHS, type CycleKey } from "@/lib/payments/billing.functions";
 import { listProviderMeta } from "./providers/registry";
 
 async function assertOwner(supabase: any, userId: string) {
@@ -372,7 +372,7 @@ export const initiateSubscriptionCheckout = createServerFn({ method: "POST" })
       .single();
     if (invErr) throw new Error(invErr.message);
 
-    const { safeReturnOrigin } = await import("@/lib/safe-return-origin.server");
+    const { safeReturnOrigin } = await import("@/lib/accounts/safe-return-origin.server");
     const origin = safeReturnOrigin(data.return_origin);
     const returnUrl = `${origin}/admin/billing/return?invoice=${invoiceNo}`;
     const cancelUrl = `${origin}/admin/billing?cancelled=1&invoice=${invoiceNo}`;
@@ -405,7 +405,7 @@ export const initiateSubscriptionCheckout = createServerFn({ method: "POST" })
     // Remember this visitor for the payment webhook, and report AddPaymentInfo.
     try {
       const { getRequest } = await import("@tanstack/react-start/server");
-      const { rememberCheckoutVisitor, sendPlatformEvent, visitorFromHeaders } = await import("@/lib/platform-meta.server");
+      const { rememberCheckoutVisitor, sendPlatformEvent, visitorFromHeaders } = await import("@/lib/marketing/platform-meta.server");
       const visitor = visitorFromHeaders(getRequest().headers);
       await rememberCheckoutVisitor((inv as any).id, visitor);
       await sendPlatformEvent({
@@ -487,7 +487,7 @@ export const verifyAndActivateSubscription = createServerFn({ method: "POST" })
 
     if (result.status === "paid" && (inv as any).purpose === "wallet_topup") {
       // Wallet top-up: credit the balance (idempotent) — no plan activation.
-      const { creditTopupInvoice } = await import("@/lib/wallet.server");
+      const { creditTopupInvoice } = await import("@/lib/payments/wallet.server");
       await creditTopupInvoice(supabaseAdmin as any, inv);
       await supabaseAdmin
         .from("subscription_invoices")
@@ -495,7 +495,7 @@ export const verifyAndActivateSubscription = createServerFn({ method: "POST" })
         .eq("id", (inv as any).id);
       try {
         const { getRequest } = await import("@tanstack/react-start/server");
-        const { trackVerifiedPayment, visitorFromHeaders } = await import("@/lib/platform-meta.server");
+        const { trackVerifiedPayment, visitorFromHeaders } = await import("@/lib/marketing/platform-meta.server");
         await trackVerifiedPayment({
           invoiceId: (inv as any).id,
           userId: (inv as any).user_id,
@@ -534,7 +534,7 @@ export const verifyAndActivateSubscription = createServerFn({ method: "POST" })
         .eq("id", (inv as any).store_id).maybeSingle();
       st = data;
     }
-    const { computePlanExpiry } = await import("@/lib/plan-period");
+    const { computePlanExpiry } = await import("@/lib/payments/plan-period");
     const { expires } = computePlanExpiry({
       now, months, targetPackageId: (inv as any).package_id,
       currentPackageId: st?.package_id, currentExpiresAt: st?.expires_at,
@@ -552,7 +552,7 @@ export const verifyAndActivateSubscription = createServerFn({ method: "POST" })
           trial_ends_at: null,
         })
         .eq("id", (inv as any).store_id);
-      const { grantPlanAiCredits } = await import("@/lib/ai-credit-grant.server");
+      const { grantPlanAiCredits } = await import("@/lib/payments/ai-credit-grant.server");
       await grantPlanAiCredits(supabaseAdmin, (inv as any).store_id, (pkg as any)?.id ?? (inv as any).package_id, String((inv as any).invoice_no ?? (inv as any).id));
     }
 
@@ -629,7 +629,7 @@ export const verifyAndActivateSubscription = createServerFn({ method: "POST" })
     }
 
     try {
-      const { notifySubscription } = await import("@/lib/platform-notify.server");
+      const { notifySubscription } = await import("@/lib/notifications/platform-notify.server");
       const { data: u } = await supabaseAdmin.auth.admin.getUserById((inv as any).user_id);
       await notifySubscription({
         email: u?.user?.email ?? null,
@@ -651,7 +651,7 @@ export const verifyAndActivateSubscription = createServerFn({ method: "POST" })
     // Main-website Meta Purchase — only now, after the gateway verified payment.
     try {
       const { getRequest } = await import("@tanstack/react-start/server");
-      const { trackVerifiedPayment, visitorFromHeaders } = await import("@/lib/platform-meta.server");
+      const { trackVerifiedPayment, visitorFromHeaders } = await import("@/lib/marketing/platform-meta.server");
       await trackVerifiedPayment({
         invoiceId: (inv as any).id,
         userId: (inv as any).user_id,

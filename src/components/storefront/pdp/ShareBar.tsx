@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Copy, Facebook, MessageCircle, Send } from "lucide-react";
 import { toast } from "sonner";
-import { useStoreT } from "@/lib/store-i18n";
+import { useStoreT } from "@/lib/storefront/store-i18n";
 
 export function ShareBar({ url, title }: { url: string; title: string }) {
   const { t } = useStoreT();

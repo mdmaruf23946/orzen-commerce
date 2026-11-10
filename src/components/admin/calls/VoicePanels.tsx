@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   getVoiceConnection, testVoiceToken, connectVoiceProvider, updateVoiceBaseUrl, retestVoiceProvider, disconnectVoiceProvider,
   getVoiceSettings, saveVoiceSettings, saveVoiceDefaults, type VoiceSettings,
-} from "@/lib/voice.functions";
+} from "@/lib/calls/voice.functions";
 import { useProviderOverview } from "@/components/admin/calls/EpbxPanels";
 import { CallScriptPanel } from "@/components/admin/calls/CallScriptPanel";
 

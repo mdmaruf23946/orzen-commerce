@@ -14,12 +14,12 @@ import { Switch } from "@/components/ui/switch";
 import {
   getStoreAiCallSetup, activateStoreAiCallCenter, setStoreAiCallActive, updateStoreAiCallPrefs,
   storeAiCallOverview, listStoreAiCalls, getStoreAiCall,
-} from "@/lib/ai-call-center-store.functions";
-import { AI_RESULT_LABEL, AI_RESULT_TONE, AI_STATUS_LABEL, AI_STATUS_TONE, formatMinutes } from "@/lib/ai-call-center";
+} from "@/lib/calls/ai-call-center-store.functions";
+import { AI_RESULT_LABEL, AI_RESULT_TONE, AI_STATUS_LABEL, AI_STATUS_TONE, formatMinutes } from "@/lib/calls/ai-call-center";
 import { FeatureGate } from "@/components/admin/FeatureGate";
 import { CallCenterPage } from "@/components/admin/calls/ManualCallCenter";
 import { CallAnalyticsCards, CallLogTable } from "@/components/admin/calls/CallAnalytics";
-import { listCallRecordings } from "@/lib/call-center.functions";
+import { listCallRecordings } from "@/lib/calls/call-center.functions";
 import {
   ProviderOverviewCard, PhoneNumbersPanel, AgentsPanel, DialPad, ProviderCallLog, AutomatedOrderCalls, WebRtcPanel, NotAvailable, AccountHubCard, LowBalanceBanner,
 } from "@/components/admin/calls/EpbxPanels";

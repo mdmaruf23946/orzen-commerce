@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { ownerCustomerStats } from "@/lib/owner.functions";
+import { ownerCustomerStats } from "@/lib/admin/owner.functions";
 import { ContactLinks } from "@/components/owner/ContactLinks";
 import { Users, UserCheck, Store as StoreIcon } from "lucide-react";
 

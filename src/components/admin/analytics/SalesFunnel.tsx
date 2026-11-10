@@ -1,5 +1,5 @@
 import { Info } from "lucide-react";
-import type { AnalyticsPayload } from "@/lib/analytics.server";
+import type { AnalyticsPayload } from "@/lib/analytics/analytics.server";
 
 export function SalesFunnel({
   funnel,

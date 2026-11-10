@@ -13,7 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { compressImage } from "@/lib/compress-image";
-import { listCouriers, upsertCourier, deleteCourier } from "@/lib/owner-ext.functions";
+import { listCouriers, upsertCourier, deleteCourier } from "@/lib/admin/owner-ext.functions";
 
 export const Route = createFileRoute("/_authenticated/owner/courier-brand-assets")({
   component: CourierBrandAssetsPage,

@@ -4,8 +4,8 @@ import {
   AlertTriangle, CheckCircle2, RefreshCw, ShieldAlert, ShieldCheck, Lock, Info, RotateCw,
 } from "lucide-react";
 import { toast } from "sonner";
-import { runFraudCheck, getCachedFraudCheck, ensureAutoFraudCheck, resyncFraudCheck } from "@/lib/fraud.functions";
-import { amIOwner } from "@/lib/owner.functions";
+import { runFraudCheck, getCachedFraudCheck, ensureAutoFraudCheck, resyncFraudCheck } from "@/lib/orders/fraud.functions";
+import { amIOwner } from "@/lib/admin/owner.functions";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 

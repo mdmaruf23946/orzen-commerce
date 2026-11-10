@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { Button } from "@/components/ui/button";
-import type { StoreSeo } from "@/lib/seo";
+import type { StoreSeo } from "@/lib/marketing/seo";
 
 export type SeoOverview = {
   store: any;

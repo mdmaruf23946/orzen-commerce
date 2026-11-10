@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Lock, Sparkles } from "lucide-react";
-import { myBillingStatus } from "@/lib/billing.functions";
+import { myBillingStatus } from "@/lib/payments/billing.functions";
 import { hasFeature, FEATURE_LABELS, type FeatureKey } from "@/lib/features";
 import { useUpgradePrompt } from "@/components/admin/UpgradeModal";
 import { cn } from "@/lib/utils";

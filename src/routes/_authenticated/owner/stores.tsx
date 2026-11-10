@@ -1,4 +1,4 @@
-import { storeHref } from "@/lib/store-link";
+import { storeHref } from "@/lib/storefront/store-link";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -11,8 +11,8 @@ import {
   deleteStore,
   listPackages,
   getStoreUsage,
-} from "@/lib/owner.functions";
-import { listUsersWithoutStore, createStoreForUser } from "@/lib/owner-ext.functions";
+} from "@/lib/admin/owner.functions";
+import { listUsersWithoutStore, createStoreForUser } from "@/lib/admin/owner-ext.functions";
 
 import { Button } from "@/components/ui/button";
 import { ContactLinks } from "@/components/owner/ContactLinks";

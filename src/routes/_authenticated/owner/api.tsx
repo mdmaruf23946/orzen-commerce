@@ -4,7 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Plus, Trash2, Copy, KeyRound } from "lucide-react";
-import { listApiKeys, createApiKey, revokeApiKey, deleteApiKey } from "@/lib/owner-ext.functions";
+import { listApiKeys, createApiKey, revokeApiKey, deleteApiKey } from "@/lib/admin/owner-ext.functions";
 import { OwnerPageHeader } from "@/components/owner/OwnerPageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

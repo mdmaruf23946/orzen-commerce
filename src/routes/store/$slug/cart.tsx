@@ -1,13 +1,13 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useStoreT } from "@/lib/store-i18n";
+import { useStoreT } from "@/lib/storefront/store-i18n";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Minus, Plus, Trash2, Check } from "lucide-react";
-import { readCart, updateQty, removeItem, readSelection, writeSelection, type CartItem } from "@/lib/cart";
-import { reconcileStoredCart, type CartNotice } from "@/lib/cart-reconcile";
+import { readCart, updateQty, removeItem, readSelection, writeSelection, type CartItem } from "@/lib/storefront/cart";
+import { reconcileStoredCart, type CartNotice } from "@/lib/storefront/cart-reconcile";
 import { CartNotices } from "@/components/storefront/CartNotices";
-import { getStoreBySlug, listProductsByIds } from "@/lib/storefront.functions";
+import { getStoreBySlug, listProductsByIds } from "@/lib/storefront/storefront.functions";
 import { Button } from "@/components/ui/button";
 
 

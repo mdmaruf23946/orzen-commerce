@@ -9,7 +9,7 @@ export const Route = createFileRoute("/api/public/lp/order")({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const { guardRequest } = await import("@/lib/rate-limit.server");
+        const { guardRequest } = await import("@/lib/security/rate-limit.server");
         const blocked = await guardRequest("landing_order", request);
         if (blocked) return blocked;
         let raw: unknown;
@@ -23,7 +23,7 @@ export const Route = createFileRoute("/api/public/lp/order")({
           return Response.json({ ok: false, error: "Invalid request" }, { status: 400 });
         }
         const { landing_page_id, ...rest } = parsed.data;
-        const { createLandingPageOrder } = await import("@/lib/landing-builder.server");
+        const { createLandingPageOrder } = await import("@/lib/site-builder/landing-builder.server");
         const result = await createLandingPageOrder(landing_page_id, rest);
         return Response.json(result.body, { status: result.status });
       },

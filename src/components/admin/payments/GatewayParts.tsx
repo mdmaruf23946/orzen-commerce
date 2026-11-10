@@ -27,7 +27,7 @@ import {
   toggleStorePaymentGateway,
   disconnectStorePaymentGateway,
   testStorePaymentWebhook,
-} from "@/lib/store-payments.functions";
+} from "@/lib/payments/store-payments.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -704,7 +704,7 @@ export function ConfigureForm({
       if (res?.ok) {
         toast.success(res.message ?? `${brand.label} connected`);
         if (alsoSetDefault) {
-          const { setActiveStorePaymentGateway } = await import("@/lib/store-payments.functions");
+          const { setActiveStorePaymentGateway } = await import("@/lib/payments/store-payments.functions");
           try {
             const setActive = setActiveStorePaymentGateway as any;
             await setActive({ data: { storeId, providerId: g.provider_id } });

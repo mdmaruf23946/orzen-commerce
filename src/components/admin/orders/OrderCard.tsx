@@ -11,9 +11,9 @@ import {
 import { toast } from "sonner";
 import { COURIERS } from "@/components/admin/couriers/providers";
 import { STATUS_LABEL, STATUS_TONE, type ParcelStatus } from "@/lib/couriers/status";
-import type { AdminOrderRow } from "@/lib/orders-admin.functions";
-import { getCachedFraudCheck } from "@/lib/fraud.functions";
-import { orderSourceInfo } from "@/lib/external-sites";
+import type { AdminOrderRow } from "@/lib/orders/orders-admin.functions";
+import { getCachedFraudCheck } from "@/lib/orders/fraud.functions";
+import { orderSourceInfo } from "@/lib/integrations/external-sites";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
   DropdownMenuLabel,

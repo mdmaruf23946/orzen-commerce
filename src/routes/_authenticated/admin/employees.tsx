@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { Plus, Pencil, Trash2, UserCog, KeyRound, Search, ShieldCheck } from "lucide-react";
 import {
   listEmployees, createEmployee, updateEmployee, deleteEmployee, resetEmployeePassword,
-} from "@/lib/employees.functions";
+} from "@/lib/admin/employees.functions";
 import {
   GRANTABLE_SECTIONS, EMPLOYEE_ROLES, presetPermissions,
   type PermissionLevel, type PermissionMap, type EmployeeRole,

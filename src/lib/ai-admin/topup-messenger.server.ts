@@ -6,7 +6,7 @@
 // server-side admin allow-list can ever reach that path.
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { loadMessengerConnection, readMessengerCreds } from "./messenger.server";
-import { sendPostbackButtons, sendText } from "@/lib/messenger-send.server";
+import { sendPostbackButtons, sendText } from "@/lib/integrations/messenger-send.server";
 
 export const TOPUP_APPROVE_PREFIX = "TOPUP_APPROVE_";
 export const TOPUP_REJECT_PREFIX = "TOPUP_REJECT_";
@@ -118,7 +118,7 @@ export async function decideTopupFromMessenger(args: {
 
   const adm: any = supabaseAdmin;
   const now = new Date();
-  const { enqueueEmail } = await import("@/lib/emails.server");
+  const { enqueueEmail } = await import("@/lib/notifications/emails.server");
 
   if (!args.approve) {
     const reason = "Rejected by platform owner from Messenger after manual verification.";
@@ -137,7 +137,7 @@ export async function decideTopupFromMessenger(args: {
       .then(() => null, () => null);
     if (pay.customer_email) {
       try {
-        const { tplPaymentRejected } = await import("@/lib/emails.server");
+        const { tplPaymentRejected } = await import("@/lib/notifications/emails.server");
         const tpl = await tplPaymentRejected({
           ownerName: store?.owner_name ?? null,
           planName: "Wallet Add Fund",
@@ -170,7 +170,7 @@ export async function decideTopupFromMessenger(args: {
   const walletUserId = inv?.user_id ?? store?.owner_user_id;
   if (!walletUserId) return "⚠️ এই পেমেন্টের ওয়ালেট মালিক পাওয়া যায়নি।";
 
-  const { creditWallet } = await import("@/lib/wallet.server");
+  const { creditWallet } = await import("@/lib/payments/wallet.server");
   const res: any = await creditWallet(adm, {
     userId: walletUserId,
     amount: Number(pay.amount),
@@ -205,7 +205,7 @@ export async function decideTopupFromMessenger(args: {
 
   if (pay.customer_email) {
     try {
-      const { tplWalletTopupApproved } = await import("@/lib/emails.server");
+      const { tplWalletTopupApproved } = await import("@/lib/notifications/emails.server");
       const tpl = await tplWalletTopupApproved({
         ownerName: store?.owner_name ?? null,
         storeName: store?.name ?? null,

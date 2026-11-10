@@ -10,13 +10,13 @@ import {
   listStoreCategories,
   listBestSellingProducts,
   getStoreBySlug,
-} from "@/lib/storefront.functions";
+} from "@/lib/storefront/storefront.functions";
 import { useStoreUI } from "@/lib/store-ui";
-import { useStoreT } from "@/lib/store-i18n";
+import { useStoreT } from "@/lib/storefront/store-i18n";
 import { useStoreTheme } from "@/lib/theme/context";
 import { ProductCard } from "@/components/storefront/ProductCard";
 import { HeroBanners } from "@/components/storefront/HeroBanners";
-import { getCategoryIcon } from "@/lib/category-icons";
+import { getCategoryIcon } from "@/lib/catalog/category-icons";
 import { CategoryIconCluster } from "@/components/CategoryIconCluster";
 
 

@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Activity } from "lucide-react";
 import { FeatureGate } from "@/components/admin/FeatureGate";
-import { aiGetLogs } from "@/lib/merchant-ai.functions";
+import { aiGetLogs } from "@/lib/agents/merchant-ai.functions";
 
 export const Route = createFileRoute("/_authenticated/admin/ai/logs")({
   head: () => ({

@@ -5,7 +5,7 @@ import { useServerFn } from "@tanstack/react-start";
 import {
   ArrowRight, Check, X, Camera, Globe, PhoneCall, Truck, ShieldCheck, Inbox, Sparkles,
 } from "lucide-react";
-import { getPublicPricing, computeCycleTotal } from "@/lib/billing.functions";
+import { getPublicPricing, computeCycleTotal } from "@/lib/payments/billing.functions";
 import { ALWAYS_INCLUDED, FEATURE_LABELS as CORE_LABELS, formatLimit, PLAN_DISPLAY_FEATURES, displayFeatureOn, isDisplayHidden } from "@/lib/features";
 import { useLang } from "@/lib/i18n";
 import { cn } from "@/lib/utils";

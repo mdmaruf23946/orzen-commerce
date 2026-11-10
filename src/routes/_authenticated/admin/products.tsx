@@ -10,8 +10,8 @@ import {
   deleteProduct,
   getMyStore,
   listMyCategories,
-} from "@/lib/admin.functions";
-import { bulkUpdateProducts, bulkDeleteProducts } from "@/lib/business.functions";
+} from "@/lib/admin/admin.functions";
+import { bulkUpdateProducts, bulkDeleteProducts } from "@/lib/admin/business.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -30,7 +30,7 @@ import { AdminPageHeader } from "@/components/admin/page/AdminPageHeader";
 import { TypeFilterTabs } from "@/components/admin/page/TypeFilterTabs";
 import { AdminToolbar } from "@/components/admin/page/AdminToolbar";
 import { ProductRow, productTypeOf, type ProductType } from "@/components/admin/products/ProductRow";
-import { typeScopeCounts } from "@/lib/admin.functions";
+import { typeScopeCounts } from "@/lib/admin/admin.functions";
 import { useProductTypeScope, scopeTabs, type ProductTypeScope } from "@/lib/product-type-scope";
 
 export const Route = createFileRoute("/_authenticated/admin/products")({

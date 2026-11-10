@@ -10,8 +10,8 @@ import {
 import {
   getFacebookPage, listFacebookPosts, listFacebookDrafts, publishFacebookPost, deleteFacebookPost,
   deleteFacebookDraft,
-} from "@/lib/facebook-page.functions";
-import { CAP_SCOPE } from "@/lib/facebook-caps";
+} from "@/lib/integrations/facebook-page.functions";
+import { CAP_SCOPE } from "@/lib/integrations/facebook-caps";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Section, NotConnected, EmptyState, CapBadge, formatWhen, FB_BLUE } from "@/components/admin/facebook/ui";

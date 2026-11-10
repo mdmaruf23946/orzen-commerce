@@ -3,11 +3,11 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Star, ShieldCheck, Zap, Infinity as InfinityIcon, Download, RefreshCw } from "lucide-react";
-import { addToCart } from "@/lib/cart";
-import { listRelatedProducts, listStoreCategories } from "@/lib/storefront.functions";
-import { formatBytes, type LicenseType } from "@/lib/digital";
-import { LICENSE_LABELS } from "@/lib/digital";
-import { readVariants, variantPrice, variantLabel } from "@/lib/product-variants";
+import { addToCart } from "@/lib/storefront/cart";
+import { listRelatedProducts, listStoreCategories } from "@/lib/storefront/storefront.functions";
+import { formatBytes, type LicenseType } from "@/lib/catalog/digital";
+import { LICENSE_LABELS } from "@/lib/catalog/digital";
+import { readVariants, variantPrice, variantLabel } from "@/lib/catalog/product-variants";
 import { ProductGallery } from "@/components/storefront/pdp/ProductGallery";
 import { ReviewsBlock } from "@/components/storefront/pdp/ReviewsBlock";
 import { RelatedRail } from "@/components/storefront/pdp/RelatedRail";
@@ -15,7 +15,7 @@ import { ShareBar } from "@/components/storefront/pdp/ShareBar";
 import { StoreCard } from "@/components/storefront/pdp/StoreCard";
 import { StickyMobileBar } from "@/components/storefront/pdp/StickyMobileBar";
 import { Button } from "@/components/ui/button";
-import { useStoreT } from "@/lib/store-i18n";
+import { useStoreT } from "@/lib/storefront/store-i18n";
 import {
   DigitalChangelog,
   DigitalDescription,

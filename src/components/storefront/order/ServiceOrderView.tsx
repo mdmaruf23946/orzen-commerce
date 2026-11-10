@@ -10,10 +10,10 @@ import { toast } from "sonner";
 import {
   getServiceOrder, requestServiceRevision, submitServiceReview,
   requestServiceCancel, requestServiceDeliverable,
-} from "@/lib/service-order.functions";
-import { SERVICE_STAGE_LABEL, stageFlow, type ServiceStage } from "@/lib/service-workflow";
-import { readToken } from "@/lib/customer-session";
-import { useStoreT } from "@/lib/store-i18n";
+} from "@/lib/orders/service-order.functions";
+import { SERVICE_STAGE_LABEL, stageFlow, type ServiceStage } from "@/lib/orders/service-workflow";
+import { readToken } from "@/lib/accounts/customer-session";
+import { useStoreT } from "@/lib/storefront/store-i18n";
 
 
 function Card({ title, icon, children }: { title: string; icon?: React.ReactNode; children: React.ReactNode }) {

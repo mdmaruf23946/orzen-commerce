@@ -236,7 +236,7 @@ const courierSubmit: ActionHandler = async ({ db, storeId }, input) => {
   // Tenant guard: the order must belong to this merchant before it is dispatched.
   const { assertOwnedRow } = await import("./core.server");
   await assertOwnedRow(db, "orders", storeId, "id", String(input?.orderId ?? ""));
-  const { dispatchParcel } = await import("@/lib/courier-parcels.functions");
+  const { dispatchParcel } = await import("@/lib/couriers/courier-parcels.functions");
   const res = await dispatchParcel(db, store, {
     orderId: String(input?.orderId),
     courierKey: input?.courierKey ? String(input.courierKey) : undefined,
@@ -272,7 +272,7 @@ const fbRecentComments: ActionHandler = async ({ db, storeId }) => {
 };
 
 const fbReplyComment: ActionHandler = async ({ db, storeId }, input) => {
-  const { loadPageContext, graphPost } = await import("@/lib/facebook-page.server");
+  const { loadPageContext, graphPost } = await import("@/lib/integrations/facebook-page.server");
   const { row, token } = await loadPageContext(db, storeId);
   if (!row || !token) throw new Error("Facebook Page is not connected.");
   const commentId = String(input?.commentId ?? "");
@@ -290,7 +290,7 @@ const fbReplyComment: ActionHandler = async ({ db, storeId }, input) => {
 };
 
 const fbHideComment: ActionHandler = async ({ db, storeId }, input) => {
-  const { loadPageContext, graphPost } = await import("@/lib/facebook-page.server");
+  const { loadPageContext, graphPost } = await import("@/lib/integrations/facebook-page.server");
   const { row, token } = await loadPageContext(db, storeId);
   if (!row || !token) throw new Error("Facebook Page is not connected.");
   const commentId = String(input?.commentId ?? "");

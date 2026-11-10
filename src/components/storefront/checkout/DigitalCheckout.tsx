@@ -8,19 +8,19 @@ import {
   placeOrder,
   startOnlineCheckout,
   validateCoupon,
-} from "@/lib/storefront.functions";
-import { removeSelected, type CartItem } from "@/lib/cart";
+} from "@/lib/storefront/storefront.functions";
+import { removeSelected, type CartItem } from "@/lib/storefront/cart";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
-import { useCustomerSession } from "@/lib/customer-session";
-import { writeOrderContact } from "@/lib/order-proof";
+import { useCustomerSession } from "@/lib/accounts/customer-session";
+import { writeOrderContact } from "@/lib/orders/order-proof";
 import { computeFingerprint, getDeviceId } from "@/lib/fingerprint";
-import { LICENSE_LABELS, formatBytes, type LicenseType } from "@/lib/digital";
+import { LICENSE_LABELS, formatBytes, type LicenseType } from "@/lib/catalog/digital";
 import { Download, ShieldCheck, Sparkles, Loader2, Lock } from "lucide-react";
-import { useStoreT } from "@/lib/store-i18n";
+import { useStoreT } from "@/lib/storefront/store-i18n";
 
 export type DigitalCartInfo = Record<
   string,

@@ -1,7 +1,7 @@
 import { TrendingDown, TrendingUp } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { compactMoney, pctChange } from "@/lib/analytics-ui";
-import type { AnalyticsPayload } from "@/lib/analytics.server";
+import { compactMoney, pctChange } from "@/lib/analytics/analytics-ui";
+import type { AnalyticsPayload } from "@/lib/analytics/analytics.server";
 
 function Delta({ value }: { value: number }) {
   const up = value >= 0;

@@ -1,5 +1,10 @@
 # Roadmap
 
+## Remaining audit — Stage 3: Library organization (2026-11-10)
+- [x] Move 314 root library modules into 18 responsibility folders; keep global utilities and existing specialized directories intact
+- [x] Update imports and test mocks; all 175 tests across 32 files pass after every logical batch. Token-level comparison of 732 source files confirms only module paths changed; no stale moved-module aliases
+- [x] Preview build OK; home, pricing and sign-in render with HTTP 200 and no browser runtime errors; invalid Messenger/WhatsApp verification rejected with 403. Document structure in README and AGENTS; no production deployment, database changes or Stage 4 work. Real customer messaging/order flows not exercised
+
 ## Remaining audit — Stage 2: Messenger modularization (2026-11-10)
 - [x] Extract transport/logging, order handling, media processing and catalogue replies while preserving webhook exports and behaviour
 - [x] Add five boundary regressions; all 175 tests across 32 files pass, including mocked store-scoped out-of-stock Buy Now send/log flow

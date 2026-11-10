@@ -3,7 +3,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { EXPENSE_CATEGORIES, iso, type ExpenseCategory } from "@/lib/finance-ui";
+import { EXPENSE_CATEGORIES, iso, type ExpenseCategory } from "@/lib/analytics/finance-ui";
 
 export type ExpenseRow = {
   id: string;

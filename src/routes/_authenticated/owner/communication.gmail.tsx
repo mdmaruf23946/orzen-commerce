@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
 import { CheckCircle2, XCircle, Mail, RefreshCw } from "lucide-react";
-import { getGmailStatus, sendGmailTest } from "@/lib/communication.functions";
+import { getGmailStatus, sendGmailTest } from "@/lib/notifications/communication.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";

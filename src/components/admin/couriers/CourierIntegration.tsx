@@ -5,10 +5,10 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { getMyStore, updateCouriers, testCourierConnection, syncCourierInfo } from "@/lib/admin.functions";
+import { getMyStore, updateCouriers, testCourierConnection, syncCourierInfo } from "@/lib/admin/admin.functions";
 import { CourierCard } from "./CourierCard";
 import { COURIERS, emptyConfig, type CourierConfig, type CourierKey } from "./providers";
-import { useCourierBrandAssets } from "@/lib/courier-apps";
+import { useCourierBrandAssets } from "@/lib/couriers/courier-apps";
 
 type FormState = Record<CourierKey, CourierConfig>;
 

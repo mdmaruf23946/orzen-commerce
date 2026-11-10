@@ -3,12 +3,12 @@ import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { z } from "zod";
 import { toast } from "sonner";
-import { loginCustomer } from "@/lib/customer-auth.functions";
-import { useCustomerSession } from "@/lib/customer-session";
+import { loginCustomer } from "@/lib/accounts/customer-auth.functions";
+import { useCustomerSession } from "@/lib/accounts/customer-session";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useStoreT } from "@/lib/store-i18n";
+import { useStoreT } from "@/lib/storefront/store-i18n";
 import { TurnstileWidget, turnstileConfigured, CAPTCHA_WAIT_BN } from "@/components/TurnstileWidget";
 
 

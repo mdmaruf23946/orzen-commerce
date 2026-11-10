@@ -18,7 +18,7 @@ import {
   aiGetOverview,
   aiSetNotificationRule,
   aiSetPermission,
-} from "@/lib/merchant-ai.functions";
+} from "@/lib/agents/merchant-ai.functions";
 import { AGENT_BY_KEY, MERCHANT_ACTIONS, NOTIFICATION_EVENTS } from "@/lib/merchant-ai/registry";
 
 export const Route = createFileRoute("/_authenticated/admin/ai/settings")({

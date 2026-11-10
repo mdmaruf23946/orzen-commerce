@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Progress } from "@/components/ui/progress";
 import { Download, Loader2 } from "lucide-react";
-import { exportProductsFiltered, listExportFacets } from "@/lib/business.functions";
+import { exportProductsFiltered, listExportFacets } from "@/lib/admin/business.functions";
 import { EXPORT_COLUMNS, writeCsv, writeXlsx } from "./io";
 import { DEFAULT_EXPORT_COLUMNS } from "./schema";
 

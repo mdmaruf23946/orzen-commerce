@@ -59,7 +59,7 @@ import {
   listPickupHistory,
   listCourierLogs,
   getParcelPrintData,
-} from "@/lib/courier-parcels.functions";
+} from "@/lib/couriers/courier-parcels.functions";
 
 export const Route = createFileRoute("/_authenticated/admin/parcels")({
   validateSearch: (s: Record<string, unknown>) => ({

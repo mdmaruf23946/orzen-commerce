@@ -9,8 +9,8 @@ import {
   loadAiContext,
   logUsage,
   resolveFocusProduct,
-} from "@/lib/ai-agent.server";
-import { windowWebHistory } from "@/lib/web-history-window";
+} from "@/lib/agents/ai-agent.server";
+import { windowWebHistory } from "@/lib/agents/web-history-window";
 
 function admin() {
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY!;
@@ -40,7 +40,7 @@ export const Route = createFileRoute("/api/ai/chat")({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const { guardRequest } = await import("@/lib/rate-limit.server");
+        const { guardRequest } = await import("@/lib/security/rate-limit.server");
         const blocked = await guardRequest("ai_chat", request);
         if (blocked) return blocked;
         const body = (await request.json()) as {
@@ -69,7 +69,7 @@ export const Route = createFileRoute("/api/ai/chat")({
 
         // Load or create the web conversation. A chat opens only for the browser
         // holding its private key, or for the same signed-in store customer.
-        const { canAccessWebConv, customerIdFromToken, newChatKey, sha256Hex, clientInfo } = await import("@/lib/web-chat-access.server");
+        const { canAccessWebConv, customerIdFromToken, newChatKey, sha256Hex, clientInfo } = await import("@/lib/inbox/web-chat-access.server");
         const customerId = await customerIdFromToken(sb, store.id, body.customerToken);
         const client = clientInfo(request);
         let convId = body.conversationId?.trim() || null;
@@ -159,7 +159,7 @@ export const Route = createFileRoute("/api/ai/chat")({
         }
         // Spam / abusive / repeatedly off-topic: pause AI for this chat only.
         {
-          const { guardConversation } = await import("@/lib/conversation-guard.server");
+          const { guardConversation } = await import("@/lib/agents/conversation-guard.server");
           if (await guardConversation(sb, convId!)) {
             return Response.json({ conversationId: convId, handedOff: true }, { status: 200 });
           }
@@ -214,9 +214,9 @@ export const Route = createFileRoute("/api/ai/chat")({
           const orderBusy = Object.keys(pending).filter((k) => k !== "_at").length > 0;
           if (!orderBusy && lastUserText.trim()) {
             try {
-              const { lookupGlobalIntent } = await import("@/lib/global-phrasebook.server");
+              const { lookupGlobalIntent } = await import("@/lib/agents/global-phrasebook.server");
               if ((await lookupGlobalIntent(sb, lastUserText)) === "delivery_charge") {
-                const { tryFastPath } = await import("@/lib/fast-path.server");
+                const { tryFastPath } = await import("@/lib/agents/fast-path.server");
                 const bn = /[\u0980-\u09FF]/.test(lastUserText);
                 const fast = await tryFastPath(sb, { storeId: store.id, conversationId: ctxConvId, text: bn ? "ডেলিভারি চার্জ কত" : "delivery charge koto", customerPhone: null });
                 if (fast?.kind === "delivery_charge") {
@@ -282,7 +282,7 @@ export const Route = createFileRoute("/api/ai/chat")({
               void logUsage(store.id, modelId, usage, "chat");
               const calls = (steps ?? []).flatMap((st: any) => st.toolCalls ?? []).map((c: any) => ({ name: c.toolName, args: c.input }));
               if (!orderBusy && calls.length) {
-                void import("@/lib/global-phrasebook.server")
+                void import("@/lib/agents/global-phrasebook.server")
                   .then((m) => m.learnFromAiTurn(sb, { storeId: store.id, text: lastUserText, toolCalls: calls }))
                   .catch(() => {});
               }

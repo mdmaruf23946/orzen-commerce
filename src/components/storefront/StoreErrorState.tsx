@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { useRouter } from "@tanstack/react-router";
 import { AlertTriangle, RefreshCw } from "lucide-react";
 import { trackError } from "@/lib/error-context";
-import { useStoreT } from "@/lib/store-i18n";
+import { useStoreT } from "@/lib/storefront/store-i18n";
 import { Button } from "@/components/ui/button";
 
 export function StoreErrorState({

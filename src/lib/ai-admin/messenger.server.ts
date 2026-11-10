@@ -1,7 +1,7 @@
 // Shared server helpers for the AI Admin Messenger (Facebook Page) connection.
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { decryptJSON } from "@/lib/crypto/credentials.server";
-import { sendText } from "@/lib/messenger-send.server";
+import { sendText } from "@/lib/integrations/messenger-send.server";
 
 export type AdminMessengerCreds = { page_access_token: string; app_secret?: string };
 

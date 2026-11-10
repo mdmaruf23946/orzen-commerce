@@ -5,9 +5,9 @@ import { Gauge, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import { PLATFORM_ORIGIN } from "@/lib/seo";
-import { runPageSpeed } from "@/lib/pagespeed.functions";
-import { getSearchConsoleSummary } from "@/lib/search-console.functions";
+import { PLATFORM_ORIGIN } from "@/lib/marketing/seo";
+import { runPageSpeed } from "@/lib/marketing/pagespeed.functions";
+import { getSearchConsoleSummary } from "@/lib/marketing/search-console.functions";
 import { useQuery } from "@tanstack/react-query";
 
 type Result = Awaited<ReturnType<typeof runPageSpeed>>;

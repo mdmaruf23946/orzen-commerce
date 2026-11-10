@@ -28,7 +28,7 @@ export const Route = createFileRoute("/api/public/marketing/visit")({
         } catch {
           return Response.json({ ok: false }, { status: 400 });
         }
-        const { checkRateLimit, clientIp } = await import("@/lib/rate-limit.server");
+        const { checkRateLimit, clientIp } = await import("@/lib/security/rate-limit.server");
         const rl = await checkRateLimit("platform_meta", `mk:${clientIp(request)}`, { limit: 300 });
         if (!rl.allowed) return Response.json({ ok: false }, { status: 429 });
 

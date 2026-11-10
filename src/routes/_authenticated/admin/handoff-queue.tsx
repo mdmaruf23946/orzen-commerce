@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { UserCog, MessageSquare, Bot } from "lucide-react";
-import { listHandoffQueue, returnConversationToAi } from "@/lib/ai-review.functions";
+import { listHandoffQueue, returnConversationToAi } from "@/lib/agents/ai-review.functions";
 import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/_authenticated/admin/handoff-queue")({

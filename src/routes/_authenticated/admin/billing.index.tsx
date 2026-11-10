@@ -11,14 +11,14 @@ import {
   computeCycleTotal,
   activateFreePlan,
   type CycleKey,
-} from "@/lib/billing.functions";
+} from "@/lib/payments/billing.functions";
 import { FEATURE_KEYS, FEATURE_LABELS, ALWAYS_INCLUDED, PLAN_FEATURE_GROUPS, HIGHLIGHT_PRIORITY, formatLimit, PLAN_DISPLAY_FEATURES, displayFeatureOn, isDisplayHidden } from "@/lib/features";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import WalletPanel from "@/components/admin/billing/WalletPanel";
 import AiCreditsPanel from "@/components/admin/billing/AiCreditsPanel";
-import { getFooterSettings } from "@/lib/footer.functions";
-import { openSubscriptionInvoice } from "@/lib/subscription-invoice-print";
+import { getFooterSettings } from "@/lib/storefront/footer.functions";
+import { openSubscriptionInvoice } from "@/lib/payments/subscription-invoice-print";
 import { usePlatformBranding, resolvePlacement } from "@/lib/platform-branding";
 
 export const Route = createFileRoute("/_authenticated/admin/billing/")({

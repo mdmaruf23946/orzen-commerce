@@ -15,7 +15,7 @@ import { compressImage } from "@/lib/compress-image";
 import {
   listPlatformPaymentGateways,
   upsertPlatformPaymentGateway,
-} from "@/lib/store-payments.functions";
+} from "@/lib/payments/store-payments.functions";
 import { PAYMENT_BRANDS } from "@/components/admin/payments/providers";
 
 

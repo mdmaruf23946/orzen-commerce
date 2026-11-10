@@ -27,7 +27,7 @@ export const Route = createFileRoute("/api/public/cron/domain-idle")({
 
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
         const { releaseLandingSubdomain, releaseLandingCustomDomains } = await import(
-          "@/lib/domain-lifecycle.server"
+          "@/lib/hosting/domain-lifecycle.server"
         );
 
         // 1. Warn pages idle for 15+ days (not yet warned, hosts still live).

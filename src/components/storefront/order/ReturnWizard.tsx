@@ -13,15 +13,15 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { getReturnContext, createMyReturnRequest } from "@/lib/returns.functions";
-import { readWishlist } from "@/lib/wishlist";
+import { getReturnContext, createMyReturnRequest } from "@/lib/orders/returns.functions";
+import { readWishlist } from "@/lib/storefront/wishlist";
 import {
   computeReturnAmounts,
   KIND_LABEL,
   type ReturnKind,
   type ReturnLine,
-} from "@/lib/returns-pricing";
-import { useStoreT } from "@/lib/store-i18n";
+} from "@/lib/orders/returns-pricing";
+import { useStoreT } from "@/lib/storefront/store-i18n";
 
 function img(p?: string | null) {
   if (!p) return null;

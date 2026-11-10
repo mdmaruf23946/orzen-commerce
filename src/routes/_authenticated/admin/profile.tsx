@@ -13,9 +13,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
-import { getAccountProfile, updateAccountMedia, updateAccountProfile } from "@/lib/account-profile.functions";
+import { getAccountProfile, updateAccountMedia, updateAccountProfile } from "@/lib/accounts/account-profile.functions";
 import { AVATAR_TEMPLATES, COVER_TEMPLATES, resolveMediaSrc } from "@/lib/profile-media-templates";
-import { useStoreAccess } from "@/lib/use-store-access";
+import { useStoreAccess } from "@/lib/accounts/use-store-access";
 import { AccessPermissionsSection } from "@/components/admin/access/AccessPermissionsSection";
 
 export const Route = createFileRoute("/_authenticated/admin/profile")({

@@ -1,4 +1,4 @@
-import { STATE_LABEL, type ChannelState } from "@/lib/notify-settings";
+import { STATE_LABEL, type ChannelState } from "@/lib/notifications/notify-settings";
 
 const styles: Record<ChannelState, string> = {
   connected: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",

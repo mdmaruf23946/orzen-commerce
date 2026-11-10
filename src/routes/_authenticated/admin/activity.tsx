@@ -3,9 +3,9 @@ import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { History, User } from "lucide-react";
-import { listActivity, listEmployees } from "@/lib/employees.functions";
+import { listActivity, listEmployees } from "@/lib/admin/employees.functions";
 import { PANEL_SECTIONS } from "@/lib/panel-sections";
-import { useStoreAccess } from "@/lib/use-store-access";
+import { useStoreAccess } from "@/lib/accounts/use-store-access";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";

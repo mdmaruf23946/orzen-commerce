@@ -3,13 +3,13 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { Download } from "lucide-react";
-import { inventoryDigital, updateDigitalDownloadLimit, digitalDownloadLog } from "@/lib/inventory.functions";
+import { inventoryDigital, updateDigitalDownloadLimit, digitalDownloadLog } from "@/lib/catalog/inventory.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { KpiStrip, Pill, ItemCard, Facts, EmptyBox, money, exportCsv, fmtBytes, fmtDate } from "./kit";
-import { LICENSE_LABELS, type LicenseType } from "@/lib/digital";
+import { LICENSE_LABELS, type LicenseType } from "@/lib/catalog/digital";
 
 export function DigitalInventory({ search }: { search: string }) {
   const listFn = useServerFn(inventoryDigital);

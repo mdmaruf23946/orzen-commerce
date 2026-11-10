@@ -10,7 +10,7 @@ import {
   listAiAdminMessages,
   listAiAdminPending,
   decideAiAdminPending,
-} from "@/lib/ai-admin.functions";
+} from "@/lib/admin/ai-admin.functions";
 import { OwnerPageHeader } from "@/components/owner/OwnerPageHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";

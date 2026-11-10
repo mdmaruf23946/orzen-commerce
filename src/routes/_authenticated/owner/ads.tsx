@@ -12,7 +12,7 @@ import {
   toggleAdSlot,
   deleteAdSlot,
   adAdminStats,
-} from "@/lib/ads.functions";
+} from "@/lib/marketing/ads.functions";
 import { OwnerPageHeader } from "@/components/owner/OwnerPageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

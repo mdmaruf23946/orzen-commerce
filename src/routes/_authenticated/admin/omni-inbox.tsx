@@ -10,18 +10,18 @@ import { OmniProductPicker } from "@/components/admin/OmniProductPicker";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { FeatureGate } from "@/components/admin/FeatureGate";
-import { listOmniConversations, listOmniMessages, setOmniHandoff, retryMissedReply } from "@/lib/omni-inbox.functions";
-import { OMNI_CHANNELS, OMNI_FOLDERS, type OmniFolder } from "@/lib/omni-channels";
-import { sendManualMessage as sendMessenger, refreshMessengerProfiles } from "@/lib/messenger-inbox.functions";
-import { sendManualMessage as sendWhatsapp } from "@/lib/whatsapp-inbox.functions";
-import { sendWebManualMessage } from "@/lib/webchat-inbox.functions";
+import { listOmniConversations, listOmniMessages, setOmniHandoff, retryMissedReply } from "@/lib/inbox/omni-inbox.functions";
+import { OMNI_CHANNELS, OMNI_FOLDERS, type OmniFolder } from "@/lib/inbox/omni-channels";
+import { sendManualMessage as sendMessenger, refreshMessengerProfiles } from "@/lib/integrations/messenger-inbox.functions";
+import { sendManualMessage as sendWhatsapp } from "@/lib/integrations/whatsapp-inbox.functions";
+import { sendWebManualMessage } from "@/lib/inbox/webchat-inbox.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
-import { useBadgeCounts } from "@/lib/use-badge-counts";
-import { listFacebookComments } from "@/lib/facebook-page.functions";
+import { useBadgeCounts } from "@/lib/inbox/use-badge-counts";
+import { listFacebookComments } from "@/lib/integrations/facebook-page.functions";
 import { FacebookCommentThread, FacebookPostPanel } from "@/components/admin/OmniFacebookComment";
 
 export const Route = createFileRoute("/_authenticated/admin/omni-inbox")({

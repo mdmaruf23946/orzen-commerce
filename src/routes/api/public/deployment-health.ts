@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { PRODUCTION_SUPABASE_PROJECT_ID } from "@/lib/deployment-target";
+import { PRODUCTION_SUPABASE_PROJECT_ID } from "@/lib/hosting/deployment-target";
 import { serverSupabaseProjectId } from "@/lib/server-env";
 
 export const Route = createFileRoute("/api/public/deployment-health")({

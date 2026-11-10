@@ -5,15 +5,15 @@ export const Route = createFileRoute("/robots.txt")({
   server: {
     handlers: {
       GET: async ({ request }) => {
-        const { originFromRequest, slugFromHost, storeBySlug } = await import("@/lib/seo.server");
-        const { buildRobotsTxt } = await import("@/lib/seo");
+        const { originFromRequest, slugFromHost, storeBySlug } = await import("@/lib/marketing/seo.server");
+        const { buildRobotsTxt } = await import("@/lib/marketing/seo");
         const { host, origin } = originFromRequest(request);
         const slug = await slugFromHost(host);
 
         if (!slug) {
           // Platform site: advertise the host that actually served the request
           // (published Lovable URL or orzen.top); never an ephemeral preview host.
-          const { PLATFORM_ORIGIN } = await import("@/lib/seo");
+          const { PLATFORM_ORIGIN } = await import("@/lib/marketing/seo");
           const platBase =
             host.endsWith(".lovable.app") && !host.includes("id-preview--")
               ? origin

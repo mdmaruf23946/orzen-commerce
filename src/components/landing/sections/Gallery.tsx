@@ -1,7 +1,7 @@
 // Responsive image gallery with a lightweight lightbox.
 import { useState } from "react";
 import { X } from "lucide-react";
-import { lpImage } from "@/lib/landing-builder";
+import { lpImage } from "@/lib/site-builder/landing-builder";
 
 type Item = { image?: string; caption?: string };
 
