@@ -10,7 +10,7 @@ import { OmniProductPicker } from "@/components/admin/OmniProductPicker";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { FeatureGate } from "@/components/admin/FeatureGate";
-import { listOmniConversations, listOmniMessages, setOmniHandoff } from "@/lib/omni-inbox.functions";
+import { listOmniConversations, listOmniMessages, setOmniHandoff, retryMissedReply } from "@/lib/omni-inbox.functions";
 import { OMNI_CHANNELS, OMNI_FOLDERS, type OmniFolder } from "@/lib/omni-channels";
 import { sendManualMessage as sendMessenger, refreshMessengerProfiles } from "@/lib/messenger-inbox.functions";
 import { sendManualMessage as sendWhatsapp } from "@/lib/whatsapp-inbox.functions";
@@ -130,6 +130,8 @@ function OmniInbox() {
   const fetchList = useServerFn(listOmniConversations);
   const fetchMsgs = useServerFn(listOmniMessages);
   const handoff = useServerFn(setOmniHandoff);
+  const retryAi = useServerFn(retryMissedReply);
+  const [retrying, setRetrying] = useState(false);
   const sendFb = useServerFn(sendMessenger);
   const sendWa = useServerFn(sendWhatsapp);
   const sendWeb = useServerFn(sendWebManualMessage);
@@ -384,7 +386,7 @@ function OmniInbox() {
                     {c.last_message_preview || "—"}
                   </span>
                   <span className="ml-auto flex shrink-0 items-center gap-1">
-                    {c.failed && <AlertTriangle className="h-3.5 w-3.5 text-destructive" aria-label="পাঠানো যায়নি" />}
+                    {(c.failed || c.missed) && <AlertTriangle className="h-3.5 w-3.5 text-destructive" aria-label="পাঠানো যায়নি" />}
                     {c.handoff_mode === "human" && <span className="rounded bg-accent px-1.5 py-0.5 text-[10px] text-accent-foreground">Human</span>}
                     {c.unread_count > 0 && (
                       <span className="grid h-5 min-w-5 place-items-center rounded-full bg-primary px-1 text-[10px] text-primary-foreground">{c.unread_count}</span>
@@ -442,6 +444,31 @@ function OmniInbox() {
             {isFb ? (
               <FacebookCommentThread comment={active.comment} onDone={() => setActiveId(null)} />
             ) : (<>
+            {active.missed && active.channel !== "web" && (
+              <div className="flex flex-wrap items-center gap-2 border-b border-destructive/30 bg-destructive/10 px-3 py-2 text-sm">
+                <AlertTriangle className="h-4 w-4 shrink-0 text-destructive" />
+                <span className="flex-1">এই কাস্টমারের মেসেজের উত্তর যায়নি। দেখে নিন, চাইলে AI এখনই উত্তর দেবে।</span>
+                <Button
+                  size="sm"
+                  disabled={retrying}
+                  onClick={async () => {
+                    setRetrying(true);
+                    try {
+                      const r = await retryAi({ data: { conversationId: active.id } });
+                      toast.success(r.requeued ? "AI উত্তর পাঠাচ্ছে…" : "উত্তর দেওয়ার মতো মেসেজ পাওয়া যায়নি");
+                      qc.invalidateQueries();
+                    } catch (e) {
+                      toast.error((e as Error).message);
+                    } finally {
+                      setRetrying(false);
+                    }
+                  }}
+                >
+                  {retrying ? <Loader2 className="h-4 w-4 animate-spin sm:mr-1" /> : <Bot className="h-4 w-4 sm:mr-1" />}
+                  AI দিয়ে উত্তর দিন
+                </Button>
+              </div>
+            )}
             <div className="flex-1 space-y-2 overflow-y-auto bg-muted/30 p-3 sm:p-4">
               {(msgs as any[]).map((m) => {
                 const failed = m.message_type === "error" || m.delivery_status === "failed";

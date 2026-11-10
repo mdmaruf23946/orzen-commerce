@@ -45,10 +45,11 @@ export const listOmniConversations = createServerFn({ method: "POST" })
       .gte("created_at", since)
       .limit(300);
     const failed = new Set((errs ?? []).map((e: any) => e.conversation_id as string));
+    const missedKeys = await missedSenderKeys(sb, storeId);
 
     let q = sb
       .from("ai_conversations")
-      .select("id,channel,customer_name,phone,unread_count,last_message_at,last_message_preview,handoff_mode,handoff_reason,total_orders,total_spent,lead_status,created_at,profile_pic:psid_profile->>profile_pic,pending_phone:psid_profile->pending_order->>phone,pending_product:psid_profile->pending_order->>product_id")
+      .select("id,channel,external_id,customer_name,phone,unread_count,last_message_at,last_message_preview,handoff_mode,handoff_reason,total_orders,total_spent,lead_status,created_at,profile_pic:psid_profile->>profile_pic,pending_phone:psid_profile->pending_order->>phone,pending_product:psid_profile->pending_order->>product_id")
       .eq("store_id", storeId)
       .in("channel", data.channel === "all" ? [...OMNI_CHANNEL_KEYS] : [data.channel])
       .order("last_message_at", { ascending: false, nullsFirst: false })
@@ -58,9 +59,14 @@ export const listOmniConversations = createServerFn({ method: "POST" })
     if (data.folder === "human") q = q.eq("handoff_mode", "human");
     if (data.folder === "ai") q = q.neq("handoff_mode", "human");
     if (data.folder === "attention") {
-      if (!failed.size) q = q.in("id", ["00000000-0000-0000-0000-000000000000"]);
+      const attIds = new Set(failed);
+      if (missedKeys.size) {
+        const { data: mc } = await sb.from("ai_conversations").select("id,channel,external_id").eq("store_id", storeId).in("external_id", [...missedKeys].map((k) => k.slice(3))).limit(300);
+        for (const r of (mc ?? []) as any[]) if (missedKeys.has(`${r.channel === "whatsapp" ? "wa" : "fb"}:${r.external_id}`)) attIds.add(r.id);
+      }
+      if (!attIds.size) q = q.in("id", ["00000000-0000-0000-0000-000000000000"]);
       else
-      q = q.in("id", [...failed]);
+      q = q.in("id", [...attIds]);
     }
     if (data.folder === "vip") q = q.or("total_orders.gte.3,total_spent.gte.5000");
     // Automatic segments
@@ -80,7 +86,7 @@ export const listOmniConversations = createServerFn({ method: "POST" })
     const out = (rows ?? []).map((r: any) => {
       const ordered = (r.total_orders ?? 0) > 0 || r.lead_status === "ordered";
       const segment = ordered ? "customer" : r.lead_status === "hold" ? "hold" : r.pending_product ? (r.pending_phone ? "interested" : "incomplete") : null;
-      return { ...r, failed: failed.has(r.id), vip: isVip(r), segment };
+      return { ...r, failed: failed.has(r.id), missed: missedKeys.has(`${r.channel === "whatsapp" ? "wa" : "fb"}:${r.external_id}`), vip: isVip(r), segment };
     });
 
     // Badge counts per channel (unread conversations).
@@ -98,7 +104,7 @@ export const listOmniConversations = createServerFn({ method: "POST" })
     // Per-folder counts for the current channel (same rules as the filters above).
     const { data: all } = await sb
       .from("ai_conversations")
-      .select("id,unread_count,handoff_mode,total_orders,total_spent,lead_status,first_contact_at,pending:psid_profile->pending_order,pending_phone:psid_profile->pending_order->>phone")
+      .select("id,channel,external_id,unread_count,handoff_mode,total_orders,total_spent,lead_status,first_contact_at,pending:psid_profile->pending_order,pending_phone:psid_profile->pending_order->>phone")
       .eq("store_id", storeId)
       .in("channel", data.channel === "all" ? [...OMNI_CHANNEL_KEYS] : [data.channel])
       .limit(2000);
@@ -110,7 +116,7 @@ export const listOmniConversations = createServerFn({ method: "POST" })
       inc("all");
       if ((r.unread_count ?? 0) > 0) inc("unread");
       if (r.handoff_mode === "human") inc("human"); else inc("ai");
-      if (failed.has(r.id)) inc("attention");
+      if (failed.has(r.id) || missedKeys.has(`${r.channel === "whatsapp" ? "wa" : "fb"}:${r.external_id}`)) inc("attention");
       if (isVip(r)) inc("vip");
       if (orders >= 1 || r.lead_status === "ordered") inc("customers");
       if (r.lead_status === "hold") inc("hold");
@@ -121,6 +127,36 @@ export const listOmniConversations = createServerFn({ method: "POST" })
       if (r.first_contact_at && new Date(r.first_contact_at).getTime() >= dayAgo) inc("new");
     }
     return { rows: out, counts, folderCounts };
+  });
+
+// A "missed reply" = a customer message whose AI job failed or never finished
+// within 3 minutes. Nothing re-runs these automatically; a human decides.
+async function missedSenderKeys(sb: any, storeId: string) {
+  const since = new Date(Date.now() - 2 * 86400_000).toISOString();
+  const stale = new Date(Date.now() - 3 * 60_000).toISOString();
+  const keys = new Set<string>();
+  for (const [table, prefix] of [["messenger_jobs", "fb"], ["whatsapp_jobs", "wa"]] as const) {
+    const { data } = await sb
+      .from(table)
+      .select("sender_id")
+      .eq("store_id", storeId)
+      .gte("created_at", since)
+      .or(`status.eq.failed,and(status.in.(pending,retry,processing),created_at.lt.${stale})`)
+      .limit(300);
+    for (const r of data ?? []) keys.add(`${prefix}:${(r as any).sender_id}`);
+  }
+  return keys;
+}
+
+export const retryMissedReply = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ conversationId: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const storeId = await storeIdFor(context.supabase, context.userId);
+    await assertConv(context.supabase, storeId, data.conversationId);
+    const { data: n, error } = await context.supabase.rpc("retry_missed_reply" as any, { _conversation_id: data.conversationId } as any);
+    if (error) throw new Error(error.message);
+    return { requeued: Number(n ?? 0) };
   });
 
 export const listOmniMessages = createServerFn({ method: "POST" })
