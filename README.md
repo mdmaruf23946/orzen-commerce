@@ -2,7 +2,7 @@
 
 ## Current Architecture (technical summary)
 
-- **Framework:** TanStack Start v1 (React 19, SSR, server functions) on Vite 7.
+- **Framework:** TanStack Start v1 (React 19, SSR, server functions) on Vite 8.
 - **Hosting:** Cloudflare Workers (`orzen.top`), deployed with `npm run deploy:production` (wrangler). Do not use Lovable Publish for the live domain.
 - **Backend:** Supabase — PostgreSQL (RLS on every table), Auth, Storage. No Supabase Edge Functions; server logic lives in `createServerFn` and `src/routes/api/public/*`.
 - **Database schema:** `supabase/migrations/` is the single source of truth.
