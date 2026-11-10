@@ -41,3 +41,4 @@
 - Database schema changes go only in `supabase/migrations/` (single source of truth); `drizzle/` is a read-only mirror — prevents schema drift between two migration systems.
 - Messenger webhook is split: types, intents, order-text, product-helpers, visual-match (photo matching), graph (signature/token/profile) modules; messenger-webhook.server.ts keeps event routing and order flow — smaller files, unchanged behaviour.
 - Winner Admin push alerts (new store, pending plan payment) use `push_outbox.audience='owner'` + `owner_push_subscriptions`, delivered only to users currently holding the `owner` role (re-checked at send time) — keeps platform alerts off merchant devices.
+- Messenger/WhatsApp replies are purely event-driven (insert trigger wakes the worker); no periodic sweep. Failed or >3-min-unfinished jobs show as missed in Omni Inbox and only a human re-sends them via `retry_missed_reply` — saves idle DB load and avoids late surprise AI replies.

@@ -72,3 +72,5 @@ BEGIN
 END $$;
 REVOKE EXECUTE ON FUNCTION public.retry_missed_reply(uuid) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.retry_missed_reply(uuid) TO authenticated;
+
+GRANT EXECUTE ON FUNCTION public.arm_voice_dispatch(), public.retry_missed_reply(uuid), public.dispatch_minute_jobs() TO service_role;
