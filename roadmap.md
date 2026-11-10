@@ -1,5 +1,10 @@
 # Roadmap
 
+## Remaining audit — Stage 2: Messenger modularization (2026-11-10)
+- [x] Extract transport/logging, order handling, media processing and catalogue replies while preserving webhook exports and behaviour
+- [x] Add five boundary regressions; all 175 tests across 32 files pass, including mocked store-scoped out-of-stock Buy Now send/log flow
+- [x] Preview build OK; home 200 and invalid Messenger verification 403. Real Meta delivery not exercised and production not deployed; no database changes or Stage 3–4 work
+
 ## Storefront catalogue cutoff fix (2026-10-31)
 - [x] Verify and remove the implicit 500-product cutoff while preserving bounded requests and explicit preview limits
 - [x] Six regression tests pass, including 1,205 products, scoping, preview limits and later-page failures; existing 16-product store list/search verified in preview. No >500-product store available in the preview backend for live-data verification. Production not deployed; unrelated existing header hydration warning observed.
