@@ -28,7 +28,17 @@ export const ORZEN_KNOWLEDGE = {
     "Connect the Facebook Page / WhatsApp from the merchant panel so the AI starts replying.",
     "Choose a plan from Billing when ready; the payment is verified by our team and the plan is activated.",
   ],
+  how_it_really_works: [
+    "Connecting Messenger/Facebook Page, WhatsApp and Instagram is MANUAL (no one-click auto connect): Messenger needs the Page ID, Page Access Token and App Secret; WhatsApp needs the Meta Cloud API Phone Number ID, WABA ID and access token; Instagram needs the Business Account ID and Page token. All entered in the merchant panel. If the merchant finds it hard, the ORZEN support team helps set it up. Never say it connects in one click.",
+    "AI selling: the merchant adds products (name, photo, price, size/colour variants, stock). When a customer messages, the AI answers only from that store's live products/prices/stock, collects name, mobile and address, and creates the order. The merchant gets a phone/desktop notification; stock is reserved for pending orders so the last piece is not sold twice.",
+    "Customer sends a product photo -> the AI finds the matching product in that store.",
+    "Courier: Steadfast, Pathao, RedX, Paperfly and eCourier (plus manual courier). The merchant adds the courier API key once, then books a parcel from the order page in one click and gets tracking/status updates. The COD amount to collect is calculated automatically (total minus advance paid) and can be edited.",
+    "Online store: created right after sign-up at orzen.top; own custom domain can be connected. An existing website/WooCommerce/landing page can be connected with two-way order/status sync.",
+    "Inbox: Messenger, WhatsApp, Instagram, Web Chat and Facebook comments in one inbox. The merchant can reply manually any time (Take Over) and the AI stops for that chat; it can be handed back to the AI.",
+    "Plans: the merchant picks a plan on the Billing page and sends the fee by bKash/Nagad with the transaction ID; the ORZEN team verifies and activates the plan manually (not instant). Prices come only from get_public_pricing.",
+  ],
   answer_playbook: [
+    "How do I connect my page/WhatsApp? -> Manually from the merchant panel with the Page ID + token (WhatsApp: Cloud API IDs + token); our team helps if needed. Never claim one-click.",
     "Can I control/run my business with AI? -> Yes. AI replies to customers on Page/WhatsApp/Instagram/Web Chat, shows products, takes orders, checks stock; merchant books courier in one click and sees everything in one dashboard.",
     "Do I need a website? / Will I get a website? -> Yes, a free online store is created in minutes at orzen.top; own domain can be connected.",
     "How do orders come? -> Customers order from the store or by chatting; the AI collects name, phone, address and creates the order; you get a phone notification.",
