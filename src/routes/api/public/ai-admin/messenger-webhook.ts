@@ -129,8 +129,12 @@ export const Route = createFileRoute("/api/public/ai-admin/messenger-webhook")({
         // Secure routing: admin access comes ONLY from the server-side PSID
         // allow-list. Message content can never grant it.
         const isAdmin = allowed.length > 0 && allowed.includes(psid);
+        // Owner testing the Page with a sales-style question gets the same
+        // short sales answer a prospect would; admin commands stay admin.
+        const { isAdminCommand } = await import("@/lib/ai-admin/admin-intent");
+        const adminAsSales = isAdmin && !postbackPayload && !isAdminCommand(text);
 
-        if (!isAdmin) {
+        if (!isAdmin || adminAsSales) {
           const { handleCustomerMessage } = await import("@/lib/ai-admin/customer-router.server");
           const result = await handleCustomerMessage({
             psid,

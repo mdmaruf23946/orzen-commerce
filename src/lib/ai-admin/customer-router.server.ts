@@ -106,6 +106,7 @@ export async function handleCustomerMessage(args: {
   }
 
   await appendCustomerMessage(thread.id, "assistant", reply);
-  await send(reply);
+  const { splitReplyBubbles } = await import("./admin-intent");
+  for (const bubble of splitReplyBubbles(reply)) await send(bubble);
   return error ? { error: error.slice(0, 300) } : {};
 }
