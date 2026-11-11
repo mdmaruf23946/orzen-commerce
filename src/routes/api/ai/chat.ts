@@ -43,6 +43,18 @@ export const Route = createFileRoute("/api/ai/chat")({
         const { guardRequest } = await import("@/lib/security/rate-limit.server");
         const blocked = await guardRequest("ai_chat", request);
         if (blocked) return blocked;
+        // Only the storefront page itself may use this chat: scripts and other
+        // sites (missing or foreign Origin/Referer) are refused.
+        {
+          const host = new URL(request.url).host;
+          const fwdHost = request.headers.get("x-forwarded-host");
+          const src = request.headers.get("origin") || request.headers.get("referer");
+          let srcHost = "";
+          try { srcHost = src ? new URL(src).host : ""; } catch { srcHost = ""; }
+          if (!srcHost || (srcHost !== host && srcHost !== fwdHost)) {
+            return new Response("Forbidden", { status: 403 });
+          }
+        }
         const body = (await request.json()) as {
           slug?: string;
           messages?: UIMessage[];
@@ -83,6 +95,12 @@ export const Route = createFileRoute("/api/ai/chat")({
           if (!(await canAccessWebConv(existing as any, store.id, body.chatKey, customerId))) convId = null;
         }
         if (!convId) {
+          // Per-store cap on brand-new web chats so one store's AI budget cannot be drained.
+          const since = new Date(Date.now() - 3600_000).toISOString();
+          const { count: newChats } = await sb.from("ai_conversations").select("id", { count: "exact", head: true })
+            .eq("store_id", store.id).eq("channel", "web").gte("created_at", since);
+          if ((newChats ?? 0) >= 300)
+            return Response.json({ error: "এখন চ্যাট ব্যস্ত। একটু পরে আবার চেষ্টা করুন।" }, { status: 429 });
           issuedKey = newChatKey();
           const { data: created, error } = await sb
             .from("ai_conversations")

@@ -5,13 +5,38 @@ import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
 import { sendFbEvents, extractClientIp, type FbEventInput } from "@/lib/marketing/fb-capi.server";
 
+// Only standard storefront events are relayed; anything else is dropped.
+const ALLOWED_EVENTS = new Set([
+  "PageView", "ViewContent", "AddToCart", "InitiateCheckout", "AddPaymentInfo",
+  "Search", "Lead", "Contact", "CompleteRegistration", "Purchase",
+]);
+const customDataSchema = z
+  .object({
+    value: z.number().finite().nonnegative().max(10_000_000).optional(),
+    currency: z.string().regex(/^[A-Z]{3}$/).optional(),
+    content_ids: z.array(z.string().max(120)).max(50).optional(),
+    content_name: z.string().max(200).optional(),
+    content_type: z.string().max(40).optional(),
+    content_category: z.string().max(200).optional(),
+    contents: z.array(z.object({
+      id: z.string().max(120).optional().nullable(),
+      quantity: z.number().int().min(0).max(10000).optional(),
+      item_price: z.number().finite().nonnegative().max(10_000_000).optional(),
+    }).passthrough().transform((c) => ({ id: c.id ?? undefined, quantity: c.quantity, item_price: c.item_price }))).max(50).optional(),
+    num_items: z.number().int().min(0).max(10000).optional(),
+    search_string: z.string().max(200).optional(),
+    order_id: z.string().max(120).optional(),
+    transaction_id: z.string().max(120).optional(),
+  })
+  .strip();
+
 const bodySchema = z.object({
   store_slug: z.string().min(1).max(120),
   landing_page_id: z.string().uuid().optional().nullable(),
   event: z.string().min(1).max(60),
   event_id: z.string().min(1).max(120),
   event_source_url: z.string().max(2000).optional(),
-  custom_data: z.record(z.string(), z.any()).optional(),
+  custom_data: z.unknown().optional(),
   user_data: z
     .object({
       email: z.string().max(200).optional().nullable(),
@@ -44,8 +69,11 @@ export const Route = createFileRoute("/api/public/fb-capi/track")({
         try {
           payload = bodySchema.parse(await request.json());
         } catch (e) {
-          return Response.json({ ok: false, error: (e as Error).message }, { status: 400 });
+          return Response.json({ ok: false, error: "Invalid request" }, { status: 400 });
         }
+        if (!ALLOWED_EVENTS.has(payload.event)) return Response.json({ ok: true, skipped: true });
+        const cd = customDataSchema.safeParse(payload.custom_data ?? {});
+        let customData: Record<string, unknown> = cd.success ? cd.data : {};
 
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
         const { data: store } = await supabaseAdmin
@@ -76,6 +104,21 @@ export const Route = createFileRoute("/api/public/fb-capi/track")({
           return Response.json({ ok: true, skipped: true });
         }
 
+        // Purchase must belong to a real, recent order of this store; value comes from the order.
+        if (payload.event === "Purchase") {
+          const m2 = /^purchase-([0-9a-f-]{36})$/i.exec(payload.event_id);
+          if (!m2) return Response.json({ ok: true, skipped: true });
+          const { data: order } = await supabaseAdmin
+            .from("orders")
+            .select("id, subtotal, created_at")
+            .eq("id", m2[1])
+            .eq("store_id", (store as any).id)
+            .maybeSingle();
+          const age = order ? Date.now() - new Date((order as any).created_at).getTime() : Infinity;
+          if (!order || age > 24 * 3600_000) return Response.json({ ok: true, skipped: true });
+          customData = { ...customData, value: Number((order as any).subtotal) || 0, currency: "BDT", order_id: (order as any).id };
+        }
+
         const ip = extractClientIp(request.headers);
         const ua = request.headers.get("user-agent");
 
@@ -88,7 +131,7 @@ export const Route = createFileRoute("/api/public/fb-capi/track")({
             client_ip_address: ip,
             client_user_agent: ua,
           },
-          custom_data: payload.custom_data,
+          custom_data: customData,
         };
 
         const result = await sendFbEvents({
