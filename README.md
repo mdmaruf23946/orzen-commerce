@@ -23,7 +23,7 @@
 ## Database Migrations
 
 - Add every schema change as a new SQL file in `supabase/migrations/`. Never edit applied migrations.
-- `drizzle/` is a read-only mirror for typing/reference — never generate migrations from it.
+- `drizzle/` is a read-only mirror for typing/reference — never generate migrations from it; `drizzle.config.ts` blocks manual runs. Policy: `docs/DATABASE_MIGRATION_POLICY.md`.
 
 ## CI
 

@@ -1,5 +1,8 @@
 # Roadmap
 
+## Final audit — Stage B: Migration safety (2026-11-11)
+- [x] Drizzle config refuses manual runs without the platform migration URL; policy documented; no database or migration-file changes
+
 ## Remaining audit — Stage 4: Migration settings (2026-11-10)
 - [x] Read-only review: 302 schema migrations are the source of truth; the separate 26-file mirror and its config are unused by app code, tests, CI and deployment
 - [x] Add a safety note to the mirror config forbidding manual schema commands; no database, migration file or data changes
