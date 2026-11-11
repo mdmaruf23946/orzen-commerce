@@ -36,3 +36,8 @@ dist-ssr
 # Python cache
 __pycache__/
 *.py[cod]
+
+# Local environment files (never commit)
+.env
+.env.*
+!.env.example
