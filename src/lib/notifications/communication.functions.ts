@@ -112,6 +112,12 @@ export const sendGmailTest = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await assertOwner(context.supabase, context.userId);
     const profile = await gmailProfile();
+    // Test mail may only go to the caller's own address or the connected Gmail.
+    const own = String((context.claims as any)?.email ?? "").toLowerCase();
+    const target = data.to.trim().toLowerCase();
+    if (target !== own && target !== String(profile.emailAddress ?? "").toLowerCase()) {
+      throw new Error("Test email can only be sent to your own email address.");
+    }
     const { renderPlatformEmail } = await import("@/lib/notifications/brevo.server");
     const html = await renderPlatformEmail({
       title: "Gmail connection test সফল",
@@ -265,6 +271,10 @@ export const sendCommunication = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => ComposeSchema.parse(d))
   .handler(async ({ data, context }) => {
     await assertOwner(context.supabase, context.userId);
+    // Bulk sends are throttled per owner account (5 campaigns / 10 min).
+    const { checkRateLimit } = await import("@/lib/security/rate-limit.server");
+    const rl = await checkRateLimit("contact", `comm:${context.userId}`, { limit: 5, windowSec: 600 });
+    if (!rl.allowed) throw new Error("Too many campaigns sent. Please wait a few minutes.");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     // Gmail must be connected if we're sending email

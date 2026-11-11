@@ -2,13 +2,31 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
 
+// Only standard storefront events are relayed; anything else is dropped.
+const ALLOWED_EVENTS = new Set([
+  "PageView", "ViewContent", "AddToCart", "InitiateCheckout", "AddPaymentInfo",
+  "Search", "Lead", "Contact", "CompleteRegistration", "Purchase",
+]);
+const customDataSchema = z
+  .object({
+    value: z.number().finite().nonnegative().max(10_000_000).optional(),
+    currency: z.string().regex(/^[A-Z]{3}$/).optional(),
+    content_ids: z.array(z.string().max(120)).max(50).optional(),
+    content_name: z.string().max(200).optional(),
+    content_type: z.string().max(40).optional(),
+    content_category: z.string().max(200).optional(),
+    num_items: z.number().int().min(0).max(10000).optional(),
+    search_string: z.string().max(200).optional(),
+  })
+  .strip();
+
 const bodySchema = z.object({
   store_slug: z.string().min(1).max(120),
   landing_page_id: z.string().uuid().optional().nullable(),
   event: z.string().min(1).max(60),
   event_id: z.string().min(1).max(120),
   event_source_url: z.string().max(2000).optional(),
-  custom_data: z.record(z.string(), z.any()).optional(),
+  custom_data: z.unknown().optional(),
   user_data: z
     .object({
       email: z.string().max(200).optional().nullable(),
@@ -27,13 +45,21 @@ export const Route = createFileRoute("/api/public/tiktok/track")({
         try {
           payload = bodySchema.parse(await request.json());
         } catch (e) {
-          return Response.json({ ok: false, error: (e as Error).message }, { status: 400 });
+          return Response.json({ ok: false, error: "Invalid request" }, { status: 400 });
         }
+        if (!ALLOWED_EVENTS.has(payload.event)) return Response.json({ ok: true, skipped: true });
+        // Browser beacons must come from a page (no cross-site/program forgery).
+        const site = request.headers.get("sec-fetch-site");
+        if (site && site !== "same-origin" && site !== "same-site") {
+          return Response.json({ ok: true, skipped: true });
+        }
+        const cd = customDataSchema.safeParse(payload.custom_data ?? {});
+        let customData: Record<string, unknown> = cd.success ? cd.data : {};
 
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
         const { data: store } = await supabaseAdmin
           .from("stores")
-          .select("marketing")
+          .select("id, marketing")
           .eq("slug", payload.store_slug)
           .eq("status", "active")
           .maybeSingle();
@@ -56,6 +82,21 @@ export const Route = createFileRoute("/api/public/tiktok/track")({
           return Response.json({ ok: true, skipped: true });
         }
 
+        // Purchase must belong to a real, recent order of this store; value comes from the order.
+        if (payload.event === "Purchase") {
+          const m = /^purchase-([0-9a-f-]{36})$/i.exec(payload.event_id);
+          if (!m) return Response.json({ ok: true, skipped: true });
+          const { data: order } = await supabaseAdmin
+            .from("orders")
+            .select("id, subtotal, created_at")
+            .eq("id", m[1])
+            .eq("store_id", (store as any).id)
+            .maybeSingle();
+          const age = order ? Date.now() - new Date((order as any).created_at).getTime() : Infinity;
+          if (!order || age > 24 * 3600_000) return Response.json({ ok: true, skipped: true });
+          customData = { ...customData, value: Number((order as any).subtotal) || 0, currency: "BDT" };
+        }
+
         const { sendTiktokEvents, extractIp } = await import("@/lib/marketing/tiktok-events.server");
         const matchOn = t.match_enabled !== false;
         const result = await sendTiktokEvents({
@@ -70,7 +111,7 @@ export const Route = createFileRoute("/api/public/tiktok/track")({
               event: payload.event,
               event_id: payload.event_id,
               page_url: payload.event_source_url,
-              properties: payload.custom_data ?? {},
+              properties: customData,
               user_data: {
                 ...(payload.user_data ?? {}),
                 ip: extractIp(request.headers),

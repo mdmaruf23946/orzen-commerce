@@ -2278,6 +2278,7 @@ export type Database = {
           email: string | null
           id: string
           items: Json
+          owner_hash: string | null
           phone: string | null
           store_id: string
           total: number
@@ -2293,6 +2294,7 @@ export type Database = {
           email?: string | null
           id: string
           items?: Json
+          owner_hash?: string | null
           phone?: string | null
           store_id: string
           total?: number
@@ -2308,6 +2310,7 @@ export type Database = {
           email?: string | null
           id?: string
           items?: Json
+          owner_hash?: string | null
           phone?: string | null
           store_id?: string
           total?: number

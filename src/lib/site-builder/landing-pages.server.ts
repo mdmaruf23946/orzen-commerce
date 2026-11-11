@@ -253,6 +253,11 @@ export async function intakeLandingPageOrder(input: IntakeInput): Promise<Intake
     return { status: 200, body: { ok: true, pong: true } };
   }
   if (evt === "catalog.sync" || evt === "catalog" || (!parsed?.customer_name && !parsed?.phone && Array.isArray(parsed?.products) && !Array.isArray(parsed?.items))) {
+    // Catalog writes need a real credential (signed webhook or API key);
+    // the public embed id is not proof of authority over the catalog.
+    if (input.method === "embed") {
+      return { status: 403, body: { ok: false, error: "Catalog sync requires webhook or API authentication" } };
+    }
     const { applyCatalog } = await import("@/lib/integrations/external-sites.server");
     const r = await applyCatalog(sb, conn, parsed);
     await writeLog(sb, conn.store_id, conn.id, r.status === 200 ? "success" : "invalid", {

@@ -140,6 +140,9 @@ async function postToOrzen(storeId: string, event: string, data: unknown) {
   const { row } = await loadRow(storeId);
   const url = row?.account_info?.webhook_url as string | undefined;
   if (row?.status !== "connected" || !url) return { ok: false, message: "Orzen Call is not connected." };
+  const { outboundUrlProblem } = await import("@/lib/security/outbound-url");
+  const bad = outboundUrlProblem(url);
+  if (bad) return { ok: false, message: `Webhook link rejected: ${bad}.` };
   const body = JSON.stringify({ event, store_id: storeId, sent_at: new Date().toISOString(), data });
   const { createHmac } = await import("node:crypto");
   const sig = createHmac("sha256", (row.encrypted_token as string) ?? "").update(body).digest("hex");
@@ -148,6 +151,7 @@ async function postToOrzen(storeId: string, event: string, data: unknown) {
       method: "POST",
       headers: { "Content-Type": "application/json", "X-Orzen-Event": event, "X-Orzen-Signature": sig },
       body,
+      redirect: "manual",
       signal: AbortSignal.timeout(10_000),
     });
     if (!r.ok) return { ok: false, message: `Orzen Call replied with error ${r.status}.` };

@@ -567,12 +567,17 @@ export const testWebhook = createServerFn({ method: "POST" })
     const sb: any = context.supabase;
     const { data: wh } = await sb.from("webhooks").select("url,secret,event").eq("id", data.id).maybeSingle();
     if (!wh) throw new Error("Not found");
+    const { outboundUrlProblem } = await import("@/lib/security/outbound-url");
+    const bad = outboundUrlProblem(String(wh.url ?? ""));
+    if (bad) throw new Error(`Webhook URL rejected: ${bad}`);
     let status = 0;
     try {
       const res = await fetch(wh.url, {
         method: "POST",
         headers: { "content-type": "application/json", "x-webhook-secret": wh.secret ?? "" },
         body: JSON.stringify({ event: "test.ping", at: new Date().toISOString() }),
+        redirect: "manual",
+        signal: AbortSignal.timeout(10_000),
       });
       status = res.status;
     } catch { status = 0; }

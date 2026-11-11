@@ -39,7 +39,7 @@ export const Route = createFileRoute("/api/public/marketing/visit")({
 
         const now = new Date().toISOString();
         const { data: existing } = await db
-          .from("marketing_visits").select("id,platform").eq("store_id", store.id).eq("session_id", p.session_id).maybeSingle();
+          .from("marketing_visits").select("id,platform,created_at").eq("store_id", store.id).eq("session_id", p.session_id).maybeSingle();
         if (!existing) {
           await db.from("marketing_visits").insert({
             store_id: store.id, visitor_id: p.visitor_id, session_id: p.session_id, platform: p.platform,
@@ -56,7 +56,10 @@ export const Route = createFileRoute("/api/public/marketing/visit")({
             .from("orders").select("id,attribution_platform,created_at").eq("id", p.order_id).eq("store_id", store.id).maybeSingle();
           if (order) {
             orderId = order.id;
-            if (!order.attribution_platform && Date.now() - new Date(order.created_at).getTime() < 60 * 60 * 1000) {
+            // Only a session recorded *before* the order was placed may claim it.
+            const sessionPredatesOrder =
+              !!existing && new Date(existing.created_at).getTime() < new Date(order.created_at).getTime();
+            if (sessionPredatesOrder && !order.attribution_platform && Date.now() - new Date(order.created_at).getTime() < 60 * 60 * 1000) {
               await db.from("orders").update({
                 attribution_platform: platform, attribution_campaign: p.campaign ?? null, attribution_session_id: p.session_id,
               }).eq("id", order.id).is("attribution_platform", null);

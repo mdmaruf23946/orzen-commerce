@@ -176,6 +176,13 @@
       "when": 1793540610415,
       "tag": "0024_instagram_messaging",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1794400611186,
+      "tag": "0025_harden_public_rpcs_store_billing_drafts",
+      "breakpoints": true
     }
   ]
 }

@@ -1554,13 +1554,13 @@ export const getOrder = createServerFn({ method: "GET" })
       .parse(d),
   )
   .handler(async ({ data }) => {
-    const sb = publicClient();
-    const { data: row, error } = await sb.rpc("get_public_order", { _order_id: data.orderId });
-    if (error) throw new Error(error.message);
+    // RPC is service-role only; ownership is checked below before PII is returned.
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: row, error } = await supabaseAdmin.rpc("get_public_order", { _order_id: data.orderId });
+    if (error) throw new Error("Could not load order");
     if (!row) return null;
     const order = row as any;
 
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { ownsOrderById } = await import("@/lib/orders/order-ownership.server");
     const owns = await ownsOrderById(supabaseAdmin, data.orderId, {
       storeId: order.store_id,

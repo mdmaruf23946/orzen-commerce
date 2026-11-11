@@ -3,6 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
+import DOMPurify from "isomorphic-dompurify";
 import { Send, Users, Save, Sparkles, Loader2, Code2 } from "lucide-react";
 import {
   previewCommunication, sendCommunication,
@@ -209,7 +210,7 @@ function Compose() {
           ) : form.body_html ? (
             <div
               className="prose prose-sm dark:prose-invert max-w-none rounded-md border bg-background p-3 text-sm [&_a]:text-primary [&_li]:my-1 [&_p]:my-2"
-              dangerouslySetInnerHTML={{ __html: form.body_html }}
+              dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(form.body_html, { FORBID_TAGS: ["style", "form", "iframe", "object", "embed"] }) }}
             />
           ) : (
             <div className="rounded-md border border-dashed bg-muted/30 p-6 text-center text-sm text-muted-foreground">

@@ -102,9 +102,11 @@ export const Route = createFileRoute("/api/public/ai-admin/messenger-webhook")({
 
         if (!conn || !creds?.page_access_token) return new Response("Not configured", { status: 200 });
 
-        if (creds.app_secret) {
-          const ok = verifySignature(raw, request.headers.get("x-hub-signature-256"), creds.app_secret);
-          if (!ok) return new Response("Invalid signature", { status: 401 });
+        // Signature is mandatory: without an App Secret we cannot prove the
+        // payload came from Meta, so sender identity (admin PSID) is untrusted.
+        if (!creds.app_secret) return new Response("App secret not configured", { status: 401 });
+        if (!verifySignature(raw, request.headers.get("x-hub-signature-256"), creds.app_secret)) {
+          return new Response("Invalid signature", { status: 401 });
         }
 
         const messaging = payload?.entry?.[0]?.messaging?.[0];

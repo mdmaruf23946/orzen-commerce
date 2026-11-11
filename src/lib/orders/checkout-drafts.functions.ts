@@ -13,6 +13,7 @@ export const saveCheckoutDraft = createServerFn({ method: "POST" })
     z
       .object({
         id: z.string().uuid(),
+        secret: z.string().min(32).max(128),
         storeId: z.string().uuid(),
         name: s(120), phone: s(40), email: s(160), address: s(500), area: s(120),
         items: z
@@ -26,13 +27,18 @@ export const saveCheckoutDraft = createServerFn({ method: "POST" })
     const hasInfo = [data.name, data.phone, data.email, data.address].some((v) => v && v.length > 0);
     if (!hasInfo) return { ok: true };
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: existing } = await supabaseAdmin
-      .from("checkout_drafts").select("store_id,converted_order_id").eq("id", data.id).maybeSingle();
-    if (existing && (existing.store_id !== data.storeId || existing.converted_order_id)) return { ok: true };
+    const { createHash } = await import("node:crypto");
+    const ownerHash = createHash("sha256").update(data.secret).digest("hex");
+    const { data: existing } = await (supabaseAdmin as any)
+      .from("checkout_drafts").select("store_id,converted_order_id,owner_hash").eq("id", data.id).maybeSingle();
+    // Only the browser that created a draft (holder of its secret) may overwrite it.
+    if (existing && (existing.store_id !== data.storeId || existing.converted_order_id || existing.owner_hash !== ownerHash)) {
+      return { ok: true };
+    }
     const { data: store } = await supabaseAdmin.from("stores").select("id").eq("id", data.storeId).maybeSingle();
     if (!store) return { ok: false };
-    await supabaseAdmin.from("checkout_drafts").upsert({
-      id: data.id, store_id: data.storeId,
+    await (supabaseAdmin as any).from("checkout_drafts").upsert({
+      id: data.id, store_id: data.storeId, owner_hash: ownerHash,
       customer_name: data.name || null, phone: data.phone || null, email: data.email || null,
       address: data.address || null, area: data.area || null,
       items: data.items as any, total: data.total, updated_at: new Date().toISOString(),

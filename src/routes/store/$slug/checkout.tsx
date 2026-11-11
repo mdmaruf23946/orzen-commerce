@@ -174,19 +174,29 @@ function CheckoutPage() {
   const saveDraft = useServerFn(saveCheckoutDraft);
   const completeDraft = useServerFn(completeCheckoutDraft);
   const [draftId, setDraftId] = useState<string | null>(null);
+  const [draftSecret, setDraftSecret] = useState<string | null>(null);
   useEffect(() => {
     const key = `orzen-checkout-draft:${slug}`;
+    const skey = `orzen-checkout-draft-secret:${slug}`;
     let id = localStorage.getItem(key);
-    if (!id) { id = crypto.randomUUID(); localStorage.setItem(key, id); }
+    let secret = localStorage.getItem(skey);
+    if (!id || !secret) {
+      // New id + per-browser secret: only this browser can update its draft.
+      id = crypto.randomUUID();
+      secret = crypto.randomUUID() + crypto.randomUUID();
+      localStorage.setItem(key, id);
+      localStorage.setItem(skey, secret);
+    }
     setDraftId(id);
+    setDraftSecret(secret);
   }, [slug]);
   useEffect(() => {
-    if (!draftId || !store?.id || !items.length) return;
+    if (!draftId || !draftSecret || !store?.id || !items.length) return;
     if (![name, phone, email, address].some((v) => v.trim())) return;
     const t = setTimeout(() => {
       saveDraft({
         data: {
-          id: draftId, storeId: store.id,
+          id: draftId, secret: draftSecret, storeId: store.id,
           name: name.trim(), phone: phone.trim(), email: email.trim(), address: address.trim(), area: area.trim(),
           items: items.slice(0, 50).map((i: any) => ({
             productId: String(i.productId).slice(0, 64), name: String(i.name ?? "").slice(0, 200),
@@ -200,7 +210,7 @@ function CheckoutPage() {
     }, 1200);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [draftId, store?.id, items, name, phone, email, address, area]);
+  }, [draftId, draftSecret, store?.id, items, name, phone, email, address, area]);
 
 
   if (!store) return null;

@@ -75,7 +75,9 @@ async function staffAccess(supabase: any, userId: string, staff: any, ownStoreId
 /** Owner => own store. Member => the selected (or first) store they belong to. */
 // Short per-isolate cache: one panel page fires many server functions that all
 // resolve the same access. Only successful results are cached, keyed by user +
-// requested store, so stores never mix; permission changes apply within 30s.
+// requested store, so stores never mix. Only *owner* results are cached —
+// staff/delegated membership is re-checked on every call so a revoke applies
+// immediately.
 const ACCESS_TTL_MS = 30_000;
 const accessCache = new Map<string, { at: number; value: StoreAccess }>();
 
@@ -88,7 +90,7 @@ export async function resolveStoreAccess(
   const hit = accessCache.get(key);
   if (hit && Date.now() - hit.at < ACCESS_TTL_MS) return hit.value;
   const value = await resolveStoreAccessUncached(supabase, userId, claims);
-  if (value.storeId) {
+  if (value.storeId && value.isOwner && !value.staff) {
     accessCache.set(key, { at: Date.now(), value });
     if (accessCache.size > 5000) accessCache.delete(accessCache.keys().next().value as string);
   }
