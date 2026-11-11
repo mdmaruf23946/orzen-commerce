@@ -30,7 +30,6 @@ ANON_REQUIRED = [
     "resolve_host_kind",
     "platform_routing_hosts",
     "get_public_store_by_slug",
-    "get_public_order",
     "get_public_delivery_zones",
     "get_public_landing_page",
     "get_store_page",
