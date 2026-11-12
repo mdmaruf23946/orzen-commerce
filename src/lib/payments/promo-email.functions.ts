@@ -48,30 +48,35 @@ export const sendPromoEmail = createServerFn({ method: "POST" })
       storeIds: z.array(z.string().uuid()).min(1).max(500),
       subject: z.string().trim().min(1).max(200),
       message: z.string().trim().min(1).max(5000),
+      discountLabel: z.string().trim().max(80).optional(),
+      showBenefits: z.boolean().optional(),
+      benefitsTitle: z.string().trim().max(120).optional(),
+      benefits: z.string().max(1500).optional(),
     }).parse(d),
   )
   .handler(async ({ data, context }) => {
     await assertOwner(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: coupon } = await (supabaseAdmin as any).from("subscription_coupons").select("code,active,type,value,expires_at").eq("id", data.couponId).maybeSingle();
+    const { data: coupon } = await (supabaseAdmin as any).from("subscription_coupons").select("code,active,type,value,expires_at,plan_amounts,max_discount").eq("id", data.couponId).maybeSingle();
     if (!coupon) throw new Error("প্রোমো কোড পাওয়া যায়নি");
     if (!coupon.active) throw new Error("প্রোমো কোডটি বন্ধ আছে — আগে Active করুন");
     if (coupon.expires_at && new Date(coupon.expires_at).getTime() < Date.now()) throw new Error("প্রোমো কোডের মেয়াদ শেষ — আগে মেয়াদ বাড়ান");
     const { escapeHtml, renderPlatformEmail, sendBrevoEmail } = await import("@/lib/notifications/brevo.server");
-    const { fillPromoTemplate, promoValidity, recipientName, bnNum } = await import("@/lib/payments/promo-audience");
+    const { fillPromoTemplate, promoValidity, recipientName, promoDiscountHeadline } = await import("@/lib/payments/promo-audience");
     const all = await loadRecipients(supabaseAdmin);
     const chosen = all.filter((r: any) => data.storeIds.includes(r.id));
     let sent = 0;
     const failed: string[] = [];
     const v = promoValidity(coupon.expires_at);
-    const discount = coupon.type === "percent" ? `${bnNum(Number(coupon.value))}% ছাড়` : `৳${bnNum(Number(coupon.value))} ছাড়`;
+    const discount = data.discountLabel || promoDiscountHeadline(coupon);
+    const benefitLines = (data.benefits ?? "").split("\n").map((x) => x.trim()).filter(Boolean);
     for (const r of chosen) {
       const { data: u } = await (supabaseAdmin as any).auth.admin.getUserById(r.owner_user_id);
       let email = r.email;
       if (!email.includes("@")) email = u?.user?.email ?? "";
       if (!email.includes("@")) { failed.push(r.name); continue; }
       const name = recipientName(u?.user?.user_metadata, r.owner_name);
-      const vars = { code: coupon.code, store_name: r.name, owner_name: name, discount, expiry_date: v.date || "সীমিত সময়", days_left: v.daysLeft == null ? "" : bnNum(v.daysLeft), validity_text: v.text };
+      const vars = { code: coupon.code, store_name: r.name, owner_name: name, discount, expiry_date: v.date || "সীমিত সময়", days_left: v.daysLeft == null ? "" : String(v.daysLeft), validity_text: v.text };
       const subject = fillPromoTemplate(data.subject, vars);
       const body = escapeHtml(fillPromoTemplate(data.message, vars)).replace(/\n/g, "<br>");
       const e = escapeHtml;
@@ -80,7 +85,7 @@ export const sendPromoEmail = createServerFn({ method: "POST" })
   <div style="background:#163f2c;color:#ffffff;text-align:center;padding:10px;font-size:13px;font-weight:700;letter-spacing:1px">🎁 সীমিত সময়ের বিশেষ অফার</div>
   <div style="background:#fffaf0;text-align:center;padding:20px 16px">
     <div style="font-size:30px;line-height:38px;font-weight:800;color:#b45309">${e(discount)}</div>
-    <div style="font-size:13px;color:#64716b;margin:6px 0 12px">প্যাকেজ কেনার সময় এই কোডটি লিখে Apply করুন</div>
+    <div style="font-size:13px;color:#64716b;margin:6px 0 12px">প্যাকেজ ও মেয়াদ অনুযায়ী ছাড়ের পরিমাণ ভিন্ন হতে পারে — প্যাকেজ কেনার সময় এই কোডটি লিখে Apply করুন</div>
     <div style="display:inline-block;padding:12px 22px;border:2px dashed #163f2c;border-radius:8px;background:#ffffff;font-family:Consolas,monospace;font-size:26px;font-weight:800;letter-spacing:4px;color:#163f2c">${e(coupon.code)}</div>
   </div>
   <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#fff1d6"><tr>
@@ -88,7 +93,7 @@ export const sendPromoEmail = createServerFn({ method: "POST" })
     ${v.date ? `<td align="center" style="padding:12px;font-size:14px;color:#7c2d12;border-left:1px solid #f0c36d">📅 শেষ তারিখ: <b>${e(v.date)}</b></td>` : ""}
   </tr></table>
 </div>
-<div style="font-size:14px;line-height:24px;color:#24342c;margin:0 0 6px"><b>আপগ্রেড করলে যা পাবেন:</b><br>✅ AI দিয়ে Messenger/WhatsApp-এ অটো সেল ও অর্ডার<br>✅ কুরিয়ার বুকিং ও COD হিসাব এক জায়গায়<br>✅ বেশি প্রোডাক্ট, বেশি অর্ডার, পেশাদার স্টোর</div>
+${data.showBenefits !== false && benefitLines.length ? `<div style="font-size:14px;line-height:24px;color:#24342c;margin:0 0 6px"><b>${e(data.benefitsTitle || "আপগ্রেড করলে যা পাবেন:")}</b><br>${benefitLines.map((l) => `✅ ${e(l)}`).join("<br>")}</div>` : ""}
 <div style="font-size:13px;color:#b45309;margin-top:10px">⚡ অফারটি মেয়াদ শেষ হলে আর পাওয়া যাবে না — এখনই নিয়ে নিন।</div>`;
       try {
         const html = await renderPlatformEmail({

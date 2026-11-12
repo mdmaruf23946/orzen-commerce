@@ -8,6 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { listPromoRecipients, sendPromoEmail } from "@/lib/payments/promo-email.functions";
+import { DEFAULT_PROMO_BENEFITS, promoDiscountHeadline } from "@/lib/payments/promo-audience";
+import { useEffect } from "react";
 
 type Group = "free" | "trial" | "paid" | "all";
 const GROUPS: { key: Group; label: string }[] = [
@@ -17,7 +19,7 @@ const GROUPS: { key: Group; label: string }[] = [
   { key: "all", label: "সবাই" },
 ];
 
-export function PromoEmailDialog({ coupon, onClose }: { coupon: { id: string; code: string } | null; onClose: () => void }) {
+export function PromoEmailDialog({ coupon, onClose }: { coupon: { id: string; code: string; type?: string; value?: number; plan_amounts?: Record<string, number>; max_discount?: number | null } | null; onClose: () => void }) {
   const listFn = useServerFn(listPromoRecipients);
   const sendFn = useServerFn(sendPromoEmail);
   const { data = [], isLoading } = useQuery({ queryKey: ["owner", "promoRecipients"], queryFn: () => listFn(), enabled: !!coupon });
@@ -25,8 +27,14 @@ export function PromoEmailDialog({ coupon, onClose }: { coupon: { id: string; co
   const [q, setQ] = useState("");
   const [picked, setPicked] = useState<Set<string>>(new Set());
   const [subject, setSubject] = useState("🎁 {{owner_name}}, আপনার জন্য {{discount}} — {{validity_text}}");
-  const [message, setMessage] = useState("প্রিয় {{owner_name}},\n\n{{store_name}} স্টোরকে আরও বড় করতে আপনার জন্য রয়েছে বিশেষ {{discount}}! অফারটি চলবে {{expiry_date}} পর্যন্ত — {{validity_text}}।\n\nনিচের প্রোমো কোডটি ব্যবহার করে আজই আপনার প্যাকেজ আপগ্রেড করুন।");
+  const [message, setMessage] = useState("প্রিয় {{owner_name}},\n\n{{store_name}} স্টোরকে আরও বড় করতে আপনার জন্য রয়েছে {{discount}}! প্যাকেজ ও মেয়াদ অনুযায়ী আপনার পছন্দের প্ল্যানে ছাড় পাবেন। অফারটি চলবে {{expiry_date}} পর্যন্ত — {{validity_text}}।\n\nনিচের প্রোমো কোডটি ব্যবহার করে আজই আপনার প্যাকেজ আপগ্রেড করুন।");
   const [sending, setSending] = useState(false);
+  const [discountLabel, setDiscountLabel] = useState("");
+  const [showBenefits, setShowBenefits] = useState(true);
+  const [benefitsTitle, setBenefitsTitle] = useState("আপগ্রেড করলে যা পাবেন:");
+  const [benefits, setBenefits] = useState(DEFAULT_PROMO_BENEFITS);
+  const autoLabel = coupon ? promoDiscountHeadline({ type: coupon.type ?? "fixed", value: coupon.value ?? 0, plan_amounts: coupon.plan_amounts, max_discount: coupon.max_discount }) : "";
+  useEffect(() => { setDiscountLabel(autoLabel); }, [coupon?.id]);
 
   const rows = useMemo(() => data.filter((r: any) =>
     (group === "all" || r.group === group) &&
@@ -40,7 +48,7 @@ export function PromoEmailDialog({ coupon, onClose }: { coupon: { id: string; co
     if (!confirm(`${picked.size} জন মার্চেন্টকে ইমেইল পাঠাবেন?`)) return;
     setSending(true);
     try {
-      const res = await sendFn({ data: { couponId: coupon.id, storeIds: [...picked], subject, message } });
+      const res = await sendFn({ data: { couponId: coupon.id, storeIds: [...picked], subject, message, discountLabel, showBenefits, benefitsTitle, benefits } });
       toast.success(`${res.sent} টি ইমেইল পাঠানো হয়েছে`);
       if (res.failed.length) toast.error(`পাঠানো যায়নি: ${res.failed.join(", ")}`);
       setPicked(new Set());
@@ -81,6 +89,19 @@ export function PromoEmailDialog({ coupon, onClose }: { coupon: { id: string; co
                 </label>
               ))}
             </div>
+          </div>
+          <div className="space-y-1">
+            <Label>মার্চেন্টকে কোন ছাড় দেখাবে</Label>
+            <Input value={discountLabel} onChange={(e) => setDiscountLabel(e.target.value)} placeholder={autoLabel} />
+            <p className="text-xs text-muted-foreground">নিজে থেকে সবচেয়ে বেশি মাসিক ছাড় বসানো হয়েছে ({autoLabel})। চাইলে নিজের মতো লিখুন, যেমন “৳৫০০ পর্যন্ত ছাড়”।</p>
+          </div>
+          <div className="space-y-2 rounded-lg border p-3">
+            <label className="flex items-center gap-2 text-sm font-medium"><input type="checkbox" checked={showBenefits} onChange={(e) => setShowBenefits(e.target.checked)} /> “আপগ্রেড করলে যা পাবেন” অংশ ইমেইলে দেখাবে</label>
+            {showBenefits && (<>
+              <Input value={benefitsTitle} onChange={(e) => setBenefitsTitle(e.target.value)} />
+              <Textarea rows={3} value={benefits} onChange={(e) => setBenefits(e.target.value)} />
+              <p className="text-xs text-muted-foreground">প্রতিটি লাইন একটি করে ✅ পয়েন্ট হবে।</p>
+            </>)}
           </div>
           <div className="space-y-1"><Label>বিষয় (Subject)</Label><Input value={subject} onChange={(e) => setSubject(e.target.value)} /></div>
           <div className="space-y-1">

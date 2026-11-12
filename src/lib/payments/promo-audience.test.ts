@@ -21,3 +21,11 @@ describe("promo email personalisation", () => {
     expect(v.date).toBe("১৫ নভেম্বর ২০২৬");
   });
 });
+
+import { promoDiscountHeadline } from "./promo-audience";
+describe("promo discount headline", () => {
+  it("uses the largest per-plan amount when base is 0", () =>
+    expect(promoDiscountHeadline({ type: "percent", value: 0, plan_amounts: { a: 700, b: 1000 } })).toBe("৳১০০০ পর্যন্ত ছাড়"));
+  it("fixed base vs plans takes max", () =>
+    expect(promoDiscountHeadline({ type: "fixed", value: 300, plan_amounts: { a: 200 } })).toBe("৳৩০০ পর্যন্ত ছাড়"));
+});

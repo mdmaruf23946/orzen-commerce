@@ -58,7 +58,7 @@ function CouponsPage() {
   const listFn = useServerFn(listSubscriptionCoupons);
   const saveFn = useServerFn(upsertSubscriptionCoupon);
   const delFn = useServerFn(deleteSubscriptionCoupon);
-  const [mailCoupon, setMailCoupon] = useState<{ id: string; code: string } | null>(null);
+  const [mailCoupon, setMailCoupon] = useState<any>(null);
   const plansFn = useServerFn(listPublicPlans);
   const qc = useQueryClient();
   const { data } = useQuery({ queryKey: ["owner", "subCoupons"], queryFn: () => listFn() });
@@ -232,7 +232,7 @@ function CouponsPage() {
                     }} />
                   </td>
                   <td className="py-2 text-right whitespace-nowrap">
-                    <Button size="sm" variant="ghost" aria-label="Send by email" title="ইমেইলে পাঠান" onClick={() => setMailCoupon({ id: c.id, code: c.code })}><Mail className="h-4 w-4" /></Button>
+                    <Button size="sm" variant="ghost" aria-label="Send by email" title="ইমেইলে পাঠান" onClick={() => setMailCoupon(c)}><Mail className="h-4 w-4" /></Button>
                     <Button size="sm" variant="ghost" aria-label="Edit" onClick={() => edit(c)}><Pencil className="h-4 w-4" /></Button>
                     <Button size="sm" variant="ghost" aria-label="Delete" onClick={async () => {
                       if (!confirm(`Delete ${c.code}?`)) return;
