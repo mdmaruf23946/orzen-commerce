@@ -183,6 +183,13 @@
       "when": 1794400611186,
       "tag": "0025_harden_public_rpcs_store_billing_drafts",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1794479560136,
+      "tag": "0026_subscription_promo_codes",
+      "breakpoints": true
     }
   ]
 }

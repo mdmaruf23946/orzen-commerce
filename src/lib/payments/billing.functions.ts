@@ -137,6 +137,33 @@ const BD_PHONE = /^01[3-9]\d{8}$/;
 const TXN_RE = /^[A-Za-z0-9]{6,32}$/;
 const CYCLE_LABEL = { monthly: "Monthly", "3m": "3 Months", "6m": "6 Months", yearly: "Yearly" } as const;
 
+// Merchant checks a promo code before paying. The server recomputes the plan
+// price so the browser can never choose its own discount.
+export const checkPromoCode = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z.object({
+      code: z.string().trim().min(1).max(40),
+      packageId: z.string().uuid(),
+      cycle: z.enum(["monthly", "3m", "6m", "yearly"]),
+    }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+    const { data: pkg } = await supabase.from("subscription_packages").select("price").eq("id", data.packageId).maybeSingle();
+    if (!pkg) return { ok: false as const, error: "Package not found" };
+    const { data: settings } = await (supabase as any).rpc("get_billing_discounts");
+    const s = {
+      discount_3m: Number((settings as any)?.discount_3m ?? 5),
+      discount_6m: Number((settings as any)?.discount_6m ?? 10),
+      discount_yearly: Number((settings as any)?.discount_yearly ?? 20),
+    };
+    const { total } = computeCycleTotal(Number(pkg.price), data.cycle, s);
+    const { validatePromoCode } = await import("@/lib/payments/promo-code.server");
+    const r = await validatePromoCode(data.code, { packageId: data.packageId, cycle: data.cycle, amount: total });
+    return r.ok ? { ok: true as const, code: r.code, discount: r.discount, total: r.total } : { ok: false as const, error: r.error };
+  });
+
 export const submitManualPayment = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) =>
@@ -156,6 +183,7 @@ export const submitManualPayment = createServerFn({ method: "POST" })
         customer_email: z.string().trim().email().max(255),
         customer_note: z.string().trim().max(500).optional().nullable(),
         ai_credit_bundle_id: z.string().uuid().optional().nullable(),
+        coupon_code: z.string().trim().max(40).optional().nullable(),
       })
       .parse(d),
   )
@@ -192,7 +220,14 @@ export const submitManualPayment = createServerFn({ method: "POST" })
       if (!b) throw new Error("Selected credit pack is no longer available");
       bundle = { id: b.id, credits: Number(b.credits), price_bdt: Number(b.price_bdt) };
     }
-    const total = planTotal + (bundle?.price_bdt ?? 0);
+    let promo: { couponId: string; code: string; discount: number } | null = null;
+    if (data.coupon_code) {
+      const { validatePromoCode } = await import("@/lib/payments/promo-code.server");
+      const r = await validatePromoCode(data.coupon_code, { packageId: data.packageId, cycle: data.cycle, amount: planTotal });
+      if (!r.ok) throw new Error(r.error);
+      promo = r;
+    }
+    const total = planTotal - (promo?.discount ?? 0) + (bundle?.price_bdt ?? 0);
 
     const { data: payment, error } = await (supabase.from("payments") as any)
       .insert({
@@ -208,7 +243,11 @@ export const submitManualPayment = createServerFn({ method: "POST" })
         ai_credit_bundle_id: bundle?.id ?? null,
         ai_credits_extra: bundle?.credits ?? 0,
         ai_credits_price: bundle?.price_bdt ?? 0,
-        notes: `Cycle: ${data.cycle} (${months} mo).${bundle ? ` +${bundle.credits} AI credits (৳${bundle.price_bdt}).` : ""} Awaiting verification.`,
+        coupon_id: promo?.couponId ?? null,
+        coupon_code: promo?.code ?? null,
+        coupon_discount: promo?.discount ?? 0,
+        original_amount: planTotal + (bundle?.price_bdt ?? 0),
+        notes: `Cycle: ${data.cycle} (${months} mo).${promo ? ` Promo ${promo.code} −৳${promo.discount}.` : ""}${bundle ? ` +${bundle.credits} AI credits (৳${bundle.price_bdt}).` : ""} Awaiting verification.`,
       })
       .select("id")
       .single();

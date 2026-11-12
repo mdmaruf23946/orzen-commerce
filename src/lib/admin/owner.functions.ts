@@ -535,6 +535,18 @@ export const verifyPayment = createServerFn({ method: "POST" })
       .eq("id", data.id);
     if (payErr) throw new Error(payErr.message);
 
+    // Count the promo code use once, only when the plan payment is approved.
+    {
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const adm: any = supabaseAdmin;
+      const { data: pc } = await adm.from("payments").select("coupon_id,coupon_counted").eq("id", data.id).maybeSingle();
+      if (pc?.coupon_id && !pc.coupon_counted) {
+        await adm.from("payments").update({ coupon_counted: true }).eq("id", data.id);
+        const { data: cp } = await adm.from("subscription_coupons").select("used_count").eq("id", pc.coupon_id).maybeSingle();
+        if (cp) await adm.from("subscription_coupons").update({ used_count: Number(cp.used_count ?? 0) + 1 }).eq("id", pc.coupon_id);
+      }
+    }
+
     const { error: stErr } = await sb
       .from("stores")
       .update({

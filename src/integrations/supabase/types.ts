@@ -6428,6 +6428,10 @@ export type Database = {
           ai_credits_granted: boolean
           ai_credits_price: number
           amount: number
+          coupon_code: string | null
+          coupon_counted: boolean
+          coupon_discount: number
+          coupon_id: string | null
           created_at: string
           customer_email: string | null
           customer_note: string | null
@@ -6437,6 +6441,7 @@ export type Database = {
           invoice_no: string | null
           method: string | null
           notes: string | null
+          original_amount: number | null
           package_id: string | null
           purpose: string
           rejection_reason: string | null
@@ -6453,6 +6458,10 @@ export type Database = {
           ai_credits_granted?: boolean
           ai_credits_price?: number
           amount: number
+          coupon_code?: string | null
+          coupon_counted?: boolean
+          coupon_discount?: number
+          coupon_id?: string | null
           created_at?: string
           customer_email?: string | null
           customer_note?: string | null
@@ -6462,6 +6471,7 @@ export type Database = {
           invoice_no?: string | null
           method?: string | null
           notes?: string | null
+          original_amount?: number | null
           package_id?: string | null
           purpose?: string
           rejection_reason?: string | null
@@ -6478,6 +6488,10 @@ export type Database = {
           ai_credits_granted?: boolean
           ai_credits_price?: number
           amount?: number
+          coupon_code?: string | null
+          coupon_counted?: boolean
+          coupon_discount?: number
+          coupon_id?: string | null
           created_at?: string
           customer_email?: string | null
           customer_note?: string | null
@@ -6487,6 +6501,7 @@ export type Database = {
           invoice_no?: string | null
           method?: string | null
           notes?: string | null
+          original_amount?: number | null
           package_id?: string | null
           purpose?: string
           rejection_reason?: string | null
@@ -6498,6 +6513,13 @@ export type Database = {
           verified_by?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "payments_coupon_id_fkey"
+            columns: ["coupon_id"]
+            isOneToOne: false
+            referencedRelation: "subscription_coupons"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "payments_package_id_fkey"
             columns: ["package_id"]
@@ -11374,9 +11396,12 @@ export type Database = {
           applies_to_packages: string[]
           code: string
           created_at: string
+          description: string | null
           expires_at: string | null
           id: string
+          max_discount: number | null
           min_amount: number
+          plan_amounts: Json
           starts_at: string | null
           type: string
           updated_at: string
@@ -11390,9 +11415,12 @@ export type Database = {
           applies_to_packages?: string[]
           code: string
           created_at?: string
+          description?: string | null
           expires_at?: string | null
           id?: string
+          max_discount?: number | null
           min_amount?: number
+          plan_amounts?: Json
           starts_at?: string | null
           type: string
           updated_at?: string
@@ -11406,9 +11434,12 @@ export type Database = {
           applies_to_packages?: string[]
           code?: string
           created_at?: string
+          description?: string | null
           expires_at?: string | null
           id?: string
+          max_discount?: number | null
           min_amount?: number
+          plan_amounts?: Json
           starts_at?: string | null
           type?: string
           updated_at?: string

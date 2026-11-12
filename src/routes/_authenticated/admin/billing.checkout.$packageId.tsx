@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { ArrowLeft, CheckCircle2, Wallet, Loader2 } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Wallet, Loader2, TicketPercent, X } from "lucide-react";
 import {
   MethodTabs,
   MethodLogo,
@@ -18,6 +18,7 @@ import {
   listPublicPlans,
   getEnabledPaymentMethods,
   submitManualPayment,
+  checkPromoCode,
   getBillingSettings,
   computeCycleTotal,
   activateFreePlan,
@@ -92,6 +93,11 @@ function CheckoutPage() {
   const [note, setNote] = useState("");
   const [saving, setSaving] = useState(false);
   const [successId, setSuccessId] = useState<string | null>(null);
+  const promoFn = useServerFn(checkPromoCode);
+  const [promoInput, setPromoInput] = useState("");
+  const [promo, setPromo] = useState<{ code: string; discount: number; cycle: CycleKey } | null>(null);
+  const [promoErr, setPromoErr] = useState("");
+  const [promoBusy, setPromoBusy] = useState(false);
 
   // Auto-fill email from session
   useMemo(() => {
@@ -112,7 +118,29 @@ function CheckoutPage() {
 
   const s = settings ?? { discount_3m: 5, discount_6m: 10, discount_yearly: 20 };
   const planCalc = computeCycleTotal(Number(pkg.price), cycle, s);
-  const calc = planCalc;
+  const activePromo = promo && promo.cycle === cycle ? promo : null;
+  const calc = { ...planCalc, total: Math.max(0, planCalc.total - (activePromo?.discount ?? 0)) };
+
+  async function applyPromo() {
+    const code = promoInput.trim().toUpperCase();
+    if (!code) return;
+    setPromoBusy(true);
+    setPromoErr("");
+    try {
+      const r = await promoFn({ data: { code, packageId, cycle } });
+      if (r.ok) {
+        setPromo({ code: r.code, discount: r.discount, cycle });
+        toast.success(`প্রোমো কোড যুক্ত হয়েছে — ৳${r.discount.toLocaleString()} ছাড়`);
+      } else {
+        setPromo(null);
+        setPromoErr(r.error);
+      }
+    } catch (err) {
+      setPromoErr((err as Error).message);
+    } finally {
+      setPromoBusy(false);
+    }
+  }
   const freeCredits = Number(pkg.ai_credits_included ?? 0);
 
   const enabledMethods = (["bkash", "nagad", "rocket"] as const).filter(
@@ -165,6 +193,7 @@ function CheckoutPage() {
           sender_number: sender.trim(),
           customer_email: email.trim(),
           customer_note: note.trim() || undefined,
+          coupon_code: activePromo?.code ?? undefined,
         },
       });
       setSuccessId(res.paymentId);
@@ -293,6 +322,42 @@ function CheckoutPage() {
         </div>
       </div>
 
+      {/* Promo code */}
+      <div className="rounded-2xl border bg-card p-4 shadow-sm">
+        <Label className="flex items-center gap-1.5 text-xs uppercase tracking-wide text-muted-foreground">
+          <TicketPercent className="h-4 w-4" /> Promo code
+        </Label>
+        {activePromo ? (
+          <div className="mt-2 flex items-center justify-between gap-2 rounded-xl bg-primary/10 px-3 py-2 text-sm">
+            <span>
+              <span className="font-mono font-semibold">{activePromo.code}</span> — ৳{activePromo.discount.toLocaleString()} ছাড়
+              <span className="ml-2 text-muted-foreground line-through">৳{planCalc.total.toLocaleString()}</span>
+            </span>
+            <Button type="button" size="icon" variant="ghost" aria-label="Remove promo code" onClick={() => { setPromo(null); setPromoInput(""); }}>
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        ) : (
+          <div className="mt-2 flex gap-2">
+            <Input
+              value={promoInput}
+              onChange={(e) => { setPromoInput(e.target.value.toUpperCase()); setPromoErr(""); }}
+              onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); applyPromo(); } }}
+              placeholder="প্রোমো কোড লিখুন"
+              maxLength={40}
+              aria-label="Promo code"
+            />
+            <Button type="button" onClick={applyPromo} disabled={promoBusy || !promoInput.trim()}>
+              {promoBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : "Apply"}
+            </Button>
+          </div>
+        )}
+        {promo && promo.cycle !== cycle && (
+          <p className="mt-1.5 text-xs text-muted-foreground">মেয়াদ বদলানোয় কোডটি আবার Apply করুন।</p>
+        )}
+        {promoErr && <p className="mt-1.5 text-xs text-destructive">{promoErr}</p>}
+      </div>
+
       {/* AI credits */}
       {freeCredits > 0 && (
         <div className="rounded-2xl border bg-card p-4 shadow-sm">
@@ -342,7 +407,7 @@ function CheckoutPage() {
                   <Wallet className="h-4 w-4" /> Pay from wallet
                 </div>
                 <div className="mt-0.5 text-xs text-muted-foreground">
-                  Balance ৳{balance.toLocaleString()} · Instant activation, no manual approval.
+                  Balance ৳{balance.toLocaleString()} · Instant activation, no manual approval.{activePromo ? " প্রোমো কোড শুধু bKash/Nagad/Rocket পেমেন্টে প্রযোজ্য।" : ""}
                 </div>
               </div>
               <Button

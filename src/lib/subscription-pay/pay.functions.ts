@@ -174,6 +174,9 @@ export const upsertSubscriptionCoupon = createServerFn({ method: "POST" })
         starts_at: z.string().nullable().optional(),
         expires_at: z.string().nullable().optional(),
         active: z.boolean().default(true),
+        max_discount: z.number().min(0).nullable().optional(),
+        plan_amounts: z.record(z.string().uuid(), z.number().min(0)).optional(),
+        description: z.string().max(200).nullable().optional(),
       })
       .parse(d),
   )
@@ -191,6 +194,9 @@ export const upsertSubscriptionCoupon = createServerFn({ method: "POST" })
       starts_at: data.starts_at ?? null,
       expires_at: data.expires_at ?? null,
       active: data.active,
+      max_discount: data.max_discount ?? null,
+      plan_amounts: data.plan_amounts ?? {},
+      description: data.description ?? null,
     };
     if (data.id) {
       const { error } = await supabaseAdmin.from("subscription_coupons").update(row).eq("id", data.id);
@@ -335,19 +341,12 @@ export const initiateSubscriptionCheckout = createServerFn({ method: "POST" })
     let couponCode: string | null = null;
     let couponDiscount = 0;
     if (data.coupon_code) {
-      const { data: v } = await (supabaseAdmin as any).rpc("validate_subscription_coupon", {
-        _code: data.coupon_code,
-        _package_id: data.package_id,
-        _cycle: data.cycle,
-        _amount: afterCycle,
-      });
-      if (v?.ok) {
-        couponId = v.couponId;
-        couponCode = v.code;
-        couponDiscount = Number(v.discount ?? 0);
-      } else {
-        throw new Error(v?.error ?? "Invalid coupon");
-      }
+      const { validatePromoCode } = await import("@/lib/payments/promo-code.server");
+      const v = await validatePromoCode(data.coupon_code, { packageId: data.package_id, cycle: data.cycle, amount: afterCycle });
+      if (!v.ok) throw new Error(v.error);
+      couponId = v.couponId;
+      couponCode = v.code;
+      couponDiscount = v.discount;
     }
 
     const total = Math.max(0, afterCycle - couponDiscount);

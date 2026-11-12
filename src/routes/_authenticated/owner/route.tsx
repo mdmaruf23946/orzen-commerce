@@ -89,7 +89,7 @@ const SECTION_TABS: SectionTabs[] = [
       { to: "/owner/subscriptions", label: "Subscriptions" },
       { to: "/owner/subscription-pay", label: "Subscription Payments", exact: true },
       { to: "/owner/subscription-pay/providers", label: "Payment Providers" },
-      { to: "/owner/subscription-coupons", label: "Coupons" },
+      { to: "/owner/subscription-coupons", label: "Promo Codes" },
       { to: "/owner/billing", label: "Manual Payments" },
       { to: "/owner/packages", label: "Packages" },
       { to: "/owner/payment-settings", label: "Payment Settings" },

@@ -159,7 +159,15 @@ function BillingPage() {
                   <td className="p-3 text-xs uppercase">{p.method ?? "—"}</td>
                   <td className="p-3 font-mono text-[11px]">{p.sender_number ?? "—"}</td>
                   <td className="p-3 font-mono text-[11px]">{p.txn_id ?? "—"}</td>
-                  <td className="p-3 text-right font-semibold">৳{Number(p.amount).toFixed(0)}</td>
+                  <td className="p-3 text-right font-semibold">
+                    ৳{Number(p.amount).toFixed(0)}
+                    {p.coupon_code && (
+                      <div className="text-[11px] font-normal text-muted-foreground">
+                        <span className="font-mono">{p.coupon_code}</span> −৳{Number(p.coupon_discount ?? 0).toFixed(0)}
+                        {p.original_amount != null && <> · <span className="line-through">৳{Number(p.original_amount).toFixed(0)}</span></>}
+                      </div>
+                    )}
+                  </td>
                   <td className="p-3 text-xs">{new Date(p.created_at).toLocaleString()}</td>
                   <td className="p-3">
                     <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium capitalize ${
@@ -265,6 +273,12 @@ function BillingPage() {
                   <div className="rounded-lg border p-2">
                     <div className="text-xs text-muted-foreground">Merchant submitted</div>
                     <div className="font-semibold">৳{Number(approveTarget.amount)}</div>
+                    {approveTarget.coupon_code && (
+                      <div className="text-xs text-muted-foreground">
+                        Promo <span className="font-mono">{approveTarget.coupon_code}</span>: −৳{Number(approveTarget.coupon_discount ?? 0)}
+                        {approveTarget.original_amount != null && <> (original ৳{Number(approveTarget.original_amount)})</>}
+                      </div>
+                    )}
                   </div>
                 </div>
                 <div className="text-xs text-muted-foreground">
