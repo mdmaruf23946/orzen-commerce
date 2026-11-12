@@ -243,13 +243,35 @@ export const updateMyStore = createServerFn({ method: "POST" })
     } else {
       patch.favicon_url = patch.custom_favicon_url ?? patch.icon_url ?? null;
     }
+    // If the slug changes, the new subdomain must go live first (clear error otherwise).
+    const { data: current } = await supabase
+      .from("stores")
+      .select("slug")
+      .eq("owner_user_id", userId)
+      .maybeSingle();
+    const oldSlug = (current as any)?.slug as string | undefined;
+    let renameHosts: { next: string; prev: string; detach: (h: string) => Promise<void> } | null = null;
+    if (oldSlug && patch.slug && patch.slug !== oldSlug) {
+      const { data: taken } = await supabase.rpc("is_slug_taken", { _slug: patch.slug });
+      if (taken) throw new Error("That subdomain is already taken");
+      const { data: ps } = await supabase.from("platform_settings").select("settings").eq("id", 1).maybeSingle();
+      const root = String(((ps as any)?.settings?.root_domain as string) || "orzen.top").toLowerCase();
+      const { ensureSubdomainAttached, detachSubdomain } = await import("@/lib/hosting/cloudflare-pages.server");
+      const { attachNewSubdomainOrThrow } = await import("@/lib/hosting/subdomain-rename");
+      await attachNewSubdomainOrThrow(`${patch.slug}.${root}`, ensureSubdomainAttached);
+      renameHosts = { next: `${patch.slug}.${root}`, prev: `${oldSlug}.${root}`, detach: detachSubdomain };
+    }
     const { data: updated, error } = await supabase
       .from("stores")
       .update(patch as any)
       .eq("owner_user_id", userId)
       .select("*")
       .single();
-    if (error) throw new Error(error.message);
+    if (error) {
+      if (renameHosts) await renameHosts.detach(renameHosts.next).catch(() => {});
+      throw new Error(error.message);
+    }
+    if (renameHosts) await renameHosts.detach(renameHosts.prev).catch(() => {});
     // Refresh generated legal pages so store name / phone / address stay in sync,
     // without changing their public URLs.
     try {

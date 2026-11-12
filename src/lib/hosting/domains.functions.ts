@@ -256,19 +256,19 @@ export const updateMySubdomain = createServerFn({ method: "POST" })
     const { data: taken } = await supabase.rpc("is_slug_taken", { _slug: data.slug });
     if (taken) throw new Error("That subdomain is already taken");
 
-    const { error } = await supabase.from("stores").update({ slug: data.slug }).eq("id", store.id);
-    if (error) throw new Error(error.message);
+    // Attach the new host FIRST; refuse the rename with a clear error if it fails.
+    const settings = await platformDomainSettings(supabase);
+    const { ensureSubdomainAttached, detachSubdomain } =
+      await import("@/lib/hosting/cloudflare-pages.server");
+    const { attachNewSubdomainOrThrow } = await import("@/lib/hosting/subdomain-rename");
+    await attachNewSubdomainOrThrow(`${data.slug}.${settings.rootDomain}`, ensureSubdomainAttached);
 
-    // Keep Cloudflare in sync: attach the new host, drop the old one.
-    try {
-      const settings = await platformDomainSettings(supabase);
-      const { ensureSubdomainAttached, detachSubdomain } =
-        await import("@/lib/hosting/cloudflare-pages.server");
-      await ensureSubdomainAttached(`${data.slug}.${settings.rootDomain}`);
-      await detachSubdomain(`${store.slug}.${settings.rootDomain}`);
-    } catch {
-      // Non-fatal — merchant can retry with "Reconnect".
+    const { error } = await supabase.from("stores").update({ slug: data.slug }).eq("id", store.id);
+    if (error) {
+      await detachSubdomain(`${data.slug}.${settings.rootDomain}`).catch(() => {});
+      throw new Error(error.message);
     }
+    await detachSubdomain(`${store.slug}.${settings.rootDomain}`).catch(() => {});
     return { ok: true, slug: data.slug, changed: true, previous: store.slug };
   });
 
