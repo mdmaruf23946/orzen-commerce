@@ -398,7 +398,7 @@ function CheckoutPage() {
       {/* Pay from wallet */}
       {(() => {
         const balance = Number(wallet?.balance ?? 0);
-        const enough = balance >= planCalc.total;
+        const enough = balance >= calc.total;
         return (
           <div className="rounded-2xl border bg-card p-5 shadow-sm">
             <div className="flex items-center justify-between gap-3">
@@ -407,7 +407,7 @@ function CheckoutPage() {
                   <Wallet className="h-4 w-4" /> Pay from wallet
                 </div>
                 <div className="mt-0.5 text-xs text-muted-foreground">
-                  Balance ৳{balance.toLocaleString()} · Instant activation, no manual approval.{activePromo ? " প্রোমো কোড শুধু bKash/Nagad/Rocket পেমেন্টে প্রযোজ্য।" : ""}
+                  Balance ৳{balance.toLocaleString()} · Instant activation, no manual approval.{activePromo ? ` প্রোমো কোড ${activePromo.code} — ৳${activePromo.discount.toLocaleString()} ছাড় প্রযোজ্য।` : ""}
                 </div>
               </div>
               <Button
@@ -415,7 +415,7 @@ function CheckoutPage() {
                 onClick={async () => {
                   setWalletPaying(true);
                   try {
-                    const res = (await payWalletFn({ data: { package_id: packageId, cycle } })) as any;
+                    const res = (await payWalletFn({ data: { package_id: packageId, cycle, coupon_code: activePromo?.code } })) as any;
                     if (!res?.ok) {
                       const msg = res?.error ?? "Wallet payment failed";
                       const detail =
@@ -437,12 +437,12 @@ function CheckoutPage() {
                 className="shrink-0 gap-1.5"
               >
                 {walletPaying ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wallet className="h-4 w-4" />}
-                Pay ৳{planCalc.total.toLocaleString()}
+                Pay ৳{calc.total.toLocaleString()}
               </Button>
             </div>
             {!enough && (
               <div className="mt-3 rounded-xl bg-amber-50 dark:bg-amber-500/10 p-3 text-sm text-amber-900 dark:text-amber-200">
-                Not enough balance — you need ৳{(planCalc.total - balance).toLocaleString()} more.{" "}
+                Not enough balance — you need ৳{(calc.total - balance).toLocaleString()} more.{" "}
                 <Link to="/admin/billing" search={{} as never} className="font-semibold underline">
                   Add fund
                 </Link>

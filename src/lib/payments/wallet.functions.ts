@@ -148,7 +148,7 @@ export const initiateWalletTopup = createServerFn({ method: "POST" })
 // Pay for / renew a plan straight from the wallet balance.
 export const payPlanWithWallet = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) => z.object({ package_id: z.string().uuid(), cycle: cycleSchema }).parse(d))
+  .inputValidator((d) => z.object({ package_id: z.string().uuid(), cycle: cycleSchema, coupon_code: z.string().trim().max(40).optional() }).parse(d))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     const { data: store } = await supabase
@@ -167,6 +167,7 @@ export const payPlanWithWallet = createServerFn({ method: "POST" })
       packageId: data.package_id,
       cycle: data.cycle,
       kind: "plan_payment",
+      couponCode: data.coupon_code || undefined,
     });
     return res;
   });

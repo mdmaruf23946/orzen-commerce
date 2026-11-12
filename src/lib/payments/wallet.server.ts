@@ -128,6 +128,7 @@ export async function payPlanFromWallet(
     packageId: string;
     cycle: CycleKey;
     kind: "plan_payment" | "auto_renewal";
+    couponCode?: string;
   },
 ) {
   const { data: pkg } = await sb
@@ -138,7 +139,16 @@ export async function payPlanFromWallet(
   if (!pkg || (pkg as any).is_trial) return { ok: false, error: "Plan not available" as const };
 
   const s = await cycleDiscounts(sb);
-  const { months, base, total } = cycleTotal(Number((pkg as any).price), args.cycle, s);
+  const { months, base, total: planTotal } = cycleTotal(Number((pkg as any).price), args.cycle, s);
+  // Promo code (Ad Fund payments): re-validated server-side, never trusted from the client.
+  let promo: { couponId: string; discount: number } | null = null;
+  if (args.couponCode?.trim()) {
+    const { validatePromoCode } = await import("@/lib/payments/promo-code.server");
+    const r: any = await validatePromoCode(args.couponCode, { packageId: args.packageId, cycle: args.cycle, amount: planTotal });
+    if (!r.ok) return { ok: false, error: r.error as string };
+    promo = { couponId: r.couponId, discount: Number(r.discount ?? 0) };
+  }
+  const total = Math.max(0, planTotal - (promo?.discount ?? 0));
   if (total <= 0) return { ok: false, error: "This plan has no payable amount" as const };
 
   // Wallet balance check happens atomically in wallet_debit.
@@ -212,6 +222,11 @@ export async function payPlanFromWallet(
     .from("subscription_invoices")
     .update({ status: "paid", paid_at: now.toISOString() })
     .eq("id", (inv as any).id);
+
+  if (promo?.couponId) {
+    const { data: cp } = await sb.from("subscription_coupons").select("used_count").eq("id", promo.couponId).maybeSingle();
+    if (cp) await sb.from("subscription_coupons").update({ used_count: Number((cp as any).used_count ?? 0) + 1 }).eq("id", promo.couponId);
+  }
 
   return {
     ok: true as const,
