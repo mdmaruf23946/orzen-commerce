@@ -24,8 +24,8 @@ export function PromoEmailDialog({ coupon, onClose }: { coupon: { id: string; co
   const [group, setGroup] = useState<Group>("free");
   const [q, setQ] = useState("");
   const [picked, setPicked] = useState<Set<string>>(new Set());
-  const [subject, setSubject] = useState("আপনার জন্য বিশেষ ছাড় — প্রোমো কোড {{code}}");
-  const [message, setMessage] = useState("প্রিয় {{owner_name}},\n\n{{store_name}} স্টোরের জন্য আমরা একটি বিশেষ ছাড় দিচ্ছি। প্যাকেজ কেনার সময় নিচের প্রোমো কোডটি লিখে Apply করুন।");
+  const [subject, setSubject] = useState("🎁 {{owner_name}}, আপনার জন্য {{discount}} — {{validity_text}}");
+  const [message, setMessage] = useState("প্রিয় {{owner_name}},\n\n{{store_name}} স্টোরকে আরও বড় করতে আপনার জন্য রয়েছে বিশেষ {{discount}}! অফারটি চলবে {{expiry_date}} পর্যন্ত — {{validity_text}}।\n\nনিচের প্রোমো কোডটি ব্যবহার করে আজই আপনার প্যাকেজ আপগ্রেড করুন।");
   const [sending, setSending] = useState(false);
 
   const rows = useMemo(() => data.filter((r: any) =>
@@ -86,7 +86,7 @@ export function PromoEmailDialog({ coupon, onClose }: { coupon: { id: string; co
           <div className="space-y-1">
             <Label>মেসেজ</Label>
             <Textarea rows={5} value={message} onChange={(e) => setMessage(e.target.value)} />
-            <p className="text-xs text-muted-foreground">{"{{code}}"}, {"{{store_name}}"}, {"{{owner_name}}"} লিখলে নিজে বসে যাবে। প্রোমো কোডটি ইমেইলে বড় করে দেখাবে। notify@orzen.top থেকে যাবে।</p>
+            <p className="text-xs text-muted-foreground">{"{{owner_name}} {{store_name}} {{code}} {{discount}} {{expiry_date}} {{days_left}} {{validity_text}}"} লিখলে নিজে বসে যাবে (নাম = মার্চেন্টের নিজের নাম)। মেয়াদ ও শেষ তারিখ ইমেইলে আলাদা করে দেখাবে। প্রোমো কোডটি ইমেইলে বড় করে দেখাবে। notify@orzen.top থেকে যাবে।</p>
           </div>
           <div className="flex justify-end gap-2">
             <Button variant="ghost" onClick={onClose}>বাতিল</Button>
