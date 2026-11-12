@@ -8,6 +8,7 @@ export type PromoCoupon = {
   min_amount?: number | null;
   max_discount?: number | null;
   plan_amounts?: Record<string, number> | null;
+  cycle_amounts?: Record<string, number> | null;
   applies_to_packages?: string[] | null;
   applies_to_cycles?: string[] | null;
   usage_limit?: number | null;
@@ -16,6 +17,8 @@ export type PromoCoupon = {
   expires_at?: string | null;
   active: boolean;
 };
+
+export const CYCLE_MONTHS: Record<string, number> = { monthly: 1, "3m": 3, "6m": 6, yearly: 12 };
 
 export type PromoResult =
   | { ok: true; couponId: string; code: string; discount: number; total: number }
@@ -42,15 +45,21 @@ export function evaluatePromo(
   if (amount < Number(c.min_amount ?? 0))
     return { ok: false, error: `কমপক্ষে ৳${Number(c.min_amount)} এর প্ল্যানে প্রযোজ্য` };
 
+  // Taka amounts are per month: a 3-month plan gets 3x the monthly discount,
+  // unless the admin set an explicit taka amount for that billing period.
+  const months = CYCLE_MONTHS[input.cycle] ?? 1;
   let discount: number;
+  const perCycle = c.cycle_amounts?.[input.cycle];
   const perPlan = c.plan_amounts?.[input.packageId];
-  if (perPlan != null && Number(perPlan) > 0) {
-    discount = Number(perPlan);
+  if (perCycle != null && Number(perCycle) > 0) {
+    discount = Number(perCycle);
+  } else if (perPlan != null && Number(perPlan) > 0) {
+    discount = Number(perPlan) * months;
   } else if (c.type === "percent") {
     discount = (amount * Number(c.value)) / 100;
-    if (c.max_discount != null && Number(c.max_discount) > 0) discount = Math.min(discount, Number(c.max_discount));
+    if (c.max_discount != null && Number(c.max_discount) > 0) discount = Math.min(discount, Number(c.max_discount) * months);
   } else {
-    discount = Number(c.value);
+    discount = Number(c.value) * months;
   }
   discount = Math.round(Math.min(Math.max(0, discount), amount));
   return { ok: true, couponId: c.id, code: c.code, discount, total: amount - discount };

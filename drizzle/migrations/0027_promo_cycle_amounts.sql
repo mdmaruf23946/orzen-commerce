@@ -1,0 +1,1 @@
+ALTER TABLE public.subscription_coupons ADD COLUMN IF NOT EXISTS cycle_amounts jsonb NOT NULL DEFAULT '{}'::jsonb;

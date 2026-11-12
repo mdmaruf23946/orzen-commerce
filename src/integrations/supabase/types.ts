@@ -11396,6 +11396,7 @@ export type Database = {
           applies_to_packages: string[]
           code: string
           created_at: string
+          cycle_amounts: Json
           description: string | null
           expires_at: string | null
           id: string
@@ -11415,6 +11416,7 @@ export type Database = {
           applies_to_packages?: string[]
           code: string
           created_at?: string
+          cycle_amounts?: Json
           description?: string | null
           expires_at?: string | null
           id?: string
@@ -11434,6 +11436,7 @@ export type Database = {
           applies_to_packages?: string[]
           code?: string
           created_at?: string
+          cycle_amounts?: Json
           description?: string | null
           expires_at?: string | null
           id?: string

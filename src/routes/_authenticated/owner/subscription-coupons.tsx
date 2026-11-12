@@ -41,12 +41,13 @@ type Form = {
   packages: string[];
   cycles: string[];
   plan_amounts: Record<string, string>;
+  cycle_amounts: Record<string, string>;
   active: boolean;
 };
 
 const empty: Form = {
   code: "", description: "", type: "percent", value: "10", max_discount: "", min_amount: "",
-  usage_limit: "", starts_at: "", expires_at: "", packages: [], cycles: [], plan_amounts: {}, active: true,
+  usage_limit: "", starts_at: "", expires_at: "", packages: [], cycles: [], plan_amounts: {}, cycle_amounts: {}, active: true,
 };
 
 const num = (v: string) => (v.trim() === "" ? null : Number(v));
@@ -76,6 +77,7 @@ function CouponsPage() {
       starts_at: toDate(c.starts_at), expires_at: toDate(c.expires_at),
       packages: c.applies_to_packages ?? [], cycles: c.applies_to_cycles ?? [],
       plan_amounts: Object.fromEntries(Object.entries(c.plan_amounts ?? {}).map(([k, v]) => [k, String(v)])),
+      cycle_amounts: Object.fromEntries(Object.entries(c.cycle_amounts ?? {}).map(([k, v]) => [k, String(v)])),
       active: c.active,
     });
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -84,7 +86,10 @@ function CouponsPage() {
   function payload(x: Form) {
     const plan_amounts: Record<string, number> = {};
     for (const [k, v] of Object.entries(x.plan_amounts)) if (v.trim() !== "" && Number(v) > 0) plan_amounts[k] = Number(v);
+    const cycle_amounts: Record<string, number> = {};
+    for (const [k, v] of Object.entries(x.cycle_amounts)) if (v.trim() !== "" && Number(v) > 0) cycle_amounts[k] = Number(v);
     return {
+      cycle_amounts,
       id: x.id, code: x.code.trim(), description: x.description.trim() || null, type: x.type, value: Number(x.value) || 0,
       max_discount: x.type === "percent" ? num(x.max_discount) : null, min_amount: num(x.min_amount) ?? 0,
       usage_limit: num(x.usage_limit), applies_to_packages: x.packages, applies_to_cycles: x.cycles as any,
@@ -109,7 +114,8 @@ function CouponsPage() {
   function describe(c: any) {
     const main = c.type === "percent" ? `${c.value}%${c.max_discount ? ` (সর্বোচ্চ ৳${c.max_discount})` : ""}` : `৳${c.value}`;
     const per = Object.entries(c.plan_amounts ?? {}).map(([k, v]) => `${planName(k)}: ৳${v}`);
-    return per.length ? `${main} · ${per.join(", ")}` : main;
+    const cyc = Object.entries(c.cycle_amounts ?? {}).map(([k, v]) => `${CYCLES.find((x) => x.key === k)?.label ?? k}: ৳${v}`);
+    return [main, per.join(", "), cyc.join(", ")].filter(Boolean).join(" · ");
   }
 
   return (
@@ -152,7 +158,7 @@ function CouponsPage() {
                     {p.name} <span className="font-normal text-muted-foreground">৳{Number(p.price)}/mo</span>
                   </label>
                   <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
-                    এই প্ল্যানে নির্দিষ্ট ছাড় ৳
+                    এই প্ল্যানে মাসিক ছাড় ৳
                     <Input className="h-8 w-24" type="number" min={0} value={f.plan_amounts[p.id] ?? ""}
                       onChange={(e) => setF({ ...f, plan_amounts: { ...f.plan_amounts, [p.id]: e.target.value } })} placeholder="—" />
                   </div>
@@ -160,7 +166,7 @@ function CouponsPage() {
               );
             })}
           </div>
-          <p className="text-xs text-muted-foreground">কোনো প্ল্যানে নির্দিষ্ট টাকা দিলে সেই প্ল্যানে উপরের নিয়মের বদলে ওই টাকাই কমবে।</p>
+          <p className="text-xs text-muted-foreground">টাকার ছাড় প্রতি মাস হিসেবে — ৩ মাসে ৩ গুণ, ৬ মাসে ৬ গুণ, বাৎসরিক প্ল্যানে ১২ গুণ কমবে।</p>
         </div>
 
         <div className="space-y-2">
@@ -172,6 +178,20 @@ function CouponsPage() {
               </label>
             ))}
           </div>
+        </div>
+
+        <div className="space-y-2">
+          <Label>মেয়াদ অনুযায়ী বাড়তি ছাড় <span className="font-normal text-muted-foreground">(ঐচ্ছিক — মোট কত টাকা কমবে)</span></Label>
+          <div className="grid gap-2 sm:grid-cols-4">
+            {CYCLES.map((c) => (
+              <div key={c.key} className="space-y-1">
+                <span className="text-xs text-muted-foreground">{c.label} ৳</span>
+                <Input type="number" min={0} value={f.cycle_amounts[c.key] ?? ""} placeholder="অটো (মাস × ছাড়)"
+                  onChange={(e) => setF({ ...f, cycle_amounts: { ...f.cycle_amounts, [c.key]: e.target.value } })} />
+              </div>
+            ))}
+          </div>
+          <p className="text-xs text-muted-foreground">কোনো মেয়াদে টাকা লিখলে সেই মেয়াদে মোট ঠিক ওই টাকাই কমবে। খালি রাখলে মাসিক ছাড় × মাস হিসেবে কমবে।</p>
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
@@ -203,7 +223,7 @@ function CouponsPage() {
                       try {
                         await saveFn({ data: { id: c.id, code: c.code, type: c.type, value: Number(c.value), min_amount: Number(c.min_amount ?? 0),
                           applies_to_packages: c.applies_to_packages ?? [], applies_to_cycles: c.applies_to_cycles ?? [], usage_limit: c.usage_limit,
-                          starts_at: c.starts_at, expires_at: c.expires_at, max_discount: c.max_discount, plan_amounts: c.plan_amounts ?? {},
+                          starts_at: c.starts_at, expires_at: c.expires_at, max_discount: c.max_discount, plan_amounts: c.plan_amounts ?? {}, cycle_amounts: c.cycle_amounts ?? {},
                           description: c.description, active: v } });
                         qc.invalidateQueries({ queryKey: ["owner", "subCoupons"] });
                       } catch (e) { toast.error((e as Error).message); }

@@ -17,4 +17,10 @@ describe("subscription promo codes", () => {
   it("rejects inactive", () => expect(run({ active: false }).ok).toBe(false));
   it("usage limit counts pending", () =>
     expect(evaluatePromo({ ...base, usage_limit: 2, used_count: 1 }, { packageId: "pro", cycle: "monthly", amount: 1000, pendingUses: 1 }).ok).toBe(false));
+  it("৳700 monthly discount becomes ৳2100 on 3 months", () =>
+    expect(run({ type: "fixed", value: 700 }, 4845, "pro", "3m")).toMatchObject({ discount: 2100 }));
+  it("per-plan ৳700 becomes ৳8400 yearly", () =>
+    expect(run({ plan_amounts: { pro: 700 } }, 20000, "pro", "yearly")).toMatchObject({ discount: 8400 }));
+  it("explicit 6-month amount overrides multiplier", () =>
+    expect(run({ type: "fixed", value: 700, cycle_amounts: { "6m": 5500 } }, 9000, "pro", "6m")).toMatchObject({ discount: 5500 }));
 });
