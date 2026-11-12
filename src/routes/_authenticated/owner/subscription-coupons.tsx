@@ -58,6 +58,7 @@ function CouponsPage() {
   const listFn = useServerFn(listSubscriptionCoupons);
   const saveFn = useServerFn(upsertSubscriptionCoupon);
   const delFn = useServerFn(deleteSubscriptionCoupon);
+  const [mailCoupon, setMailCoupon] = useState<{ id: string; code: string } | null>(null);
   const plansFn = useServerFn(listPublicPlans);
   const qc = useQueryClient();
   const { data } = useQuery({ queryKey: ["owner", "subCoupons"], queryFn: () => listFn() });
