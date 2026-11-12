@@ -18,12 +18,12 @@ export type FooterSettings = {
 export const FOOTER_FALLBACK: FooterSettings = {
   description:
     "An all-in-one eCommerce SaaS built for Bangladesh — store builder, AI sales agent, couriers, analytics and payments in one platform.",
-  contact: { email: "support@orzen.top", phone: "", address: "Dhaka, Bangladesh" },
+  contact: { email: "inbox@orzen.top", phone: "", address: "Dhaka, Bangladesh" },
   socials: [
     { platform: "facebook", url: "#" },
     { platform: "linkedin", url: "#" },
     { platform: "youtube", url: "#" },
-    { platform: "email", url: "mailto:support@orzen.top" },
+    { platform: "email", url: "mailto:inbox@orzen.top" },
   ],
   columns: [
     { title: "Product", links: [{ label: "Features", href: "#features" }, { label: "AI", href: "#ai" }] },

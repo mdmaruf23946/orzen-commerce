@@ -3,6 +3,8 @@ const BREVO_URL = "https://api.brevo.com/v3/smtp/email";
 const SITE = "https://orzen.top";
 
 export const PLATFORM_SENDER = { name: "ORZEN", email: "notify@orzen.top" };
+/** Cloudflare-routed inbox (forwards to the owner's personal mail) — used for help links and Reply-To. */
+export const SUPPORT_INBOX = "inbox@orzen.top";
 
 export function officialEmail(v: unknown): string {
   const s = String(v ?? "").trim().toLowerCase();
@@ -55,7 +57,7 @@ export async function getPlatformEmailBrand(): Promise<PlatformEmailBrand> {
   const fallback: PlatformEmailBrand = {
     name: "ORZEN",
     logoUrl: null,
-    supportEmail: PLATFORM_SENDER.email,
+    supportEmail: SUPPORT_INBOX,
     whatsapp: null,
     website: SITE,
   };
@@ -77,7 +79,7 @@ export async function getPlatformEmailBrand(): Promise<PlatformEmailBrand> {
     const phone = String(contact.phone || system.whatsapp_number || system.support_phone || "").trim();
     const logoUrl = absoluteOrzenUrl(chosen?.url ?? system.logo_url ?? null);
     // Only official @orzen.top addresses (Cloudflare email) appear in emails — never a personal inbox.
-    const support = officialEmail(contact.email) || officialEmail(system.contact_email) || fallback.supportEmail;
+    const support = [officialEmail(contact.email), officialEmail(system.contact_email)].find((e) => e && !e.startsWith("notify@")) || fallback.supportEmail;
     const value: PlatformEmailBrand = {
       name: String(system.platform_name || fallback.name).trim() || fallback.name,
       logoUrl,
@@ -129,7 +131,7 @@ export function platformEmailShell(args: {
   brand?: PlatformEmailBrand;
   sanitizeBody?: boolean;
 }): string {
-  const brand = args.brand ?? { name: "ORZEN", logoUrl: null, supportEmail: PLATFORM_SENDER.email, whatsapp: null, website: SITE };
+  const brand = args.brand ?? { name: "ORZEN", logoUrl: null, supportEmail: SUPPORT_INBOX, whatsapp: null, website: SITE };
   const actionUrl = absoluteOrzenUrl(args.actionUrl);
   const cta = args.actionLabel && actionUrl
     ? `<table role="presentation" cellspacing="0" cellpadding="0" style="margin-top:24px"><tr><td bgcolor="#163f2c" style="border-radius:6px"><a href="${escapeHtml(actionUrl)}" style="display:inline-block;color:#ffffff;text-decoration:none;padding:12px 20px;font-size:14px;font-weight:700">${escapeHtml(args.actionLabel)}</a></td></tr></table>`
@@ -176,6 +178,7 @@ export async function sendBrevoEmail(args: { to: string; toName?: string | null;
     headers: { "api-key": apiKey, "content-type": "application/json", accept: "application/json" },
     body: JSON.stringify({
       sender: PLATFORM_SENDER,
+      replyTo: { email: SUPPORT_INBOX, name: "ORZEN Support" },
       to: [{ email: args.to, ...(args.toName ? { name: args.toName } : {}) }],
       subject: args.subject.slice(0, 250),
       htmlContent: args.html,

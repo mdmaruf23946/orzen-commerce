@@ -38,7 +38,7 @@ export async function dispatchPush(limit = 30) {
           subscription: { endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } },
           message: {
             payload: { title: row.title, body: row.body, url: row.url, tag: row.tag, kind: row.kind },
-            adminContact: "mailto:support@orzen.top",
+            adminContact: "mailto:inbox@orzen.top",
             options: { ttl: 3600, urgency: "high" },
           },
         });

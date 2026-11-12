@@ -349,7 +349,7 @@ export const verifyPayment = createServerFn({ method: "POST" })
       .eq("id", "global")
       .maybeSingle();
     const rawSupport = String((pset?.bkash as any)?.notification_email ?? "").trim().toLowerCase();
-    const supportEmail: string = /@orzen\.top$/.test(rawSupport) ? rawSupport : "notify@orzen.top";
+    const supportEmail: string = /@orzen\.top$/.test(rawSupport) ? rawSupport : "inbox@orzen.top";
 
     // Import email helpers lazily
     const { enqueueEmail, tplPaymentApproved, tplPaymentRejected } = await import(
