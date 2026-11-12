@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Plus, Trash2, Pencil, Mail } from "lucide-react";
+import { Plus, Trash2, Pencil, Mail, Copy } from "lucide-react";
 import { PromoEmailDialog } from "@/components/owner/PromoEmailDialog";
 import {
   listSubscriptionCoupons,
@@ -215,7 +215,7 @@ function CouponsPage() {
             <tbody>
               {(data ?? []).map((c: any) => (
                 <tr key={c.id} className="border-t align-top">
-                  <td className="py-2 font-mono">{c.code}</td>
+                  <td className="py-2"><button type="button" title="কপি করতে ক্লিক করুন" className="inline-flex items-center gap-1 font-mono hover:underline" onClick={() => { navigator.clipboard?.writeText(c.code); toast.success(`${c.code} কপি হয়েছে`); }}>{c.code}<Copy className="h-3.5 w-3.5 text-muted-foreground" /></button></td>
                   <td className="py-2">{describe(c)}</td>
                   <td className="py-2">{(c.applies_to_packages ?? []).length ? c.applies_to_packages.map(planName).join(", ") : "All"}</td>
                   <td className="py-2">{c.used_count}{c.usage_limit ? ` / ${c.usage_limit}` : ""}</td>

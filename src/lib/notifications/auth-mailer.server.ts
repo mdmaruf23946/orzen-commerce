@@ -45,7 +45,7 @@ function toPlainText(html: string): string {
     .trim();
 }
 
-export const AUTH_REPLY_TO = process.env["AUTH_EMAIL_REPLY_TO"] ?? "support@orzen.top";
+export const AUTH_REPLY_TO = process.env["AUTH_EMAIL_REPLY_TO"] ?? "notify@orzen.top";
 
 async function sendViaMailjet(args: { to: string; subject: string; html: string }) {
   const key = process.env["MAILJET_API_KEY"]!;

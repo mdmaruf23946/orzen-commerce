@@ -1,9 +1,9 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { ArrowLeft, CheckCircle2, Wallet, Loader2, TicketPercent, X } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Wallet, Loader2, TicketPercent, X, Copy, Check } from "lucide-react";
 import {
   MethodTabs,
   MethodLogo,
@@ -98,6 +98,11 @@ function CheckoutPage() {
   const [promo, setPromo] = useState<{ code: string; discount: number; cycle: CycleKey } | null>(null);
   const [promoErr, setPromoErr] = useState("");
   const [promoBusy, setPromoBusy] = useState(false);
+  const [copied, setCopied] = useState(false);
+  useEffect(() => {
+    const saved = localStorage.getItem("orzen_promo");
+    if (saved) setPromoInput(saved);
+  }, []);
 
   // Auto-fill email from session
   useMemo(() => {
@@ -130,6 +135,7 @@ function CheckoutPage() {
       const r = await promoFn({ data: { code, packageId, cycle } });
       if (r.ok) {
         setPromo({ code: r.code, discount: r.discount, cycle });
+        localStorage.removeItem("orzen_promo");
         toast.success(`প্রোমো কোড যুক্ত হয়েছে — ৳${r.discount.toLocaleString()} ছাড়`);
       } else {
         setPromo(null);
@@ -330,7 +336,7 @@ function CheckoutPage() {
         {activePromo ? (
           <div className="mt-2 flex items-center justify-between gap-2 rounded-xl bg-primary/10 px-3 py-2 text-sm">
             <span>
-              <span className="font-mono font-semibold">{activePromo.code}</span> — ৳{activePromo.discount.toLocaleString()} ছাড়
+              <button type="button" title="কপি করতে ক্লিক করুন" className="inline-flex items-center gap-1 font-mono font-semibold hover:underline" onClick={() => { navigator.clipboard?.writeText(activePromo.code); setCopied(true); toast.success("প্রোমো কোড কপি হয়েছে"); setTimeout(() => setCopied(false), 1500); }}>{activePromo.code}{copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}</button> — ৳{activePromo.discount.toLocaleString()} ছাড়
               <span className="ml-2 text-muted-foreground line-through">৳{planCalc.total.toLocaleString()}</span>
             </span>
             <Button type="button" size="icon" variant="ghost" aria-label="Remove promo code" onClick={() => { setPromo(null); setPromoInput(""); }}>

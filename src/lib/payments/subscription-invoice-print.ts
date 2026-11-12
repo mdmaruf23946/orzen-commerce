@@ -109,7 +109,7 @@ export async function openSubscriptionInvoice(
   const storeNameLogo = imgUrl(store?.name_logo_url ?? null);
   const platformLogo = imgUrl(brand.logoUrl ?? null);
   const platformWordmark = imgUrl(brand.wordmarkUrl ?? null);
-  const supportEmail = brand.supportEmail || "support@orzen.top";
+  const supportEmail = brand.supportEmail || "notify@orzen.top";
   const paid = String(p.status ?? "").toLowerCase() === "paid";
   const period =
     fmtDate(p.cycle_start) && fmtDate(p.cycle_end)

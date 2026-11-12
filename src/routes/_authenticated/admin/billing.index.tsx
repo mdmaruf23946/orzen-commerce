@@ -82,6 +82,16 @@ function tierOf(p: Plan): "free" | "basic" | "business" | "custom" | null {
 
 
 function BillingPage() {
+  useEffect(() => {
+    const code = new URLSearchParams(window.location.search).get("promo")?.trim().toUpperCase();
+    if (!code || !/^[A-Z0-9_-]{2,40}$/.test(code)) return;
+    localStorage.setItem("orzen_promo", code);
+    navigator.clipboard?.writeText(code).then(
+      () => toast.success(`প্রোমো কোড ${code} কপি হয়েছে — প্যাকেজ বাছলে নিজে বসে যাবে`),
+      () => toast.success(`প্রোমো কোড ${code} সেভ হয়েছে — প্যাকেজ বাছলে নিজে বসে যাবে`),
+    );
+  }, []);
+
   const statusFn = useServerFn(myBillingStatus);
   const plansFn = useServerFn(listPublicPlans);
   const settingsFn = useServerFn(getBillingSettings);

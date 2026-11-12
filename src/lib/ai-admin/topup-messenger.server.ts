@@ -143,7 +143,7 @@ export async function decideTopupFromMessenger(args: {
           planName: "Wallet Add Fund",
           amount: Number(pay.amount),
           reason,
-          supportEmail: "support@orzen.top",
+          supportEmail: "notify@orzen.top",
           retryUrl: "/admin/billing",
           customerEmail: pay.customer_email,
         });

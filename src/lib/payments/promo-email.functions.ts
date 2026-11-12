@@ -80,13 +80,15 @@ export const sendPromoEmail = createServerFn({ method: "POST" })
       const subject = fillPromoTemplate(data.subject, vars);
       const body = escapeHtml(fillPromoTemplate(data.message, vars)).replace(/\n/g, "<br>");
       const e = escapeHtml;
+      const promoLink = `https://orzen.top/admin/billing?promo=${encodeURIComponent(coupon.code)}`;
       const offer = `
 <div style="margin:22px 0;border-radius:12px;overflow:hidden;border:1px solid #f0c36d">
   <div style="background:#163f2c;color:#ffffff;text-align:center;padding:10px;font-size:13px;font-weight:700;letter-spacing:1px">🎁 সীমিত সময়ের বিশেষ অফার</div>
   <div style="background:#fffaf0;text-align:center;padding:20px 16px">
     <div style="font-size:30px;line-height:38px;font-weight:800;color:#b45309">${e(discount)}</div>
     <div style="font-size:13px;color:#64716b;margin:6px 0 12px">প্যাকেজ ও মেয়াদ অনুযায়ী ছাড়ের পরিমাণ ভিন্ন হতে পারে — প্যাকেজ কেনার সময় এই কোডটি লিখে Apply করুন</div>
-    <div style="display:inline-block;padding:12px 22px;border:2px dashed #163f2c;border-radius:8px;background:#ffffff;font-family:Consolas,monospace;font-size:26px;font-weight:800;letter-spacing:4px;color:#163f2c">${e(coupon.code)}</div>
+    <a href="${e(promoLink)}" style="display:inline-block;padding:12px 22px;border:2px dashed #163f2c;border-radius:8px;background:#ffffff;font-family:Consolas,monospace;font-size:26px;font-weight:800;letter-spacing:4px;color:#163f2c;text-decoration:none">${e(coupon.code)}</a>
+    <div style="font-size:12px;color:#64716b;margin-top:8px">👆 কোডে ক্লিক করুন — কোডটি কপি হবে ও প্যাকেজ কেনার পেজে নিজে বসে যাবে</div>
   </div>
   <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#fff1d6"><tr>
     <td align="center" style="padding:12px;font-size:14px;color:#7c2d12;font-weight:700">⏳ ${e(v.text)}</td>
@@ -100,7 +102,7 @@ ${data.showBenefits !== false && benefitLines.length ? `<div style="font-size:14
           title: subject,
           bodyHtml: `<p>${body}</p>${offer}`,
           actionLabel: "এখনই অফারটি নিন →",
-          actionUrl: "https://orzen.top/admin/billing",
+          actionUrl: promoLink,
           kind: "billing",
           preheader: `${discount} • কোড ${coupon.code} • ${v.text}`,
           sanitizeBody: false,
