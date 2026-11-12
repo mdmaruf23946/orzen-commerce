@@ -3,7 +3,8 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Plus, Trash2, Pencil } from "lucide-react";
+import { Plus, Trash2, Pencil, Mail } from "lucide-react";
+import { PromoEmailDialog } from "@/components/owner/PromoEmailDialog";
 import {
   listSubscriptionCoupons,
   upsertSubscriptionCoupon,
@@ -230,6 +231,7 @@ function CouponsPage() {
                     }} />
                   </td>
                   <td className="py-2 text-right whitespace-nowrap">
+                    <Button size="sm" variant="ghost" aria-label="Send by email" title="ইমেইলে পাঠান" onClick={() => setMailCoupon({ id: c.id, code: c.code })}><Mail className="h-4 w-4" /></Button>
                     <Button size="sm" variant="ghost" aria-label="Edit" onClick={() => edit(c)}><Pencil className="h-4 w-4" /></Button>
                     <Button size="sm" variant="ghost" aria-label="Delete" onClick={async () => {
                       if (!confirm(`Delete ${c.code}?`)) return;
@@ -246,6 +248,7 @@ function CouponsPage() {
           </table>
         </div>
       </div>
+      <PromoEmailDialog coupon={mailCoupon} onClose={() => setMailCoupon(null)} />
     </div>
   );
 }
