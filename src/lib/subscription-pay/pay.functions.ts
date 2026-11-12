@@ -176,7 +176,7 @@ export const upsertSubscriptionCoupon = createServerFn({ method: "POST" })
         active: z.boolean().default(true),
         max_discount: z.number().min(0).nullable().optional(),
         plan_amounts: z.record(z.string().uuid(), z.number().min(0)).optional(),
-        cycle_amounts: z.record(cycleSchema, z.number().min(0)).optional(),
+        cycle_amounts: z.record(z.string(), z.number().min(0)).optional().transform((r) => Object.fromEntries(Object.entries(r ?? {}).filter(([k]) => (cycleSchema.options as readonly string[]).includes(k)))),
         description: z.string().max(200).nullable().optional(),
       })
       .parse(d),
