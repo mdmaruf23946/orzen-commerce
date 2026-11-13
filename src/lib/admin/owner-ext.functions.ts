@@ -537,6 +537,9 @@ export const upsertWebhook = createServerFn({ method: "POST" })
   }).parse(d))
   .handler(async ({ data, context }) => {
     await assertOwner(context.supabase, context.userId);
+    const { outboundUrlProblem } = await import("@/lib/security/outbound-url");
+    const bad = outboundUrlProblem(data.url);
+    if (bad) throw new Error(`Webhook URL rejected: ${bad}`);
     const sb: any = context.supabase;
     const { id, ...rest } = data;
     if (id) {

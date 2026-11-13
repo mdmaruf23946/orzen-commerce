@@ -7,6 +7,7 @@ import type {
   PlatformStatus,
 } from "./types";
 import { AUTH_SECRET_KEYS } from "./types";
+import { outboundUrlProblem } from "@/lib/security/outbound-url";
 
 export type CheckoutVars = {
   order_id: string;
@@ -285,12 +286,15 @@ async function readResponse(res: Response): Promise<{ data: unknown; raw: string
   return { data: raw, raw };
 }
 
-async function executeRequest(opts: {
+export async function executeRequest(opts: {
   method: string;
   url: string;
   headers: Record<string, string>;
   body: string | FormData | undefined;
 }): Promise<Response> {
+  // Validate the final URL at execution time (never trust save-time checks).
+  const bad = outboundUrlProblem(opts.url);
+  if (bad) throw new Error(`Gateway URL rejected: ${bad}`);
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 20_000);
   try {
@@ -299,6 +303,7 @@ async function executeRequest(opts: {
       headers: opts.headers,
       body: opts.method === "GET" || opts.method === "DELETE" ? undefined : opts.body,
       signal: controller.signal,
+      redirect: "error",
     });
   } finally {
     clearTimeout(timer);

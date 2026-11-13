@@ -784,20 +784,10 @@ export const fetchGoogleSheetCsv = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => z.object({ url: z.string().url() }).parse(d))
   .handler(async ({ data }) => {
-    const u = new URL(data.url);
-    if (!/(^|\.)google\.com$/.test(u.hostname) && !/googleusercontent\.com$/.test(u.hostname)) {
-      throw new Error("Only docs.google.com URLs are supported");
-    }
-    // Convert /edit URL to CSV export URL
-    let csvUrl = data.url;
-    const m = data.url.match(/\/spreadsheets\/d\/([^/]+)/);
-    if (m) {
-      const id = m[1];
-      const gidMatch = data.url.match(/[#&?]gid=(\d+)/);
-      const gid = gidMatch ? gidMatch[1] : "0";
-      csvUrl = `https://docs.google.com/spreadsheets/d/${id}/export?format=csv&gid=${gid}`;
-    }
-    const res = await fetch(csvUrl);
+    const { googleSheetCsvUrl, fetchGoogleSheet } = await import("@/lib/security/google-sheet-url");
+    const csvUrl = googleSheetCsvUrl(data.url);
+    if (!csvUrl) throw new Error("Only docs.google.com spreadsheet URLs are supported");
+    const res = await fetchGoogleSheet(csvUrl);
     if (!res.ok) throw new Error(`Failed to fetch sheet (HTTP ${res.status}). Make sure it's shared as "Anyone with the link".`);
     const text = await res.text();
     return { csv: text };
