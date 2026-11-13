@@ -8,6 +8,19 @@ async function assertOwner(supabase: any, userId: string) {
   if (!data) throw new Error("Forbidden");
 }
 
+// One paginated listUsers call instead of one request per store (Workers subrequest cap).
+async function loadUserMap(sb: any) {
+  const map = new Map<string, any>();
+  for (let page = 1; page <= 50; page++) {
+    const { data, error } = await sb.auth.admin.listUsers({ page, perPage: 1000 });
+    if (error) throw new Error(error.message);
+    const users = data?.users ?? [];
+    for (const u of users) map.set(u.id, u);
+    if (users.length < 1000) break;
+  }
+  return map;
+}
+
 async function loadRecipients(sb: any) {
   const { data, error } = await sb
     .from("stores")
@@ -33,10 +46,9 @@ export const listPromoRecipients = createServerFn({ method: "GET" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const rows = await loadRecipients(supabaseAdmin);
     // Fall back to the owner's login email when the store has none.
-    const missing = rows.filter((r: any) => !r.email.includes("@"));
-    for (const r of missing) {
-      const { data } = await (supabaseAdmin as any).auth.admin.getUserById(r.owner_user_id);
-      r.email = data?.user?.email ?? "";
+    const users = await loadUserMap(supabaseAdmin);
+    for (const r of rows as any[]) {
+      if (!r.email.includes("@")) r.email = users.get(r.owner_user_id)?.email ?? "";
     }
     return rows.map(({ owner_user_id, ...r }: any) => r);
   });
@@ -71,12 +83,13 @@ export const sendPromoEmail = createServerFn({ method: "POST" })
     const v = promoValidity(coupon.expires_at);
     const discount = data.discountLabel || promoDiscountHeadline(coupon);
     const benefitLines = (data.benefits ?? "").split("\n").map((x) => x.trim()).filter(Boolean);
+    const users = await loadUserMap(supabaseAdmin);
     for (const r of chosen) {
-      const { data: u } = await (supabaseAdmin as any).auth.admin.getUserById(r.owner_user_id);
+      const au = users.get(r.owner_user_id);
       let email = r.email;
-      if (!email.includes("@")) email = u?.user?.email ?? "";
+      if (!email.includes("@")) email = au?.email ?? "";
       if (!email.includes("@")) { failed.push(r.name); continue; }
-      const name = recipientName(u?.user?.user_metadata, r.owner_name);
+      const name = recipientName(au?.user_metadata, r.owner_name);
       const vars = { code: coupon.code, store_name: r.name, owner_name: name, discount, expiry_date: v.date || "সীমিত সময়", days_left: v.daysLeft == null ? "" : String(v.daysLeft), validity_text: v.text };
       const subject = fillPromoTemplate(data.subject, vars);
       const body = escapeHtml(fillPromoTemplate(data.message, vars)).replace(/\n/g, "<br>");
