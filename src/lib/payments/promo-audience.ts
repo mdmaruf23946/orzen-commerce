@@ -1,10 +1,20 @@
 // Pure rules for picking promo-email recipients by current plan.
-export type PromoAudienceGroup = "free" | "trial" | "paid";
+export type PromoAudienceGroup = "free" | "trial" | "paid" | "inactive";
 
+const INACTIVE_STATUSES = new Set(["expired", "cancelled", "suspended", "past_due"]);
+
+/** "inactive" = no running plan: lapsed status, or trial/paid end date already passed. */
 export function classifyStorePlan(s: {
   subscription_status?: string | null;
+  trial_ends_at?: string | null;
+  expires_at?: string | null;
   package?: { price?: number | null; is_trial?: boolean | null } | null;
-}): PromoAudienceGroup {
+}, now = new Date()): PromoAudienceGroup {
+  const past = (d?: string | null) => !!d && new Date(d).getTime() < now.getTime();
+  if (INACTIVE_STATUSES.has(String(s.subscription_status ?? ""))) return "inactive";
+  const trial = s.subscription_status === "trialing" || !!s.package?.is_trial;
+  if (trial && (past(s.trial_ends_at) || (!s.trial_ends_at && past(s.expires_at)))) return "inactive";
+  if (!trial && Number(s.package?.price ?? 0) > 0 && past(s.expires_at)) return "inactive";
   if (s.subscription_status === "trialing" || s.package?.is_trial) return "trial";
   if (!s.package || Number(s.package.price ?? 0) <= 0) return "free";
   return "paid";

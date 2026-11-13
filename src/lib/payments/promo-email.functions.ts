@@ -11,7 +11,7 @@ async function assertOwner(supabase: any, userId: string) {
 async function loadRecipients(sb: any) {
   const { data, error } = await sb
     .from("stores")
-    .select("id,name,email,owner_name,owner_user_id,subscription_status,subscription_packages(name,price,is_trial)")
+    .select("id,name,email,owner_name,owner_user_id,subscription_status,trial_ends_at,expires_at,subscription_packages(name,price,is_trial)")
     .order("created_at", { ascending: false });
   if (error) throw new Error(error.message);
   return (data ?? []).map((s: any) => ({
@@ -21,7 +21,8 @@ async function loadRecipients(sb: any) {
     owner_user_id: s.owner_user_id as string,
     email: (s.email ?? "") as string,
     plan: (s.subscription_packages?.name ?? "—") as string,
-    group: classifyStorePlan({ subscription_status: s.subscription_status, package: s.subscription_packages }),
+    ends_at: (s.trial_ends_at ?? s.expires_at ?? null) as string | null,
+    group: classifyStorePlan({ subscription_status: s.subscription_status, trial_ends_at: s.trial_ends_at, expires_at: s.expires_at, package: s.subscription_packages }),
   }));
 }
 

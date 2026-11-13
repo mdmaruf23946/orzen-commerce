@@ -11,11 +11,12 @@ import { listPromoRecipients, sendPromoEmail } from "@/lib/payments/promo-email.
 import { DEFAULT_PROMO_BENEFITS, promoDiscountHeadline } from "@/lib/payments/promo-audience";
 import { useEffect } from "react";
 
-type Group = "free" | "trial" | "paid" | "all";
+type Group = "free" | "trial" | "paid" | "inactive" | "all";
 const GROUPS: { key: Group; label: string }[] = [
   { key: "free", label: "ফ্রি প্ল্যান" },
   { key: "trial", label: "ট্রায়াল" },
   { key: "paid", label: "পেইড" },
+  { key: "inactive", label: "কোনো প্ল্যান চালু নেই (মেয়াদ শেষ)" },
   { key: "all", label: "সবাই" },
 ];
 
@@ -85,7 +86,7 @@ export function PromoEmailDialog({ coupon, onClose }: { coupon: { id: string; co
                   <input type="checkbox" checked={picked.has(r.id)} onChange={() => toggle(r.id)} disabled={!r.email} />
                   <span className="font-medium">{r.name}</span>
                   <span className="truncate text-muted-foreground">{r.email || "ইমেইল নেই"}</span>
-                  <span className="ml-auto text-xs text-muted-foreground">{r.plan}</span>
+                  <span className="ml-auto text-xs text-muted-foreground">{r.group === "inactive" ? `${r.plan} • মেয়াদ শেষ${r.ends_at ? ` ${new Date(r.ends_at).toLocaleDateString("bn-BD")}` : ""}` : r.plan}</span>
                 </label>
               ))}
             </div>

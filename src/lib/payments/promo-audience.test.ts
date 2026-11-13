@@ -29,3 +29,11 @@ describe("promo discount headline", () => {
   it("fixed base vs plans takes max", () =>
     expect(promoDiscountHeadline({ type: "fixed", value: 300, plan_amounts: { a: 200 } })).toBe("৳৩০০ পর্যন্ত ছাড়"));
 });
+
+describe("inactive promo audience", () => {
+  const now = new Date("2026-11-13T00:00:00Z");
+  it("expired status is inactive", () => expect(classifyStorePlan({ subscription_status: "expired", package: { price: 1700 } }, now)).toBe("inactive"));
+  it("trial past its end date is inactive", () => expect(classifyStorePlan({ subscription_status: "trialing", trial_ends_at: "2026-11-01T00:00:00Z", package: { is_trial: true } }, now)).toBe("inactive"));
+  it("running trial stays trial", () => expect(classifyStorePlan({ subscription_status: "trialing", trial_ends_at: "2026-12-01T00:00:00Z" }, now)).toBe("trial"));
+  it("paid plan past expiry is inactive", () => expect(classifyStorePlan({ subscription_status: "active", expires_at: "2026-11-01T00:00:00Z", package: { price: 1700 } }, now)).toBe("inactive"));
+});
