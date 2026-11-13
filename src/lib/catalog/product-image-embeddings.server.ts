@@ -1,3 +1,4 @@
+import { safeFetch } from "@/lib/security/safe-fetch";
 /**
  * Visual product lookup for Messenger/WhatsApp photos.
  *
@@ -127,7 +128,7 @@ async function loadImageBytes(sb: Sb, image: string): Promise<{ bytes: Uint8Arra
     const mime = r.data.type?.startsWith("image/") ? r.data.type : ext === "png" ? "image/png" : ext === "webp" ? "image/webp" : "image/jpeg";
     return { bytes, mime };
   }
-  const res = await fetch(absoluteImageUrl(image)!, { headers: { Accept: "image/*" } });
+  const res = await safeFetch(absoluteImageUrl(image)!, { headers: { Accept: "image/*" }, signal: AbortSignal.timeout(15000) });
   if (!res.ok) throw new Error(`Image HTTP ${res.status}`);
   return {
     mime: (res.headers.get("content-type") ?? "image/jpeg").split(";")[0]!.trim(),

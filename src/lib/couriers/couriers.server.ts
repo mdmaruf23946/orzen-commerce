@@ -1,3 +1,4 @@
+import { safeFetch } from "@/lib/security/safe-fetch";
 // Server-only courier API adapters. Each probe follows the courier's
 // official authentication scheme so "Test connection" reflects real access.
 
@@ -20,7 +21,7 @@ async function req(
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), init.timeoutMs ?? 10000);
   try {
-    const res = await fetch(url, { ...init, signal: controller.signal });
+    const res = await safeFetch(url, { ...init, signal: controller.signal });
     const text = (await res.text().catch(() => "")).slice(0, 800);
     return { status: res.status, text };
   } finally {

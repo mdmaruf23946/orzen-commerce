@@ -1,3 +1,4 @@
+import { safeFetch } from "@/lib/security/safe-fetch";
 // DNS lookups that work inside the Cloudflare Workers runtime.
 //
 // `node:dns` is a non-functional stub on workerd (every call throws
@@ -71,10 +72,11 @@ export async function fetchHttpChallenge(host: string, token: string): Promise<b
   const path = `/.well-known/orzen-domain-verification/${encodeURIComponent(token)}`;
   for (const scheme of ["https", "http"]) {
     try {
-      const res = await fetch(`${scheme}://${host}${path}`, {
-        redirect: "follow",
-        headers: { accept: "text/plain" },
-      });
+      const res = await safeFetch(
+        `${scheme}://${host}${path}`,
+        { headers: { accept: "text/plain" }, signal: AbortSignal.timeout(8000) },
+        { allowHttp: true },
+      );
       if (!res.ok) continue;
       const body = (await res.text()).trim();
       if (body === token) return true;

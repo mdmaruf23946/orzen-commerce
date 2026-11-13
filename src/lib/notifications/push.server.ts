@@ -1,3 +1,4 @@
+import { outboundUrlProblem } from "@/lib/security/outbound-url";
 import { buildPushHTTPRequest } from "@pushforge/builder";
 
 /** Sends pending push_outbox rows to every subscribed device of that store. Never throws. */
@@ -42,7 +43,8 @@ export async function dispatchPush(limit = 30) {
             options: { ttl: 3600, urgency: "high" },
           },
         });
-        const res = await fetch(req.endpoint, { method: "POST", headers: req.headers, body: req.body });
+        if (outboundUrlProblem(req.endpoint)) { await sb.from(table).delete().eq("id", s.id); return; }
+        const res = await fetch(req.endpoint, { method: "POST", headers: req.headers, body: req.body, redirect: "error" });
         if (res.status === 404 || res.status === 410) await sb.from("push_subscriptions").delete().eq("id", s.id);
         else if (res.ok) { sent++; await sb.from("push_subscriptions").update({ failures: 0, last_success_at: new Date().toISOString() }).eq("id", s.id); }
         else if ((s.failures ?? 0) >= 9) await sb.from("push_subscriptions").delete().eq("id", s.id);

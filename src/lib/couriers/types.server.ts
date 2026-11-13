@@ -1,3 +1,4 @@
+import { safeFetch } from "@/lib/security/safe-fetch";
 // Shared adapter contract + logged HTTP helper. Server-only.
 import type { ParcelStatus } from "./status";
 
@@ -121,7 +122,7 @@ export async function call(
   let json: any = null;
   let error: string | null = null;
   try {
-    const res = await fetch(opts.url, {
+    const res = await safeFetch(opts.url, {
       method,
       headers: { Accept: "application/json", ...(opts.headers ?? {}) },
       body: opts.body != null ? JSON.stringify(opts.body) : undefined,

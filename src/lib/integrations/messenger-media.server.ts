@@ -1,3 +1,4 @@
+import { safeFetch } from "@/lib/security/safe-fetch";
 // Extracted from the Messenger webhook; preserve existing channel behaviour.
 import { routedTranscribeAudio, routedVisionText } from "@/lib/agents/ai-provider.server";
 import { ImageProcessingError, type ProductRow, type ImageAnalysis, type VisualMatch } from "@/lib/integrations/messenger-types";
@@ -60,7 +61,7 @@ export async function downloadMessengerImage(url: string, pageToken: string, mes
   for (let attempt = 0; attempt < 3; attempt += 1) {
     let response: Response;
     try {
-      response = await fetch(currentUrl, { headers: IMAGE_FETCH_HEADERS });
+      response = await safeFetch(currentUrl, { headers: IMAGE_FETCH_HEADERS });
     } catch (cause) {
       if (attempt < 2) {
         await new Promise((resolve) => setTimeout(resolve, 400 * (attempt + 1)));
@@ -121,7 +122,7 @@ export function parseResponsesText(rawStream: string, stage: "ANALYSIS" | "MATCH
 export async function transcribeAudioAttachment(url: string): Promise<string | null> {
   if (!url) return null;
   try {
-    const audioRes = await fetch(url);
+    const audioRes = await safeFetch(url, { signal: AbortSignal.timeout(20000) });
     if (!audioRes.ok) return null;
     const buf = new Uint8Array(await audioRes.arrayBuffer());
     if (!buf.byteLength || buf.byteLength > 15 * 1024 * 1024) return null;
