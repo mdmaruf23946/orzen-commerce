@@ -36,7 +36,8 @@ async function handle(request: Request) {
     const creds = openToken(conn?.encrypted_token ?? null);
     if (creds?.api_token) headers["Authorization"] = `Bearer ${creds.api_token}`;
   }
-  const up = await fetch(ref, { headers, redirect: "follow" }).catch(() => null);
+  const { safeRecordingFetch } = await import("@/lib/security/recording-fetch");
+  const up = await safeRecordingFetch(ref, { headers }).catch(() => null);
   if (!up || (!up.ok && up.status !== 206)) return new Response("Recording unavailable", { status: 502 });
   const out = new Headers({ "Cache-Control": "private, no-store" });
   for (const h of ["content-type", "content-length", "content-range", "accept-ranges"]) {

@@ -242,8 +242,9 @@ export const Route = createFileRoute("/api/public/orzen-call/callback")({
         // Keep a permanent private copy so the recording survives even if the provider deletes it.
         if (saved && callRow.recording_ref) {
           try {
-            const res = await fetch(String(callRow.recording_ref), { headers: { "User-Agent": "ORZEN-Recording/1.0" } });
-            if (res.ok) {
+            const { safeRecordingFetch } = await import("@/lib/security/recording-fetch");
+            const res = await safeRecordingFetch(String(callRow.recording_ref), { headers: { "User-Agent": "ORZEN-Recording/1.0" } });
+            if (res?.ok) {
               const buf = await res.arrayBuffer();
               if (buf.byteLength > 0 && buf.byteLength <= 50 * 1024 * 1024) {
                 const path = `${store}/${(saved as any).id}.mp3`;
