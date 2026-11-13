@@ -143,3 +143,5 @@
 
 ## Self-learning automation (planned)
 - [ ] Learn store-scoped Q→A pairs from merchant manual replies + accepted AI replies (per store, never cross-store); serve as zero-token answers only for safe info (no price/stock/delivery/order).
+
+- Stage C-4 done: safeFetch refuses cross-origin redirects carrying credential headers or a body; 303/301/302-POST become GET. DNS rebinding remains an open platform limitation (no IP pinning on Workers).
