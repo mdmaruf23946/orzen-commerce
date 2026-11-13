@@ -192,7 +192,7 @@ export async function dispatchOutbox(limit = 50): Promise<{ sent: number; failed
       const ts = String(Math.floor(Date.now() / 1000));
       const res = await fetch(url, {
         method: "POST",
-        redirect: "manual",
+        redirect: "error",
         signal: AbortSignal.timeout(10_000),
         headers: {
           "content-type": "application/json",

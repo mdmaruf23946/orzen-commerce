@@ -1,4 +1,5 @@
 // Browser-safe helpers for connected websites / landing pages.
+import { outboundUrlProblem } from "@/lib/security/outbound-url";
 
 /** Only public https URLs may receive outbound order updates (blocks SSRF to private hosts). */
 export function assertSafeOutboundUrl(raw: string): string {
@@ -17,6 +18,7 @@ export function assertSafeOutboundUrl(raw: string): string {
   ) {
     throw new Error("Status update link must be a public website address");
   }
+  if (outboundUrlProblem(u.toString())) throw new Error("Status update link must be a public website address");
   return u.toString();
 }
 

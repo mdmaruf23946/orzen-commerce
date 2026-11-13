@@ -576,7 +576,7 @@ export const testWebhook = createServerFn({ method: "POST" })
         method: "POST",
         headers: { "content-type": "application/json", "x-webhook-secret": wh.secret ?? "" },
         body: JSON.stringify({ event: "test.ping", at: new Date().toISOString() }),
-        redirect: "manual",
+        redirect: "error",
         signal: AbortSignal.timeout(10_000),
       });
       status = res.status;

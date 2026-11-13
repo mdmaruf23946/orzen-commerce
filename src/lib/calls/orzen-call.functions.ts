@@ -151,7 +151,7 @@ async function postToOrzen(storeId: string, event: string, data: unknown) {
       method: "POST",
       headers: { "Content-Type": "application/json", "X-Orzen-Event": event, "X-Orzen-Signature": sig },
       body,
-      redirect: "manual",
+      redirect: "error",
       signal: AbortSignal.timeout(10_000),
     });
     if (!r.ok) return { ok: false, message: `Orzen Call replied with error ${r.status}.` };
