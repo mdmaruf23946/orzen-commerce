@@ -27,7 +27,8 @@ async function handle(request: Request) {
   const headers: Record<string, string> = { Authorization: `Bearer ${creds.api_token}`, Accept: "audio/*,*/*" };
   const range = request.headers.get("range");
   if (range) headers["Range"] = range;
-  const up = await fetch(getVoiceProvider("epbx").recordingUrl(q.data.id, creds), { headers }).catch(() => null);
+  const { safeRecordingFetch } = await import("@/lib/security/recording-fetch");
+  const up = await safeRecordingFetch(getVoiceProvider("epbx").recordingUrl(q.data.id, creds), { headers }).catch(() => null);
   if (!up || (!up.ok && up.status !== 206)) return new Response("Recording unavailable", { status: 502 });
   const ct = up.headers.get("content-type") ?? "";
   if (ct.includes("json") || ct.includes("html")) return new Response("Recording unavailable", { status: 404 });

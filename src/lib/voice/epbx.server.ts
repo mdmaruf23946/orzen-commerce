@@ -1,4 +1,5 @@
 // ePBX adapter — https://epbx.bd/docs/api (REST v1, Bearer token, 120 req/min).
+import { outboundUrlProblem } from "@/lib/security/outbound-url";
 import { VoiceProviderError, type VoiceCdrRow, type VoiceCreds, type VoiceProvider } from "./types";
 
 export const EPBX_DEFAULT_BASE = "https://epbx.bd/api/v1";
@@ -14,8 +15,11 @@ function normPhone(p: string): string {
 
 async function call(creds: VoiceCreds, path: string, init: { method?: string; body?: unknown } = {}) {
   let res: Response;
+  const url = baseOf(creds) + path;
+  if (outboundUrlProblem(url)) throw new VoiceProviderError("unavailable", "The ePBX address is not allowed.");
   try {
-    res = await fetch(baseOf(creds) + path, {
+    res = await fetch(url, {
+      redirect: "error",
       method: init.method ?? "GET",
       headers: {
         Authorization: `Bearer ${creds.api_token}`,

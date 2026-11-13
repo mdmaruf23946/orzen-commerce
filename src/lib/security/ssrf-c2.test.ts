@@ -38,3 +38,13 @@ describe("Stage C-2: recording fetch SSRF guard", () => {
     expect(f).not.toHaveBeenCalled();
   });
 });
+
+describe("Stage C-2: ePBX base URL guard", () => {
+  it("rejects a private custom ePBX address before any request", async () => {
+    const f = vi.fn(); vi.stubGlobal("fetch", f);
+    const { epbxProvider } = await import("@/lib/voice/epbx.server");
+    await expect(epbxProvider.testConnection({ api_token: "t", base_url: "https://127.0.0.1/api" } as any)).rejects.toThrow(/not allowed/);
+    expect(f).not.toHaveBeenCalled();
+    vi.unstubAllGlobals();
+  });
+});

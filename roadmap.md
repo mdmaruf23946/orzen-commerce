@@ -1,5 +1,16 @@
 # Roadmap
 
+## Security remediation — Stages B–E (2026-11-13)
+- [x] Stage B: Drizzle manual-command guard (`drizzleGuardProblem`) with 8 function-level tests; real CLI subprocess not exercised (would need a DB URL)
+- [x] Stage C-1: webhook save/test, Google Sheet import (allow-listed hops), custom gateway execution-time URL checks + `redirect: "error"` (34 tests)
+- [x] Stage C-2: call-recording proxy, archive fetch, ePBX call-log recording and merchant-set ePBX address validated; redirects refused (17 tests)
+- [x] Stage C-3: `safeFetch` re-validates every redirect hop for couriers, product images, Messenger media, domain checks; push endpoints validated (13 tests)
+- [x] Stage D: Merchant A/B boundary, AI chat and checkout-draft isolation (14 mock-based tests)
+- [x] Stage E: 330/330 tests pass across 45 files; build clean
+- [ ] Known limit: DNS rebinding cannot be blocked on Cloudflare Workers (no pre-fetch DNS hook)
+- [ ] BLOCKED (owner approval): live two-merchant RLS test on a disposable environment; real Meta/courier/webhook calls
+- [ ] Not deployed to orzen.top yet (awaiting owner instruction)
+
 ## Final audit — Stage B: Migration safety (2026-11-11)
 - [x] Drizzle config refuses manual runs without the platform migration URL; policy documented; no database or migration-file changes
 
