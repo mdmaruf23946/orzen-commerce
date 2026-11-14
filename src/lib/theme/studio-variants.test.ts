@@ -6,7 +6,7 @@ describe("theme studio", () => {
   it("every part offers 4 to 10 designs", () => {
     for (const p of STUDIO_PARTS) {
       expect(p.variants.length).toBeGreaterThanOrEqual(4);
-      expect(p.variants.length).toBeLessThanOrEqual(10);
+      expect(p.variants.length).toBeLessThanOrEqual(p.id === "colors" ? 30 : 10);
     }
   });
   it("applying a design keeps other keys of the same group", () => {

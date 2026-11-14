@@ -6,11 +6,12 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { ChevronRight, GripVertical, Loader2, Monitor, RotateCcw, Save, Smartphone, Tablet, Undo2 } from "lucide-react";
-import { getMyThemeState, listThemes, saveStoreThemeCustomization } from "@/lib/site-builder/themes.functions";
-import { SECTION_LABELS, mergeTheme, type SectionKey, type ThemeDefinition } from "@/lib/theme/definition";
+import { getMyThemeState, listThemes, saveStoreThemeCustomization, selectStoreTheme } from "@/lib/site-builder/themes.functions";
+import { COLOR_KEYS, COLOR_LABELS, SECTION_LABELS, mergeTheme, type SectionKey, type ThemeDefinition } from "@/lib/theme/definition";
 import { THEME_PREVIEW_MESSAGE, THEME_PREVIEW_PARAM, THEME_PREVIEW_READY } from "@/lib/theme/context";
 import { STUDIO_PARTS, activeVariantId, applyVariant, reorder, type StudioPart } from "@/lib/theme/studio-variants";
 import { Button } from "@/components/ui/button";
+import { ColorField } from "./controls";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 
@@ -162,6 +163,7 @@ export function ThemeStudio() {
   const themesFn = useServerFn(listThemes);
   const stateFn = useServerFn(getMyThemeState);
   const saveFn = useServerFn(saveStoreThemeCustomization);
+  const selectFn = useServerFn(selectStoreTheme);
   const { data: themes = [] } = useQuery({ queryKey: ["store-themes"], queryFn: () => themesFn() });
   const { data: state, isLoading } = useQuery({ queryKey: ["my-theme"], queryFn: () => stateFn() });
 
@@ -220,11 +222,47 @@ export function ThemeStudio() {
     onError: (e: any) => toast.error(e.message),
   });
 
+  const pickTheme = useMutation({
+    mutationFn: (themeId: string) => selectFn({ data: { themeId } }),
+    onSuccess: () => {
+      toast.success("থিম বদলানো হয়েছে");
+      setLocal(null);
+      setHistory([]);
+      qc.invalidateQueries({ queryKey: ["my-theme"] });
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
   const order = resolved.section_order;
 
+  const themeGrid = (
+    <div className="grid grid-cols-2 gap-2 border-t p-2">
+      {(themes as any[]).map((t) => {
+        const d = mergeTheme(t.definition, {});
+        const sel = t.id === state?.theme_id;
+        return (
+          <button key={t.id} type="button" disabled={pickTheme.isPending}
+            onClick={() => { if (!sel && (local === null || confirm("থিম বদলালে অপ্রকাশিত পরিবর্তন মুছে যাবে। চালিয়ে যাবেন?"))) pickTheme.mutate(t.id); }}
+            className={cn("overflow-hidden rounded-lg border text-left transition hover:border-primary", sel && "border-primary ring-2 ring-primary/40")}>
+            <div className="flex h-10">
+              {[d.colors.header, d.colors.primary, d.colors.accent, d.colors.footer].map((c, i) => <span key={i} className="flex-1" style={{ background: c }} />)}
+            </div>
+            <div className="truncate border-t bg-card px-2 py-1 text-xs font-medium">{t.name}</div>
+          </button>
+        );
+      })}
+    </div>
+  );
+
   if (isLoading) return <div className="flex h-64 items-center justify-center"><Loader2 className="h-6 w-6 animate-spin" /></div>;
-  if (!state?.slug || !active)
-    return <div className="rounded-xl border p-6 text-center text-sm text-muted-foreground">আগে "Theme & Styling" পেজ থেকে একটি থিম বেছে নিন, তারপর এখানে ডিজাইন করুন।</div>;
+  if (!state?.slug) return null;
+  if (!active)
+    return (
+      <div className="space-y-3 rounded-xl border bg-card p-4">
+        <p className="text-sm font-medium">শুরু করতে একটি থিম বেছে নিন</p>
+        {themeGrid}
+      </div>
+    );
 
   const partBlock = (part: StudioPart) => {
     const current = activeVariantId(part, resolved as any);
@@ -274,6 +312,15 @@ export function ThemeStudio() {
 
       <div className="grid gap-3 lg:grid-cols-[340px_minmax(0,1fr)]">
         <div className="space-y-2 lg:max-h-[calc(100vh-140px)] lg:overflow-y-auto lg:pr-1">
+          <div className="overflow-hidden rounded-xl border bg-card">
+            <button type="button" onClick={() => setOpenPart(openPart === "themes" ? "" : "themes")}
+              className="flex w-full items-center justify-between px-3 py-2.5 text-left text-sm font-medium hover:bg-muted/50">
+              <span>Ready Themes <span className="ml-1 text-xs text-muted-foreground">({themes.length} থিম)</span></span>
+              <ChevronRight className={cn("h-4 w-4 transition-transform", openPart === "themes" && "rotate-90")} />
+            </button>
+            {openPart === "themes" && themeGrid}
+          </div>
+
           {headerParts.map(partBlock)}
 
           <div className="overflow-hidden rounded-xl border bg-card">
@@ -301,6 +348,22 @@ export function ThemeStudio() {
           </div>
 
           {footerParts.map(partBlock)}
+
+          <div className="overflow-hidden rounded-xl border bg-card">
+            <button type="button" onClick={() => setOpenPart(openPart === "custom_colors" ? "" : "custom_colors")}
+              className="flex w-full items-center justify-between px-3 py-2.5 text-left text-sm font-medium hover:bg-muted/50">
+              <span>নিজের রং বাছুন <span className="ml-1 text-xs text-muted-foreground">({COLOR_KEYS.length}টি)</span></span>
+              <ChevronRight className={cn("h-4 w-4 transition-transform", openPart === "custom_colors" && "rotate-90")} />
+            </button>
+            {openPart === "custom_colors" && (
+              <div className="grid gap-2 border-t p-2">
+                {COLOR_KEYS.map((k) => (
+                  <ColorField key={k} label={COLOR_LABELS[k]} value={(resolved.colors as any)[k]}
+                    onChange={(val) => commit({ ...overrides, colors: { ...(overrides.colors ?? {}), [k]: val } })} />
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="min-w-0 space-y-2 lg:sticky lg:top-4 lg:self-start">
