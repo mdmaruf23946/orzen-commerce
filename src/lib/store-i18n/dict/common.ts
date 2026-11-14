@@ -2,6 +2,7 @@ import type { Dict } from "./types";
 
 /** Shared UI words used across the whole storefront. */
 export const commonDict: Dict = {
+  "common.more": { en: "More", bn: "আরও" },
   "common.loading": { en: "Loading…", bn: "লোড হচ্ছে…" },
   "common.save": { en: "Save", bn: "সেভ করুন" },
   "common.saving": { en: "Saving…", bn: "সেভ হচ্ছে…" },

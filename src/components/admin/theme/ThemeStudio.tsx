@@ -28,43 +28,64 @@ function MiniPreview({ part, t }: { part: string; t: ThemeDefinition }) {
   const r = (n: number) => Math.min(n, 14) / 2;
   const bar = (w: string, bg = c.muted, h = 4) => <div style={{ width: w, height: h, background: bg, borderRadius: 2, opacity: 0.6 }} />;
   const box = { background: c.background, fontFamily: t.typography.heading_font } as React.CSSProperties;
-  if (part === "header" || part === "navigation") {
-    const h = t.header;
-    const center = h.logo_align === "center";
+  if (part === "navigation") {
+    const n = t.nav;
+    const mode = n.category_mode ?? "more";
+    const pill = (i: number, active: boolean) => (
+      <div key={i} style={{
+        width: 14, height: 6, flexShrink: 0,
+        background: n.menu_style === "pill" ? (active ? c.primary : c.card) : active ? c.card : c.muted,
+        border: n.menu_style === "pill" ? `1px solid ${c.border}` : undefined,
+        borderRadius: n.menu_style === "pill" ? 6 : 1,
+        borderBottom: n.menu_style === "underline" ? `2px solid ${active ? c.primary : "transparent"}` : undefined,
+        opacity: active ? 1 : 0.6,
+      }} />
+    );
     return (
-      <div style={{ ...box, height: 60 }} className="flex flex-col">
-        <div style={{ background: h.transparent ? "transparent" : c.header, height: Math.max(18, h.height / 3), borderBottom: `1px solid ${c.border}` }}
-          className={cn("flex items-center gap-1 px-2", center ? "justify-center" : "justify-between")}>
-          {h.cart_position === "left" && <div style={{ width: 8, height: 8, borderRadius: 2, background: c.primary }} />}
-          <div style={{ width: h.logo_size === "large" ? 30 : 20, height: 7, background: c.ink, borderRadius: 2 }} />
-          {h.search_position !== "hidden" && !center && <div style={{ width: 40, height: 7, borderRadius: 4, border: `1px solid ${c.border}`, background: c.surface }} />}
-          {h.cart_position !== "left" && <div style={{ width: 8, height: 8, borderRadius: 2, background: c.primary }} />}
-        </div>
-        <div className={cn("flex gap-1 px-2 py-1.5", t.nav.category_position === "sidebar" && "flex-col")}>
-          {[0, 1, 2, 3].map((i) => (
-            <div key={i} style={{
-              width: 16, height: 5,
-              background: t.nav.menu_style === "pill" ? c.primary : c.muted,
-              borderRadius: t.nav.menu_style === "pill" ? 4 : 1,
-              borderBottom: t.nav.menu_style === "underline" && i === 0 ? `2px solid ${c.primary}` : undefined,
-              opacity: i === 0 ? 1 : 0.4,
-            }} />
-          ))}
-          {t.nav.mega_menu && <div style={{ width: 30, height: 14, background: c.surface, border: `1px solid ${c.border}` }} />}
+      <div style={{ ...box, height: 60 }} className="flex flex-col justify-center px-2">
+        <div style={{ background: n.menu_style === "inline" ? `${c.primary}22` : "transparent", borderRadius: 4, padding: 3 }}
+          className={cn("flex items-center gap-1", mode === "wrap" ? "flex-wrap" : "overflow-hidden")}>
+          {Array.from({ length: mode === "wrap" ? 11 : 6 }).map((_, i) => pill(i, i === 0))}
+          {mode === "more" && <div style={{ marginLeft: "auto", fontSize: 7, color: c.primary, fontWeight: 700 }}>More ▾</div>}
+          {mode === "scroll" && <div style={{ marginLeft: "auto", fontSize: 8, color: c.primary }}>›</div>}
         </div>
       </div>
     );
   }
-  if (part === "hero") {
-    const h = t.hero;
+  if (part === "header") {
+    const h = t.header;
+    const center = h.logo_align === "center";
     return (
-      <div style={{ ...box, height: 60 }} className={cn(t.banner.style === "full" ? "p-0" : "p-1.5")}>
-        <div style={{ height: "100%", borderRadius: r(h.radius), background: `linear-gradient(135deg, ${c.primary}, ${c.accent})`, position: "relative" }}
-          className={cn("flex flex-col justify-center gap-1 px-2", h.text_align === "center" && "items-center", h.text_align === "right" && "items-end")}>
-          <div style={{ position: "absolute", inset: 0, background: `rgba(0,0,0,${h.overlay / 100})`, borderRadius: r(h.radius) }} />
-          <div style={{ position: "relative", width: 40, height: 5, background: "rgba(255,255,255,.95)", borderRadius: 2 }} />
-          <div style={{ position: "relative", width: 24, height: 7, borderRadius: 3, background: h.cta_style === "outline" ? "transparent" : "rgba(255,255,255,.95)", border: "1px solid rgba(255,255,255,.95)" }} />
+      <div style={{ ...box, height: 60 }} className="flex flex-col">
+        <div style={{ background: h.transparent ? `repeating-linear-gradient(45deg, ${c.surface}, ${c.surface} 4px, ${c.background} 4px, ${c.background} 8px)` : c.header, height: Math.max(18, h.height / 2.6), borderBottom: `1px solid ${c.border}` }}
+          className="relative flex items-center gap-1.5 px-2">
+          {h.cart_position === "left" && <div style={{ width: 9, height: 9, borderRadius: 2, background: c.primary }} />}
+          <div className={cn("flex items-center gap-1", center && "absolute left-1/2 -translate-x-1/2")}>
+            <div style={{ width: 8, height: 8, borderRadius: 8, background: c.primary }} />
+            {h.logo_mode !== "icon" && <div style={{ width: h.logo_size === "large" ? 34 : 22, height: 7, background: c.ink, borderRadius: 2 }} />}
+          </div>
+          {h.search_position !== "hidden" && <div style={{ width: h.search_position === "center" ? 52 : 34, height: 8, borderRadius: 4, border: `1px solid ${c.border}`, background: c.surface }} className={h.search_position === "center" ? "mx-auto" : "ml-auto"} />}
+          {h.search_position === "hidden" && <div className="ml-auto" />}
+          {h.cart_position !== "left" && <div style={{ width: 9, height: 9, borderRadius: 2, background: c.primary }} />}
+          <div style={{ width: 9, height: 9, borderRadius: 9, border: `1.5px solid ${c.ink}` }} />
         </div>
+        <div style={{ fontSize: 7, color: c.muted }} className="px-2 pt-1">{h.sticky ? "Sticky" : "Scrolls"} · {h.height}px</div>
+      </div>
+    );
+  }
+  if (part === "hero") {
+    const L = t.banner.layout ?? "split_right";
+    const big = { background: `linear-gradient(135deg, ${c.primary}, ${c.accent})`, borderRadius: 3 } as React.CSSProperties;
+    const sm = { background: `${c.accent}aa`, borderRadius: 3 } as React.CSSProperties;
+    const wrap = "h-full w-full gap-1 p-1.5";
+    return (
+      <div style={{ ...box, height: 60 }}>
+        {L === "split_right" && <div className={cn(wrap, "grid grid-cols-[3fr_1fr] grid-rows-2")}><div style={big} className="row-span-2" /><div style={sm} /><div style={sm} /></div>}
+        {L === "split_left" && <div className={cn(wrap, "grid grid-cols-[1fr_3fr] grid-rows-2")}><div style={sm} /><div style={big} className="row-span-2" /><div style={sm} /></div>}
+        {L === "stacked" && <div className={cn(wrap, "grid grid-cols-2 grid-rows-[2fr_1fr]")}><div style={big} className="col-span-2" /><div style={sm} /><div style={sm} /></div>}
+        {L === "full" && <div className="flex h-full flex-col gap-1 pb-1.5"><div style={{ ...big, borderRadius: 0 }} className="flex-[2]" /><div className="grid flex-1 grid-cols-2 gap-1 px-1.5"><div style={sm} /><div style={sm} /></div></div>}
+        {L === "trio" && <div className={cn(wrap, "grid grid-cols-3 items-center")}><div style={{ ...big, height: 30 }} /><div style={{ ...sm, height: 30 }} /><div style={{ ...sm, height: 30 }} /></div>}
+        {L === "strip" && <div className="flex h-full items-center p-1.5"><div style={{ ...big, height: 16 }} className="w-full" /></div>}
       </div>
     );
   }

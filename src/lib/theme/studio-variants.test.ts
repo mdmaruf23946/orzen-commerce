@@ -26,3 +26,18 @@ describe("theme studio", () => {
     expect(isBetaTester("other@gmail.com")).toBe(false);
   });
 });
+
+describe("theme studio designs are distinct", () => {
+  it("every design in a part changes something", async () => {
+    for (const p of STUDIO_PARTS) {
+      const keys = p.variants.map((v) => JSON.stringify(v.patch));
+      expect(new Set(keys).size).toBe(keys.length);
+    }
+  });
+  it("banner layouts and category modes survive saving", async () => {
+    const { sanitizeOverrides } = await import("./definition");
+    const out = sanitizeOverrides({ banner: { layout: "split_left" }, nav: { category_mode: "more" } }, null);
+    expect(out.banner.layout).toBe("split_left");
+    expect(out.nav.category_mode).toBe("more");
+  });
+});

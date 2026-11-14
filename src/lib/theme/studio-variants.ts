@@ -110,7 +110,7 @@ export const STUDIO_PARTS: StudioPart[] = [
       v("compact", "Compact", { footer: { layout: "compact", social: true, copyright: true, payment_icons: false } }),
       v("centered", "Centered", { footer: { layout: "centered", social: true, copyright: true, payment_icons: true } }),
       v("simple", "Simple", { footer: { layout: "compact", social: false, copyright: true, payment_icons: false } }),
-      v("full", "Full Info", { footer: { layout: "columns", social: true, copyright: true, payment_icons: true } }),
+      v("full", "Columns (no social)", { footer: { layout: "columns", social: false, copyright: true, payment_icons: true } }),
     ],
   },
 ];

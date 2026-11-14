@@ -802,7 +802,7 @@ function HeaderCategoryBar({
                 onMouseEnter={() => setMoreOpen(true)}
                 className={`${itemBase} rounded-xl ${hidden.some((c) => c.id === activeMainId) ? activeItem : inactiveItem}`}
               >
-                {t("common.more") === "common.more" ? "More" : t("common.more")} ({hidden.length})
+                {t("common.more")} ({hidden.length})
                 <ChevronDown className={`h-3.5 w-3.5 transition-transform ${moreOpen ? "rotate-180" : ""}`} />
               </button>
               {moreOpen && (
