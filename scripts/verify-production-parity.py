@@ -18,7 +18,7 @@ import sys
 import urllib.error
 import urllib.request
 
-PROD_PROJECT_ID = "rljisleyqluoexmtncos"
+PROD_PROJECT_ID = "ywtedndavpffjgaqdooc"
 CF_ACCOUNT_ID = "255163c031583675dc487ea8a981dc38"
 CF_ZONE_NAME = "orzen.top"
 PRODUCTION_SERVICE = "orzen-commerce-production"

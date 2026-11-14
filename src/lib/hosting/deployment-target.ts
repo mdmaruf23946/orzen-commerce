@@ -1,4 +1,4 @@
-export const PRODUCTION_SUPABASE_PROJECT_ID = "rljisleyqluoexmtncos";
+export const PRODUCTION_SUPABASE_PROJECT_ID = "ywtedndavpffjgaqdooc";
 export const DEVELOPMENT_SUPABASE_PROJECT_ID = "dqhfxvhzagitytpvildw";
 
 export function supabaseProjectIdFromUrl(value: string | undefined): string | null {

@@ -5,7 +5,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
-EXPECTED_PROJECT_ID="rljisleyqluoexmtncos"
+EXPECTED_PROJECT_ID="ywtedndavpffjgaqdooc"
 BLOCKED_PROJECT_ID="dqhfxvhzagitytpvildw"
 # Public ORZEN domains point only at this isolated service. Workspace preview
 # publishing may update `orzen-commerce`, but cannot replace this service.
