@@ -307,7 +307,23 @@ function TrackingScripts({ marketing, slug }: { marketing: any; slug: string }) 
 
 const LOGO_PX = { small: [32, 36], medium: [40, 46], large: [48, 56] } as const;
 
-function BrandMark({
+function BrandMark(props: Parameters<typeof BrandMarkInner>[0]) {
+  // A missing/broken logo file falls back to the store name instead of a broken image.
+  const [bad, setBad] = useState<Record<string, true>>({});
+  const logoUrl = props.logoUrl && !bad[props.logoUrl] ? props.logoUrl : null;
+  const nameLogoUrl = props.nameLogoUrl && !bad[props.nameLogoUrl] ? props.nameLogoUrl : null;
+  useEffect(() => {
+    for (const u of [props.logoUrl, props.nameLogoUrl]) {
+      if (!u) continue;
+      const img = new Image();
+      img.onerror = () => setBad((b) => ({ ...b, [u]: true }));
+      img.src = u === props.logoUrl ? sizedImg(u, 240) : u;
+    }
+  }, [props.logoUrl, props.nameLogoUrl]);
+  return <BrandMarkInner {...props} logoUrl={logoUrl} nameLogoUrl={nameLogoUrl} />;
+}
+
+function BrandMarkInner({
   logoUrl,
   nameLogoUrl,
   name,
