@@ -664,13 +664,20 @@ function HeaderCategoryBar({
     if (!el) return;
     const measure = () => {
       const items = Array.from(el.querySelectorAll<HTMLElement>("[data-cat]"));
-      const limit = el.clientWidth - 110; // room for the More button
+      const cs = getComputedStyle(el);
+      const gap = parseFloat(cs.columnGap) || 4;
+      const inner = el.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+      const allBtn = el.firstElementChild as HTMLElement | null;
+      let used = allBtn ? allBtn.offsetWidth : 0;
+      const limit = inner - 110; // room for the More button
       let n = 0;
+      let total = used;
+      for (const it of items) total += gap + it.offsetWidth;
       for (const it of items) {
-        if (it.offsetLeft + it.offsetWidth <= limit) n++;
+        if (used + gap + it.offsetWidth <= limit) { used += gap + it.offsetWidth; n++; }
         else break;
       }
-      const allFit = items.length > 0 && items[items.length - 1].offsetLeft + items[items.length - 1].offsetWidth <= el.clientWidth;
+      const allFit = items.length > 0 && total <= inner;
       setFit(allFit ? items.length : n);
     };
     setFit(mains.length);
@@ -715,7 +722,7 @@ function HeaderCategoryBar({
       : ms === "pill" ? "!rounded-full bg-sf-accent text-white"
       : "bg-sf-card text-sf-accent shadow-sm";
   const rowCls =
-    mode === "wrap" ? "flex-wrap" : mode === "scroll" ? "flex-nowrap overflow-x-auto [scrollbar-width:none]" : "flex-nowrap overflow-visible";
+    mode === "wrap" ? "flex-wrap justify-center" : mode === "scroll" ? "flex-nowrap overflow-x-auto [scrollbar-width:none]" : "flex-nowrap justify-center overflow-visible";
   const boxCls = ms === "inline" ? "rounded-2xl border border-sf-line bg-sf-accent-soft p-1.5" : "p-0.5";
   const shown = mode === "more" ? mains.slice(0, fit) : mains;
   const hidden = mode === "more" ? mains.slice(fit) : [];
