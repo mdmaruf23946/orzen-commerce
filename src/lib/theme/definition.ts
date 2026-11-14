@@ -124,6 +124,8 @@ export const CARD_LABELS: Record<CardKey, string> = {
 
 export const BUTTON_STYLES = ["solid", "outline", "soft"] as const;
 export const BANNER_STYLES = ["slider", "static", "full"] as const;
+export const BANNER_LAYOUTS = ["split_right", "split_left", "stacked", "full", "trio", "strip"] as const;
+export const CATEGORY_MODES = ["more", "scroll", "wrap"] as const;
 export const ANIMATIONS = ["none", "fade", "slide", "zoom"] as const;
 export type Animation = (typeof ANIMATIONS)[number];
 
@@ -194,6 +196,7 @@ export type ThemeDefinition = {
     menu_style: (typeof MENU_STYLES)[number];
     category_position: "top" | "sidebar";
     mega_menu: boolean;
+    category_mode: (typeof CATEGORY_MODES)[number];
   };
   hero: {
     height: number;
@@ -223,7 +226,7 @@ export type ThemeDefinition = {
     shadow: (typeof SHADOW_LEVELS)[number];
     hover_animation: (typeof HOVER_EFFECTS)[number];
   };
-  banner: { style: (typeof BANNER_STYLES)[number] };
+  banner: { style: (typeof BANNER_STYLES)[number]; layout: (typeof BANNER_LAYOUTS)[number] };
   animation: Animation;
   spacing: {
     container: number;
@@ -311,7 +314,7 @@ export const DEFAULT_THEME: ThemeDefinition = {
     logo_shape: "original",
     show_name: false,
   },
-  nav: { menu_style: "inline", category_position: "top", mega_menu: false },
+  nav: { menu_style: "inline", category_position: "top", mega_menu: false, category_mode: "more" },
   hero: { height: 320, radius: 16, overlay: 0, text_align: "left", cta_style: "solid" },
   sections: {
     banner: true,
@@ -369,7 +372,7 @@ export const DEFAULT_THEME: ThemeDefinition = {
     shadow: "low",
     hover_animation: "lift",
   },
-  banner: { style: "slider" },
+  banner: { style: "slider", layout: "split_right" },
   animation: "fade",
   spacing: { container: 1120, section_gap: 40, card_gap: 16, padding: 16 },
   global: { radius: 12, shadow: "medium", animation_level: "modern" },
@@ -539,7 +542,11 @@ export function sanitizeOverrides(input: unknown, locks: ThemeLocks | null | und
     menu_style: oneOf(MENU_STYLES),
     category_position: oneOf(["top", "sidebar"]),
     mega_menu: isBool,
+    category_mode: oneOf(CATEGORY_MODES),
   });
+
+  // banner
+  pickGroup("banner" as any, { style: oneOf(BANNER_STYLES), layout: oneOf(BANNER_LAYOUTS) });
 
   // hero
   pickGroup("hero", {

@@ -1,7 +1,7 @@
 import { sizedImg } from "@/lib/img-url";
 import { createFileRoute, Link, Outlet, notFound, useRouterState } from "@tanstack/react-router";
 import { queryOptions, useSuspenseQuery, useQuery } from "@tanstack/react-query";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { ShoppingCart, Menu, User, ChevronDown } from "lucide-react";
 import { getStoreBySlug, listStoreCategories, listStoreProducts } from "@/lib/storefront/storefront.functions";
 import { getRequestOrigin } from "@/lib/marketing/seo.functions";
@@ -503,7 +503,7 @@ function StoreHeader({
             <Link
               to="/store/$slug/cart"
               params={{ slug }}
-              className="relative grid h-9 w-9 shrink-0 place-items-center rounded-full hover:bg-sf-accent-soft"
+              className={`relative grid h-9 w-9 shrink-0 place-items-center rounded-full hover:bg-sf-accent-soft ${theme.header.cart_position === "left" ? "order-first" : ""}`}
               aria-label={t("nav.cart")}
             >
               <ShoppingCart className="h-5 w-5 text-sf-text" />
@@ -651,7 +651,33 @@ function HeaderCategoryBar({
 }) {
   const { activeMainId, activeSubId, selectMain, selectSub } = useStoreUI();
   const { t } = useStoreT();
+  const nav = useStoreTheme().nav;
+  const mode = nav.category_mode ?? "more";
   const [openId, setOpenId] = useState<string | null>(null);
+  const rowRef = useRef<HTMLDivElement>(null);
+  const [fit, setFit] = useState(mains.length);
+  const [moreOpen, setMoreOpen] = useState(false);
+  useLayoutEffect(() => {
+    if (mode !== "more") return;
+    const el = rowRef.current;
+    if (!el) return;
+    const measure = () => {
+      const items = Array.from(el.querySelectorAll<HTMLElement>("[data-cat]"));
+      const limit = el.clientWidth - 110; // room for the More button
+      let n = 0;
+      for (const it of items) {
+        if (it.offsetLeft + it.offsetWidth <= limit) n++;
+        else break;
+      }
+      const allFit = items.length > 0 && items[items.length - 1].offsetLeft + items[items.length - 1].offsetWidth <= el.clientWidth;
+      setFit(allFit ? items.length : n);
+    };
+    setFit(mains.length);
+    requestAnimationFrame(measure);
+    const ro = new ResizeObserver(() => { setFit(mains.length); requestAnimationFrame(measure); });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [mode, mains.length, nav.menu_style]);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const subsByParent = useMemo(() => {
@@ -675,12 +701,23 @@ function HeaderCategoryBar({
     timerRef.current = setTimeout(() => setOpenId(null), 180);
   };
 
+  const ms = nav.menu_style;
   const itemBase =
-    "flex items-center gap-0.5 px-3 py-1.5 text-[13px] font-medium transition-colors";
+    "flex shrink-0 items-center gap-0.5 whitespace-nowrap px-3 py-1.5 text-[13px] font-medium transition-colors " +
+    (ms === "underline" ? "!rounded-none border-b-2 " : "");
   const inactiveItem =
-    "text-sf-muted hover:text-sf-accent hover:bg-sf-card/70";
+    ms === "underline" ? "border-transparent text-sf-muted hover:text-sf-accent"
+      : ms === "pill" ? "!rounded-full border border-sf-line bg-sf-card text-sf-text hover:border-sf-accent hover:text-sf-accent"
+      : "text-sf-muted hover:text-sf-accent hover:bg-sf-card/70";
   const activeItem =
-    "bg-sf-card text-sf-accent shadow-sm";
+    ms === "underline" ? "border-sf-accent text-sf-accent"
+      : ms === "pill" ? "!rounded-full bg-sf-accent text-white"
+      : "bg-sf-card text-sf-accent shadow-sm";
+  const rowCls =
+    mode === "wrap" ? "flex-wrap" : mode === "scroll" ? "flex-nowrap overflow-x-auto [scrollbar-width:none]" : "flex-nowrap overflow-visible";
+  const boxCls = ms === "inline" ? "rounded-2xl border border-sf-line bg-sf-accent-soft p-1.5" : "p-0.5";
+  const shown = mode === "more" ? mains.slice(0, fit) : mains;
+  const hidden = mode === "more" ? mains.slice(fit) : [];
 
   return (
     <nav className="hidden md:block border-b border-sf-line bg-sf-header">
@@ -689,7 +726,7 @@ function HeaderCategoryBar({
         style={{ maxWidth: "var(--store-container, 64rem)" }}
       >
         {/* একই Unified Structure — সব Tax ভিত্তিক Category একই container-এ */}
-        <div className="flex flex-wrap items-center gap-1 rounded-2xl border border-sf-line bg-sf-accent-soft p-1.5">
+        <div ref={rowRef} className={`relative flex items-center gap-1 ${rowCls} ${boxCls}`}>
           <button
             type="button"
             onClick={() => selectMain(null, "header")}
@@ -697,7 +734,7 @@ function HeaderCategoryBar({
           >
             {t("common.all")} ({totalCount})
           </button>
-          {mains.map((c) => {
+          {(mode === "more" && fit === mains.length ? mains : shown).map((c) => {
             const active = activeMainId === c.id;
             const subs = subsByParent.get(c.id) ?? [];
             const hasSubs = subs.length > 0;
@@ -705,7 +742,8 @@ function HeaderCategoryBar({
             return (
               <div
                 key={c.id}
-                className="relative"
+                data-cat
+                className="relative shrink-0"
                 onMouseEnter={() => hasSubs && open(c.id)}
                 onMouseLeave={closeSoon}
               >
@@ -756,6 +794,34 @@ function HeaderCategoryBar({
               </div>
             );
           })}
+          {hidden.length > 0 && (
+            <div className="relative ml-auto shrink-0" onMouseLeave={() => setMoreOpen(false)}>
+              <button
+                type="button"
+                onClick={() => setMoreOpen((o) => !o)}
+                onMouseEnter={() => setMoreOpen(true)}
+                className={`${itemBase} rounded-xl ${hidden.some((c) => c.id === activeMainId) ? activeItem : inactiveItem}`}
+              >
+                {t("common.more") === "common.more" ? "More" : t("common.more")} ({hidden.length})
+                <ChevronDown className={`h-3.5 w-3.5 transition-transform ${moreOpen ? "rotate-180" : ""}`} />
+              </button>
+              {moreOpen && (
+                <div className="absolute right-0 top-full z-50 max-h-[60vh] min-w-[14rem] overflow-y-auto rounded-xl border border-sf-line bg-sf-card p-1.5 pt-2 shadow-lg">
+                  {hidden.map((c) => (
+                    <button
+                      key={c.id}
+                      type="button"
+                      onClick={() => { selectMain(c.id, "header"); setMoreOpen(false); }}
+                      className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm ${activeMainId === c.id ? "bg-sf-accent-soft font-medium text-sf-accent" : "text-sf-text hover:bg-sf-accent-soft"}`}
+                    >
+                      <span>{c.name}</span>
+                      <span className="text-xs text-sf-muted">{counts.get(c.id) ?? 0}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </nav>
