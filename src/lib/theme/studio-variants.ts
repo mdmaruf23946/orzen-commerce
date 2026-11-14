@@ -6,18 +6,22 @@ export type StudioPart = { id: string; label: string; variants: StudioVariant[] 
 
 const v = (id: string, name: string, patch: Record<string, any>): StudioVariant => ({ id, name, patch });
 
+// Every header design sets ALL layout keys so a previous design never leaks in.
+const HEADER_BASE = { logo_align: "left", search_position: "center", cart_position: "right", height: 64, sticky: true, transparent: false, logo_mode: "auto", logo_size: "medium", show_name: false, categories: true };
+const H = (x: Record<string, any>) => ({ header: { ...HEADER_BASE, ...x } });
+
 export const STUDIO_PARTS: StudioPart[] = [
   {
     id: "header",
     label: "Header",
     variants: [
-      v("classic", "Classic", { header: { logo_align: "left", search_position: "center", cart_position: "right", height: 64, sticky: true, transparent: false, show_name: true } }),
-      v("centered", "Centered Logo", { header: { logo_align: "center", search_position: "hidden", cart_position: "right", height: 72, sticky: true, transparent: false } }),
-      v("minimal", "Minimal", { header: { logo_align: "left", search_position: "right", cart_position: "right", height: 56, sticky: false, transparent: false, categories: false } }),
-      v("tall", "Tall Brand", { header: { logo_align: "center", search_position: "center", height: 88, logo_size: "large", sticky: true } }),
-      v("transparent", "Transparent", { header: { transparent: true, sticky: true, logo_align: "left", search_position: "right", height: 64 } }),
-      v("compact", "Compact Icons", { header: { logo_mode: "icon", logo_align: "left", search_position: "right", height: 52, show_name: false } }),
-      v("left-cart", "Cart Left", { header: { cart_position: "left", logo_align: "center", search_position: "hidden", height: 64 } }),
+      v("classic", "Classic", H({ logo_align: "left", search_position: "center", height: 64, show_name: true })),
+      v("centered", "Centered Logo", H({ logo_align: "center", search_position: "hidden", height: 72 })),
+      v("minimal", "Minimal", H({ search_position: "right", height: 56, sticky: false, categories: false })),
+      v("tall", "Tall Brand", H({ logo_align: "center", search_position: "right", height: 88, logo_size: "large", show_name: true })),
+      v("transparent", "Transparent", H({ transparent: true, search_position: "right" })),
+      v("compact", "Compact Icons", H({ logo_mode: "icon", search_position: "right", height: 52 })),
+      v("left-cart", "Cart Left", H({ cart_position: "left", logo_align: "center", search_position: "hidden" })),
     ],
   },
   {
