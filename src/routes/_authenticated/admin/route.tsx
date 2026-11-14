@@ -278,6 +278,7 @@ const menuGroups: NavGroupDef[] = [
     icon: Store,
     items: [
       { to: "/admin/theme", label: "Theme & Styling", icon: Palette },
+      { to: "/admin/theme-studio", label: "Theme Studio (Beta)", icon: Palette },
       { to: "/admin/banners", label: "Banners & Sliders", icon: ImageIcon },
       { to: "/admin/pages", label: "Pages & Legal Content", icon: FileText },
       { to: "/admin/invoice-templates", label: "Invoice Templates", icon: FileText },

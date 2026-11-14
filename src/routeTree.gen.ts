@@ -89,6 +89,7 @@ import { Route as AuthenticatedAdminStaffRouteImport } from './routes/_authentic
 import { Route as AuthenticatedAdminSubscriptionRouteImport } from './routes/_authenticated/admin/subscription'
 import { Route as AuthenticatedAdminSupportRouteImport } from './routes/_authenticated/admin/support'
 import { Route as AuthenticatedAdminThemeRouteImport } from './routes/_authenticated/admin/theme'
+import { Route as AuthenticatedAdminThemeStudioRouteImport } from './routes/_authenticated/admin/theme-studio'
 import { Route as AuthenticatedAdminWebchatRouteImport } from './routes/_authenticated/admin/webchat'
 import { Route as AuthenticatedAdminWhatsappRouteImport } from './routes/_authenticated/admin/whatsapp'
 import { Route as AuthenticatedOwnerIndexRouteImport } from './routes/_authenticated/owner/index'
@@ -737,6 +738,12 @@ const AuthenticatedAdminThemeRoute = AuthenticatedAdminThemeRouteImport.update({
   path: '/theme',
   getParentRoute: () => AuthenticatedAdminRouteRoute,
 } as any)
+const AuthenticatedAdminThemeStudioRoute =
+  AuthenticatedAdminThemeStudioRouteImport.update({
+    id: '/theme-studio',
+    path: '/theme-studio',
+    getParentRoute: () => AuthenticatedAdminRouteRoute,
+  } as any)
 const AuthenticatedAdminWebchatRoute =
   AuthenticatedAdminWebchatRouteImport.update({
     id: '/webchat',
@@ -1972,6 +1979,7 @@ export interface FileRoutesByFullPath {
   '/admin/subscription': typeof AuthenticatedAdminSubscriptionRoute
   '/admin/support': typeof AuthenticatedAdminSupportRoute
   '/admin/theme': typeof AuthenticatedAdminThemeRoute
+  '/admin/theme-studio': typeof AuthenticatedAdminThemeStudioRoute
   '/admin/webchat': typeof AuthenticatedAdminWebchatRoute
   '/admin/whatsapp': typeof AuthenticatedAdminWhatsappRoute
   '/owner/ads': typeof AuthenticatedOwnerAdsRoute
@@ -2241,6 +2249,7 @@ export interface FileRoutesByTo {
   '/admin/subscription': typeof AuthenticatedAdminSubscriptionRoute
   '/admin/support': typeof AuthenticatedAdminSupportRoute
   '/admin/theme': typeof AuthenticatedAdminThemeRoute
+  '/admin/theme-studio': typeof AuthenticatedAdminThemeStudioRoute
   '/admin/webchat': typeof AuthenticatedAdminWebchatRoute
   '/admin/whatsapp': typeof AuthenticatedAdminWhatsappRoute
   '/owner/ads': typeof AuthenticatedOwnerAdsRoute
@@ -2525,6 +2534,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/subscription': typeof AuthenticatedAdminSubscriptionRoute
   '/_authenticated/admin/support': typeof AuthenticatedAdminSupportRoute
   '/_authenticated/admin/theme': typeof AuthenticatedAdminThemeRoute
+  '/_authenticated/admin/theme-studio': typeof AuthenticatedAdminThemeStudioRoute
   '/_authenticated/admin/webchat': typeof AuthenticatedAdminWebchatRoute
   '/_authenticated/admin/whatsapp': typeof AuthenticatedAdminWhatsappRoute
   '/_authenticated/owner/ads': typeof AuthenticatedOwnerAdsRoute
@@ -2809,6 +2819,7 @@ export interface FileRouteTypes {
     | '/admin/subscription'
     | '/admin/support'
     | '/admin/theme'
+    | '/admin/theme-studio'
     | '/admin/webchat'
     | '/admin/whatsapp'
     | '/owner/ads'
@@ -3078,6 +3089,7 @@ export interface FileRouteTypes {
     | '/admin/subscription'
     | '/admin/support'
     | '/admin/theme'
+    | '/admin/theme-studio'
     | '/admin/webchat'
     | '/admin/whatsapp'
     | '/owner/ads'
@@ -3361,6 +3373,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/subscription'
     | '/_authenticated/admin/support'
     | '/_authenticated/admin/theme'
+    | '/_authenticated/admin/theme-studio'
     | '/_authenticated/admin/webchat'
     | '/_authenticated/admin/whatsapp'
     | '/_authenticated/owner/ads'
@@ -4201,6 +4214,13 @@ declare module '@tanstack/react-router' {
       path: '/theme'
       fullPath: '/admin/theme'
       preLoaderRoute: typeof AuthenticatedAdminThemeRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
+    '/_authenticated/admin/theme-studio': {
+      id: '/_authenticated/admin/theme-studio'
+      path: '/theme-studio'
+      fullPath: '/admin/theme-studio'
+      preLoaderRoute: typeof AuthenticatedAdminThemeStudioRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
     '/_authenticated/admin/webchat': {
@@ -5811,6 +5831,7 @@ interface AuthenticatedAdminRouteRouteChildren {
   AuthenticatedAdminSubscriptionRoute: typeof AuthenticatedAdminSubscriptionRoute
   AuthenticatedAdminSupportRoute: typeof AuthenticatedAdminSupportRoute
   AuthenticatedAdminThemeRoute: typeof AuthenticatedAdminThemeRoute
+  AuthenticatedAdminThemeStudioRoute: typeof AuthenticatedAdminThemeStudioRoute
   AuthenticatedAdminWebchatRoute: typeof AuthenticatedAdminWebchatRoute
   AuthenticatedAdminWhatsappRoute: typeof AuthenticatedAdminWhatsappRoute
   AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
@@ -5897,6 +5918,7 @@ const AuthenticatedAdminRouteRouteChildren: AuthenticatedAdminRouteRouteChildren
     AuthenticatedAdminSubscriptionRoute: AuthenticatedAdminSubscriptionRoute,
     AuthenticatedAdminSupportRoute: AuthenticatedAdminSupportRoute,
     AuthenticatedAdminThemeRoute: AuthenticatedAdminThemeRoute,
+    AuthenticatedAdminThemeStudioRoute: AuthenticatedAdminThemeStudioRoute,
     AuthenticatedAdminWebchatRoute: AuthenticatedAdminWebchatRoute,
     AuthenticatedAdminWhatsappRoute: AuthenticatedAdminWhatsappRoute,
     AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
