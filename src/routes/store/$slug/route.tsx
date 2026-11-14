@@ -466,7 +466,6 @@ function StoreHeader({
     <>
       <div
         className={`${theme.header.sticky ? "sticky top-0" : ""} isolate z-40 bg-background`}
-        style={{ transform: "translateZ(0)" }}
       >
       <header
         className={`border-b border-sf-line`}
@@ -658,6 +657,7 @@ function HeaderCategoryBar({
   const rowRef = useRef<HTMLDivElement>(null);
   const [fit, setFit] = useState(mains.length);
   const [moreOpen, setMoreOpen] = useState(false);
+  const [measured, setMeasured] = useState(false);
   useLayoutEffect(() => {
     if (mode !== "more") return;
     const el = rowRef.current;
@@ -679,9 +679,9 @@ function HeaderCategoryBar({
       }
       const allFit = items.length > 0 && total <= inner;
       setFit(allFit ? items.length : n);
+      setMeasured(true);
     };
-    setFit(mains.length);
-    requestAnimationFrame(measure);
+    measure();
     const ro = new ResizeObserver(() => { setFit(mains.length); requestAnimationFrame(measure); });
     ro.observe(el);
     return () => ro.disconnect();
@@ -734,7 +734,7 @@ function HeaderCategoryBar({
         style={{ maxWidth: "var(--store-container, 64rem)" }}
       >
         {/* একই Unified Structure — সব Tax ভিত্তিক Category একই container-এ */}
-        <div ref={rowRef} className={`relative flex items-center gap-1 ${rowCls} ${boxCls}`}>
+        <div ref={rowRef} style={mode === "more" && !measured ? { visibility: "hidden", maxHeight: 40, overflow: "hidden" } : undefined} className={`relative flex items-center gap-1 ${rowCls} ${boxCls}`}>
           <button
             type="button"
             onClick={() => selectMain(null, "header")}

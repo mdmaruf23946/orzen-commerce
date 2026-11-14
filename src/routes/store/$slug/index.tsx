@@ -260,7 +260,7 @@ function HomeContent() {
 
       {theme.section_order.map((k) => blocks[k] ?? null)}
 
-      <section id="all-products" className="sf-cv scroll-mt-32 space-y-4">
+      <section id="all-products" className="scroll-mt-32 space-y-4">
         <div className="flex items-center gap-2">
           <Grid3x3 className="h-4 w-4 text-sf-accent" />
           <h2 className="text-lg font-bold tracking-tight text-sf-primary sm:text-xl">
@@ -431,7 +431,9 @@ function ProductCarousel({
       io.observe(el);
     }
 
+    const isTouch = typeof window !== "undefined" && window.matchMedia?.("(pointer: coarse)").matches;
     const id = setInterval(() => {
+      if (isTouch) return;
       if (paused || !visible) return;
       if (typeof document !== "undefined" && document.hidden) return;
       if (Date.now() - pageScrolling < 800) return;
