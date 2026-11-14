@@ -796,7 +796,7 @@ function HeaderCategoryBar({
             );
           })}
           {hidden.length > 0 && (
-            <div className="relative ml-auto shrink-0" onMouseLeave={() => setMoreOpen(false)}>
+            <div className="relative shrink-0" onMouseLeave={() => setMoreOpen(false)}>
               <button
                 type="button"
                 onClick={() => setMoreOpen((o) => !o)}
