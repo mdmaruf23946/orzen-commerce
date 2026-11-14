@@ -204,7 +204,7 @@ export function ThemeStudio() {
   useEffect(() => {
     const el = wrapRef.current;
     if (!el) return;
-    const update = () => setScale(Math.min(1, Math.max(0.1, (el.clientWidth - 26) / device.w)));
+    const update = () => el.clientWidth > 0 && setScale(Math.min(1, Math.max(0.1, (el.clientWidth - 26) / device.w)));
     update();
     const ro = new ResizeObserver(update);
     ro.observe(el);
@@ -378,8 +378,8 @@ export function ThemeStudio() {
               );
             })}
           </div>
-          <div ref={wrapRef} className="flex justify-center rounded-xl border bg-muted/30 p-3">
-            <div className="overflow-hidden rounded-lg border bg-background shadow-sm" style={{ width: device.w * scale, height: device.h * scale }}>
+          <div ref={wrapRef} className="flex w-full min-w-0 max-w-full justify-center overflow-hidden rounded-xl border bg-muted/30 p-3">
+            <div className="shrink-0 overflow-hidden rounded-lg border bg-background shadow-sm" style={{ width: device.w * scale, height: device.h * scale }}>
               <iframe ref={frameRef} key={mode} title="Store live preview" onLoad={push}
                 src={`/store/${state.slug}?${THEME_PREVIEW_PARAM}=1`}
                 className="border-0"

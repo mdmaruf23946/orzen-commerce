@@ -533,24 +533,25 @@ function StoreHeader({
 
           {/* Desktop header */}
           <div
-            className="hidden items-center gap-4 md:flex"
+            className="relative hidden items-center gap-4 md:flex"
             style={{ height: "var(--store-header-height, 3.5rem)" }}
           >
             <Link
               to="/store/$slug"
               params={{ slug }}
-              className={`flex min-w-0 items-center gap-2 ${theme.header.logo_align === "center" ? "mx-auto" : ""}`}
+              className={`flex min-w-0 items-center gap-2 ${theme.header.logo_align === "center" ? "absolute left-1/2 top-1/2 max-w-[40%] -translate-x-1/2 -translate-y-1/2" : ""}`}
             >
               <BrandMark logoUrl={logoUrl} nameLogoUrl={nameLogoUrl} name={name} header={theme.header} />
             </Link>
 
             {theme.header.search && theme.header.search_position !== "hidden" && (
               <div
-                className={`w-[12rem] md:w-[14rem] lg:w-[28rem] ${theme.header.search_position === "center" && theme.header.logo_align !== "center" ? "mx-auto" : "ml-auto"}`}
+                className={`w-[12rem] md:w-[14rem] ${theme.header.logo_align === "center" ? "ml-auto lg:w-[16rem]" : "lg:w-[28rem]"} ${theme.header.search_position === "center" && theme.header.logo_align !== "center" ? "mx-auto" : "ml-auto"}`}
               >
                 <SearchBar />
               </div>
             )}
+            {theme.header.logo_align === "center" && !(theme.header.search && theme.header.search_position !== "hidden") && <div className="ml-auto" />}
 
             {theme.header.cart && (
             <Link
@@ -720,7 +721,7 @@ function HeaderCategoryBar({
   const hidden = mode === "more" ? mains.slice(fit) : [];
 
   return (
-    <nav className="hidden md:block border-b border-sf-line bg-sf-header">
+    <nav className="hidden md:block overflow-x-clip border-b border-sf-line bg-sf-header">
       <div
         className="mx-auto px-3 py-2 sm:px-6"
         style={{ maxWidth: "var(--store-container, 64rem)" }}
