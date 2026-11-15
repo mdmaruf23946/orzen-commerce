@@ -204,12 +204,17 @@ export function ThemeStudio() {
   useEffect(() => {
     const el = wrapRef.current;
     if (!el) return;
-    const update = () => el.clientWidth > 0 && setScale(Math.min(1, Math.max(0.1, (el.clientWidth - 26) / device.w)));
+    const update = () => {
+      if (el.clientWidth <= 0) return;
+      const byW = (el.clientWidth - 26) / device.w;
+      const byH = el.clientHeight > 40 && window.innerWidth >= 1024 ? (el.clientHeight - 26) / device.h : byW;
+      setScale(Math.min(1, Math.max(0.1, Math.min(byW, byH))));
+    };
     update();
     const ro = new ResizeObserver(update);
     ro.observe(el);
     return () => ro.disconnect();
-  }, [device.w]);
+  }, [device.w, device.h]);
 
   const save = useMutation({
     mutationFn: (publish: boolean) => saveFn({ data: { overrides, publish } }),
@@ -295,9 +300,9 @@ export function ThemeStudio() {
   const [headerParts, footerParts] = [STUDIO_PARTS.slice(0, 3), STUDIO_PARTS.slice(3)];
 
   return (
-    <div className="space-y-3">
-      <div className="flex flex-wrap items-center gap-2">
-        <h1 className="mr-auto text-lg font-semibold">Theme Studio <span className="ml-1 rounded bg-primary/10 px-1.5 py-0.5 text-xs text-primary">Beta</span></h1>
+    <div className="flex flex-col gap-3 lg:h-[calc(100dvh-8rem)] lg:overflow-hidden">
+      <div className="flex shrink-0 flex-wrap items-center gap-2 lg:flex-nowrap [&_button]:whitespace-nowrap">
+        <h1 className="mr-auto whitespace-nowrap text-lg font-semibold">Theme Studio <span className="ml-1 rounded bg-primary/10 px-1.5 py-0.5 text-xs text-primary">Beta</span></h1>
         <Button size="sm" variant="ghost" disabled={!history.length} onClick={() => { const h = [...history]; const prev = h.pop()!; setHistory(h); setLocal(prev); }}>
           <Undo2 className="mr-1 h-4 w-4" /> Undo
         </Button>
@@ -310,8 +315,8 @@ export function ThemeStudio() {
         </Button>
       </div>
 
-      <div className="grid gap-3 lg:grid-cols-[340px_minmax(0,1fr)]">
-        <div className="space-y-2 lg:max-h-[calc(100vh-140px)] lg:overflow-y-auto lg:pr-1">
+      <div className="grid gap-3 lg:min-h-0 lg:flex-1 lg:grid-cols-[340px_minmax(0,1fr)]">
+        <div className="space-y-2 lg:h-full lg:overflow-y-auto lg:overscroll-contain lg:pr-1">
           <div className="overflow-hidden rounded-xl border bg-card">
             <button type="button" onClick={() => setOpenPart(openPart === "themes" ? "" : "themes")}
               className="flex w-full items-center justify-between px-3 py-2.5 text-left text-sm font-medium hover:bg-muted/50">
@@ -366,9 +371,9 @@ export function ThemeStudio() {
           </div>
         </div>
 
-        <div className="min-w-0 space-y-2 lg:sticky lg:top-4 lg:self-start">
-          <div className="flex items-center gap-1.5">
-            <span className="mr-auto text-sm font-semibold">লাইভ প্রিভিউ</span>
+        <div className="flex min-w-0 flex-col gap-2 lg:h-full lg:min-h-0">
+          <div className="flex shrink-0 items-center gap-1.5">
+            <span className="mr-auto whitespace-nowrap text-sm font-semibold">লাইভ প্রিভিউ</span>
             {(Object.keys(DEVICES) as Mode[]).map((m) => {
               const Icon = DEVICES[m].icon;
               return (
@@ -378,7 +383,7 @@ export function ThemeStudio() {
               );
             })}
           </div>
-          <div ref={wrapRef} className="flex w-full min-w-0 max-w-full justify-center overflow-hidden rounded-xl border bg-muted/30 p-3">
+          <div ref={wrapRef} className="flex w-full min-w-0 max-w-full items-start justify-center overflow-hidden overscroll-contain rounded-xl border bg-muted/30 p-3 lg:min-h-0 lg:flex-1">
             <div className="shrink-0 overflow-hidden rounded-lg border bg-background shadow-sm" style={{ width: device.w * scale, height: device.h * scale }}>
               <iframe ref={frameRef} key={mode} title="Store live preview" onLoad={push}
                 src={`/store/${state.slug}?${THEME_PREVIEW_PARAM}=1`}
@@ -386,7 +391,7 @@ export function ThemeStudio() {
                 style={{ width: device.w, height: device.h, transform: `scale(${scale})`, transformOrigin: "top left" }} />
             </div>
           </div>
-          {local !== null && <p className="text-xs text-muted-foreground">পরিবর্তনগুলো এখনো পাবলিশ হয়নি — Publish চাপলে স্টোরে দেখা যাবে।</p>}
+          {local !== null && <p className="shrink-0 text-xs text-muted-foreground">পরিবর্তনগুলো এখনো পাবলিশ হয়নি — Publish চাপলে স্টোরে দেখা যাবে।</p>}
         </div>
       </div>
     </div>
