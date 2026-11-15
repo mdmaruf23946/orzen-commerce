@@ -3,6 +3,7 @@
 import { generateText, stepCountIs, tool } from "ai";
 import { z } from "zod";
 import { resolveAiModel } from "@/lib/agents/ai-provider.server";
+import { smallTalkReply } from "./small-talk";
 import { draftProduct, loadProductPerformance, loadSalesSummary, loadSeoAudit, loadStoreConfig } from "./data.server";
 
 export const COPILOT_SYSTEM = `তুমি ORZEN-এর AI Business Co-pilot — একজন অভিজ্ঞ বাংলাদেশি ই-কমার্স পরামর্শক।
@@ -12,7 +13,11 @@ export const COPILOT_SYSTEM = `তুমি ORZEN-এর AI Business Co-pilot �
 - প্রয়োজন ছাড়া টুল ডাকবে না; সাধারণ পরামর্শে টুল লাগে না।
 - তথ্য দেখানোর পর ২–৪টি কাজে লাগানোর মতো পরামর্শ দাও।
 - নতুন প্রোডাক্ট চাইলে draft_product টুল দিয়ে খসড়া বানাও এবং বলো: "নিশ্চিত করলে সেভ হবে" — তুমি নিজে কিছু সেভ করো না।
-- টুলে তথ্য না থাকলে সৎভাবে বলো যে তথ্য নেই।`;
+- টুলে তথ্য না থাকলে সৎভাবে বলো যে তথ্য নেই।
+- শিষ্টাচার: মার্চেন্ট সালাম দিলে উত্তর শুরু করবে "ওয়ালাইকুম আসসালাম" দিয়ে; কখনো পাল্টা "আসসালামু আলাইকুম" বলবে না। নিজে থেকে সালাম দিয়ে উত্তর শুরু করবে না।
+- "কেমন আছেন" জিজ্ঞেস করলে সংক্ষেপে "আলহামদুলিল্লাহ ভালো আছি" বলে মূল কথায় যাবে।
+- সাধারণ বা ছোট প্রশ্নে ১–৩ বাক্যে সরাসরি উত্তর দাও; ভূমিকা, প্রশ্নের পুনরাবৃত্তি বা লম্বা তালিকা দিও না।
+- আগের উত্তরের কথা হুবহু আবার বলবে না।`;
 
 export type CopilotMessage = { role: "user" | "assistant"; content: string };
 export type CopilotDraft = ReturnType<typeof draftProduct>["draft"];
@@ -52,6 +57,9 @@ export function buildCopilotTools(db: any, storeId: string, drafts: CopilotDraft
 }
 
 export async function runCopilot(db: any, storeId: string, messages: CopilotMessage[]) {
+  const last = messages[messages.length - 1];
+  const quick = last?.role === "user" ? smallTalkReply(last.content) : null;
+  if (quick) return { reply: quick, drafts: [] as CopilotDraft[], toolsUsed: [] as string[] };
   const ai = await resolveAiModel();
   const drafts: CopilotDraft[] = [];
   const result = await generateText({
@@ -59,8 +67,9 @@ export async function runCopilot(db: any, storeId: string, messages: CopilotMess
     system: COPILOT_SYSTEM,
     messages: messages.slice(-12),
     tools: buildCopilotTools(db, storeId, drafts),
-    stopWhen: stepCountIs(5),
-    temperature: 0.4,
+    stopWhen: stepCountIs(4),
+    temperature: 0.3,
+    maxOutputTokens: 900,
   });
   const toolsUsed = result.steps.flatMap((s: any) => (s.toolCalls ?? []).map((c: any) => c.toolName));
   return { reply: result.text, drafts, toolsUsed };
