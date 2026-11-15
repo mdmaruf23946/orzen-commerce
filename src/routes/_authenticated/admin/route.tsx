@@ -277,8 +277,7 @@ const menuGroups: NavGroupDef[] = [
     label: "Online Storefront",
     icon: Store,
     items: [
-      { to: "/admin/theme", label: "Theme & Styling", icon: Palette },
-      { to: "/admin/theme-studio", label: "Store Design (Beta)", icon: Palette },
+      { to: "/admin/theme-studio", label: "Store Design", icon: Palette },
       { to: "/admin/banners", label: "Banners & Sliders", icon: ImageIcon },
       { to: "/admin/pages", label: "Pages & Legal Content", icon: FileText },
       { to: "/admin/invoice-templates", label: "Invoice Templates", icon: FileText },
@@ -582,8 +581,6 @@ function AdminLayout() {
   const canSee = useMemo(
     () => (path: string) => {
       if (isBetaPath(path) && !betaTester) return false;
-      // Theme Studio replaces the old manual Theme & Styling page for testers.
-      if (path === "/admin/theme" && betaTester) return false;
       if (!access.isEmployee) return true;
       const section = sectionForPath(path);
       if (!section) return false;

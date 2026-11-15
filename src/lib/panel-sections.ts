@@ -51,7 +51,7 @@ export const PANEL_SECTIONS: PanelSection[] = [
   { key: "coupons", label: "Coupons & Discounts", group: "Marketing & Sales", paths: ["/admin/coupons"], feature: "coupons" },
   { key: "seo", label: "SEO Tools", group: "Marketing & Sales", paths: ["/admin/seo"], feature: "seo" },
   { key: "banners", label: "Banners & Sliders", group: "Online Storefront", paths: ["/admin/banners"] },
-  { key: "theme", label: "Theme & Styling", group: "Online Storefront", paths: ["/admin/theme"], feature: "themes" },
+  { key: "theme", label: "Store Design", group: "Online Storefront", paths: ["/admin/theme", "/admin/theme-studio"], feature: "themes" },
   { key: "notifications", label: "Customer Notification Setup", group: "Settings & Management", paths: ["/admin/notifications"], feature: "notifications" },
 
   { key: "payment_gateway", label: "Payment Gateway Apps", group: "Finance & Analytics", paths: ["/admin/payment-gateway", "/admin/payment-gateways"], ownerOnly: true, feature: "payment_gateways" },

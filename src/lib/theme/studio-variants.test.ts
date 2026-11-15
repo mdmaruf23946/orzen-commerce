@@ -21,7 +21,7 @@ describe("theme studio", () => {
     expect(reorder(["a", "b", "c"], 0, 2)).toEqual(["b", "c", "a"]);
   });
   it("studio is visible only to the test account", () => {
-    expect(isBetaPath("/admin/theme-studio")).toBe(true);
+    expect(isBetaPath("/admin/theme-studio")).toBe(false);
     expect(isBetaTester("mdmaruf0162323@gmail.com")).toBe(true);
     expect(isBetaTester("other@gmail.com")).toBe(false);
   });
