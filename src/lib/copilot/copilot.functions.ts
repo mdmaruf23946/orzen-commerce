@@ -4,7 +4,8 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { storeAccess } from "@/lib/accounts/store-access";
 import { isBetaTester } from "@/lib/beta-features";
-import { draftProduct, loadProductPerformance, loadSalesSummary, loadSeoAudit, loadStoreConfig, saveConfirmedDraft } from "./data.server";
+import { draftProduct, loadProductPerformance, loadSalesSummary, loadSeoAudit, loadStoreConfig, saveConfirmedDraft, applyCopilotAction } from "./data.server";
+import { copilotActionSchema } from "./actions";
 
 function gate(context: any) {
   if (!isBetaTester(context.claims?.email)) throw new Error("This feature is not available yet.");
@@ -57,3 +58,8 @@ export const copilotSaveProduct = createServerFn({ method: "POST" })
     stock: z.number().int().min(0).max(1_000_000).optional(), description: z.string().max(5000).optional(),
   }).parse(d))
   .handler(async ({ data, context }) => { const { db, storeId } = gate(context); return saveConfirmedDraft(db, storeId, data); });
+
+export const copilotApplyAction = createServerFn({ method: "POST" })
+  .middleware([storeAccess("settings")])
+  .inputValidator((d: unknown) => copilotActionSchema.parse(d))
+  .handler(async ({ data, context }) => { const { db, storeId } = gate(context); return applyCopilotAction(db, storeId, data); });

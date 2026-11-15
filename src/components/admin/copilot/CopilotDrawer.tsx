@@ -7,10 +7,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { copilotChat, copilotSaveProduct } from "@/lib/copilot/copilot.functions";
+import { copilotApplyAction, copilotChat, copilotSaveProduct } from "@/lib/copilot/copilot.functions";
 
 type Draft = { name?: string; price?: number; stock?: number; description?: string; [k: string]: unknown };
-type Msg = { role: "user" | "assistant"; content: string; drafts?: Draft[] };
+type Msg = { role: "user" | "assistant"; content: string; drafts?: Draft[]; actions?: Action[] };
+type Action = { type: string; [k: string]: any };
 
 const SUGGESTIONS = [
   "আজকের ও এই মাসের সেলস রিপোর্ট দাও",
@@ -74,7 +75,7 @@ export function CopilotDrawer() {
         chat({ data: { messages: next.slice(-20).map(({ role, content }) => ({ role, content })) } }),
         new Promise((_, rej) => setTimeout(() => rej(new Error("উত্তর আসতে বেশি সময় লাগছে। আবার প্রশ্নটি পাঠান।")), 90_000)),
       ]);
-      setMsgs((m) => [...m, { role: "assistant", content: r.reply || "…", drafts: r.drafts }]);
+      setMsgs((m) => [...m, { role: "assistant", content: r.reply || "…", drafts: r.drafts, actions: (r as any).actions }]);
     } catch (e: any) {
       setMsgs((m) => [...m, { role: "assistant", content: e?.message || "Co-pilot এখন ব্যস্ত, একটু পরে চেষ্টা করুন।" }]);
     } finally { setBusy(false); }
@@ -110,6 +111,7 @@ export function CopilotDrawer() {
                 <div className={`max-w-[85%] whitespace-pre-wrap rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed ${m.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted text-foreground"}`}>
                   {m.content}
                   {m.drafts?.map((d, j) => <DraftCard key={j} draft={d} />)}
+                  {m.actions?.map((a, j) => <ActionCard key={"a" + j} action={a} />)}
                 </div>
               </div>
             ))}
@@ -165,6 +167,47 @@ function DraftCard({ draft }: { draft: Draft }) {
       <Button size="sm" className="w-full" disabled={locked} onClick={confirm}>
         {state === "saving" ? <><Loader2 className="mr-1 h-3 w-3 animate-spin" /> সংরক্ষণ হচ্ছে…</> : state === "saved" ? "সংরক্ষিত হয়েছে" : "নিশ্চিত করে সেভ করুন"}
       </Button>
+    </div>
+  );
+}
+
+function ActionCard({ action }: { action: Action }) {
+  const apply = useServerFn(copilotApplyAction);
+  const [state, setState] = useState<"idle" | "saving" | "saved" | "skipped">("idle");
+  const b = action.before ?? {};
+  const rows: [string, any, any][] =
+    action.type === "store_seo" ? [["এসইও টাইটেল", b.title, action.title], ["এসইও বিবরণ", b.description, action.description]]
+    : action.type === "delivery_charge" ? [[`ডেলিভারি চার্জ (${action.zoneName ?? ""})`, b.charge != null ? `৳${b.charge}` : "", `৳${action.charge}`]]
+    : ([
+        action.price !== undefined ? ["দাম", b.price != null ? `৳${b.price}` : "", `৳${action.price}`] : null,
+        action.stock !== undefined ? ["স্টক", b.stock, action.stock] : null,
+        action.description !== undefined ? ["বিবরণ", null, action.description] : null,
+      ].filter(Boolean) as [string, any, any][]);
+  const title = action.type === "store_seo" ? "স্টোরের এসইও" : action.type === "delivery_charge" ? "ডেলিভারি চার্জ" : `প্রোডাক্ট: ${action.productName ?? ""}`;
+  async function confirm() {
+    if (state !== "idle") return;
+    setState("saving");
+    try { const { before, ...data } = action; await apply({ data: data as any }); setState("saved"); toast.success("পরিবর্তন সেভ হয়েছে"); }
+    catch (e: any) { setState("idle"); toast.error(e?.message || "সেভ করা যায়নি"); }
+  }
+  return (
+    <div className="mt-2 space-y-2 rounded-lg border bg-card p-3 text-card-foreground">
+      <div className="text-xs font-semibold text-muted-foreground">{state === "saved" ? "সেভ হয়েছে ✓" : state === "skipped" ? "বাদ দেওয়া হয়েছে" : `প্রস্তাবিত পরিবর্তন — ${title}`}</div>
+      {rows.map(([k, from, to], i) => (
+        <div key={i} className="text-xs">
+          <div className="font-medium">{k}</div>
+          {from != null && from !== "" ? <div className="text-muted-foreground line-through">{String(from)}</div> : null}
+          <div className="whitespace-pre-wrap">{String(to)}</div>
+        </div>
+      ))}
+      {state === "idle" || state === "saving" ? (
+        <div className="flex gap-2">
+          <Button size="sm" className="flex-1" disabled={state === "saving"} onClick={confirm}>
+            {state === "saving" ? <><Loader2 className="mr-1 h-3 w-3 animate-spin" /> সেভ হচ্ছে…</> : "নিশ্চিত করে সেভ করুন"}
+          </Button>
+          <Button size="sm" variant="outline" disabled={state === "saving"} onClick={() => setState("skipped")}>বাদ দিন</Button>
+        </div>
+      ) : null}
     </div>
   );
 }

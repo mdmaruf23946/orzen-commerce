@@ -40,7 +40,7 @@ export async function loadSeoAudit(db: any, storeId: string) {
 export async function loadStoreConfig(db: any, storeId: string) {
   const [{ data: store }, { data: zones }, { data: ret }] = await Promise.all([
     db.from("stores").select("name,slug,currency,couriers,primary_domain_id,messenger,whatsapp").eq("id", storeId).maybeSingle(),
-    db.from("delivery_zones").select("name,charge,eta,is_default").eq("store_id", storeId).eq("is_active", true).order("sort_order"),
+    db.from("delivery_zones").select("id,name,charge,eta,is_default").eq("store_id", storeId).eq("is_active", true).order("sort_order"),
     db.from("store_return_settings").select("*").eq("store_id", storeId).maybeSingle(),
   ]);
   const couriers = store?.couriers && typeof store.couriers === "object" ? Object.keys(store.couriers) : [];
@@ -68,4 +68,27 @@ export async function saveConfirmedDraft(db: any, storeId: string, input: { name
     .select("id").single();
   if (error) { console.error("copilot save failed", error.message); throw new Error("প্রোডাক্ট সেভ করা যায়নি, আবার চেষ্টা করুন।"); }
   return { ok: true as const, id: data.id as string, duplicate: false };
+}
+
+import type { CopilotAction } from "./actions";
+
+/** Apply one merchant-confirmed Co-pilot change, scoped to this store. */
+export async function applyCopilotAction(db: any, storeId: string, a: CopilotAction) {
+  if (a.type === "store_seo") {
+    const { data: store } = await db.from("stores").select("seo").eq("id", storeId).maybeSingle();
+    const seo = { ...(store?.seo && typeof store.seo === "object" ? store.seo : {}), title: a.title, description: a.description, meta_title: a.title, meta_description: a.description };
+    const { error } = await db.from("stores").update({ seo }).eq("id", storeId);
+    if (error) throw new Error("এসইও সেভ করা যায়নি");
+  } else if (a.type === "product_update") {
+    const patch: Record<string, unknown> = {};
+    if (a.price !== undefined) patch.price = a.price;
+    if (a.stock !== undefined) patch.stock = a.stock;
+    if (a.description !== undefined) patch.description = a.description;
+    const { data, error } = await db.from("products").update(patch).eq("id", a.productId).eq("store_id", storeId).select("id");
+    if (error || !data?.length) throw new Error("প্রোডাক্ট আপডেট করা যায়নি");
+  } else {
+    const { data, error } = await db.from("delivery_zones").update({ charge: a.charge }).eq("id", a.zoneId).eq("store_id", storeId).select("id");
+    if (error || !data?.length) throw new Error("ডেলিভারি চার্জ আপডেট করা যায়নি");
+  }
+  return { ok: true as const };
 }
