@@ -102,3 +102,9 @@ export function normalizeProductDraft(d: { name: string; price: number; stock?: 
     status: "draft" as const,
   };
 }
+
+/** URL slug for a Co-pilot product; non-Latin names fall back to "product". Suffix keeps it unique. */
+export function copilotProductSlug(name: string, suffix: string) {
+  const base = name.toLowerCase().normalize("NFKD").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 60);
+  return `${base || "product"}-${suffix}`;
+}

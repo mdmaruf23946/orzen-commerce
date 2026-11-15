@@ -1,6 +1,6 @@
 // Store-scoped Co-pilot data loaders, shared by the direct server functions
 // and the AI tool executor. Always pass the caller's own db client + storeId.
-import { auditSeo, normalizeProductDraft, productPerformance, summarizeSales } from "./insights";
+import { auditSeo, copilotProductSlug, normalizeProductDraft, productPerformance, summarizeSales } from "./insights";
 
 const since = (days: number) => new Date(Date.now() - days * 86400000).toISOString();
 
@@ -55,4 +55,17 @@ export async function loadStoreConfig(db: any, storeId: string) {
 
 export function draftProduct(input: { name: string; price: number; stock?: number; description?: string; categoryId?: string | null }) {
   return { draft: normalizeProductDraft(input), requiresConfirmation: true };
+}
+
+/** Save a merchant-confirmed draft into this store only (hidden as draft until the merchant publishes it). */
+export async function saveConfirmedDraft(db: any, storeId: string, input: { name: string; price: number; stock?: number; description?: string }) {
+  const draft = normalizeProductDraft(input);
+  const { data: dupe } = await db.from("products").select("id,name").eq("store_id", storeId).ilike("name", draft.name).limit(1);
+  if (dupe?.[0]) return { ok: true as const, id: dupe[0].id as string, duplicate: true };
+  const slug = copilotProductSlug(draft.name, Math.random().toString(36).slice(2, 7));
+  const { data, error } = await db.from("products")
+    .insert({ store_id: storeId, name: draft.name, slug, price: draft.price, stock: draft.stock, description: draft.description || null, status: "draft" })
+    .select("id").single();
+  if (error) { console.error("copilot save failed", error.message); throw new Error("প্রোডাক্ট সেভ করা যায়নি, আবার চেষ্টা করুন।"); }
+  return { ok: true as const, id: data.id as string, duplicate: false };
 }

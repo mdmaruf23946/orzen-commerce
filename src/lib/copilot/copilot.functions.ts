@@ -4,7 +4,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { storeAccess } from "@/lib/accounts/store-access";
 import { isBetaTester } from "@/lib/beta-features";
-import { draftProduct, loadProductPerformance, loadSalesSummary, loadSeoAudit, loadStoreConfig } from "./data.server";
+import { draftProduct, loadProductPerformance, loadSalesSummary, loadSeoAudit, loadStoreConfig, saveConfirmedDraft } from "./data.server";
 
 function gate(context: any) {
   if (!isBetaTester(context.claims?.email)) throw new Error("This feature is not available yet.");
@@ -49,3 +49,11 @@ export const copilotChat = createServerFn({ method: "POST" })
     try { return await runCopilot(db, storeId, data.messages); }
     catch (e) { console.error("copilotChat failed", e); throw new Error("Co-pilot is busy right now. Please try again."); }
   });
+
+export const copilotSaveProduct = createServerFn({ method: "POST" })
+  .middleware([storeAccess("products")])
+  .inputValidator((d: unknown) => z.object({
+    name: z.string().min(2).max(150), price: z.number().positive().max(10_000_000),
+    stock: z.number().int().min(0).max(1_000_000).optional(), description: z.string().max(5000).optional(),
+  }).parse(d))
+  .handler(async ({ data, context }) => { const { db, storeId } = gate(context); return saveConfirmedDraft(db, storeId, data); });

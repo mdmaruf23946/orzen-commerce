@@ -5,7 +5,9 @@ import { Sparkles, Send, Loader2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { copilotChat } from "@/lib/copilot/copilot.functions";
+import { Input } from "@/components/ui/input";
+import { toast } from "sonner";
+import { copilotChat, copilotSaveProduct } from "@/lib/copilot/copilot.functions";
 
 type Draft = { name?: string; price?: number; stock?: number; description?: string; [k: string]: unknown };
 type Msg = { role: "user" | "assistant"; content: string; drafts?: Draft[] };
@@ -63,14 +65,7 @@ export function CopilotDrawer() {
               <div key={i} className={m.role === "user" ? "flex justify-end" : "flex justify-start"}>
                 <div className={`max-w-[85%] whitespace-pre-wrap rounded-2xl px-3 py-2 text-sm ${m.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted text-foreground"}`}>
                   {m.content}
-                  {m.drafts?.map((d, j) => (
-                    <div key={j} className="mt-2 rounded-lg border bg-card p-3 text-card-foreground">
-                      <div className="text-xs font-semibold text-muted-foreground">প্রোডাক্ট খসড়া (এখনো সেভ হয়নি)</div>
-                      <div className="font-medium">{String(d.name ?? "")}</div>
-                      <div className="text-xs">দাম: ৳{String(d.price ?? "-")} · স্টক: {String(d.stock ?? "-")}</div>
-                      {d.description ? <div className="mt-1 text-xs text-muted-foreground">{String(d.description)}</div> : null}
-                    </div>
-                  ))}
+                  {m.drafts?.map((d, j) => <DraftCard key={j} draft={d} />)}
                 </div>
               </div>
             ))}
@@ -85,5 +80,39 @@ export function CopilotDrawer() {
         </SheetContent>
       </Sheet>
     </>
+  );
+}
+
+function DraftCard({ draft }: { draft: Draft }) {
+  const save = useServerFn(copilotSaveProduct);
+  const [name, setName] = useState(String(draft.name ?? ""));
+  const [price, setPrice] = useState(String(draft.price ?? ""));
+  const [stock, setStock] = useState(String(draft.stock ?? 0));
+  const [state, setState] = useState<"idle" | "saving" | "saved">("idle");
+  async function confirm() {
+    if (state !== "idle") return;
+    const p = Number(price), st = Math.max(0, Math.floor(Number(stock) || 0));
+    if (name.trim().length < 2 || !(p > 0)) { toast.error("নাম ও সঠিক দাম দিন"); return; }
+    setState("saving");
+    try {
+      const r: any = await save({ data: { name: name.trim(), price: p, stock: st, description: draft.description ? String(draft.description) : undefined } });
+      setState("saved");
+      toast.success(r.duplicate ? "এই নামে প্রোডাক্ট আগে থেকেই আছে" : "প্রোডাক্ট সেভ হয়েছে (খসড়া হিসেবে)");
+    } catch (e: any) { setState("idle"); toast.error(e?.message || "সেভ করা যায়নি"); }
+  }
+  const locked = state !== "idle";
+  return (
+    <div className="mt-2 space-y-2 rounded-lg border bg-card p-3 text-card-foreground">
+      <div className="text-xs font-semibold text-muted-foreground">{state === "saved" ? "সংরক্ষিত হয়েছে ✓" : "প্রোডাক্ট খসড়া — যাচাই করে সেভ করুন"}</div>
+      <Input value={name} disabled={locked} onChange={(e) => setName(e.target.value)} placeholder="নাম" className="h-8 text-sm" />
+      <div className="flex gap-2">
+        <Input value={price} disabled={locked} onChange={(e) => setPrice(e.target.value)} type="number" placeholder="দাম ৳" className="h-8 text-sm" />
+        <Input value={stock} disabled={locked} onChange={(e) => setStock(e.target.value)} type="number" placeholder="স্টক" className="h-8 text-sm" />
+      </div>
+      {draft.description ? <div className="text-xs text-muted-foreground">{String(draft.description)}</div> : null}
+      <Button size="sm" className="w-full" disabled={locked} onClick={confirm}>
+        {state === "saving" ? <><Loader2 className="mr-1 h-3 w-3 animate-spin" /> সংরক্ষণ হচ্ছে…</> : state === "saved" ? "সংরক্ষিত হয়েছে" : "নিশ্চিত করে সেভ করুন"}
+      </Button>
+    </div>
   );
 }

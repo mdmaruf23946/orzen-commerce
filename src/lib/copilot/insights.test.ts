@@ -27,3 +27,10 @@ describe("copilot insights", () => {
     expect(() => normalizeProductDraft({ name: "T-shirt", price: 0 })).toThrow();
   });
 });
+
+import { copilotProductSlug as slugFn } from "./insights";
+import { describe as d2, it as i2, expect as e2 } from "vitest";
+d2("copilotProductSlug", () => {
+  i2("keeps latin words", () => e2(slugFn("Cotton T-Shirt!", "ab12")).toBe("cotton-t-shirt-ab12"));
+  i2("falls back for Bengali", () => e2(slugFn("লাল শাড়ি", "x1")).toBe("product-x1"));
+});
