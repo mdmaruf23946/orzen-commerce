@@ -1,7 +1,7 @@
 // AI Business Co-pilot chat drawer (beta; mounted only for beta testers).
 import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { Sparkles, Send, Loader2, X } from "lucide-react";
+import { Sparkles, Send, Loader2, X, Mic, Square } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
@@ -28,7 +28,32 @@ export function CopilotDrawer() {
   const endRef = useRef<HTMLDivElement>(null);
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: "smooth" }); }, [msgs, busy]);
 
+  const [listening, setListening] = useState(false);
+  const recRef = useRef<any>(null);
+  useEffect(() => () => recRef.current?.abort?.(), []);
+  function toggleVoice() {
+    if (listening) { recRef.current?.stop(); return; }
+    const SR: any = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SR) { toast.error("এই ব্রাউজারে ভয়েস সাপোর্ট নেই। Chrome ব্যবহার করুন।"); return; }
+    const rec = new SR();
+    rec.lang = "bn-BD"; rec.interimResults = true; rec.continuous = true;
+    const base = text ? text.trimEnd() + " " : "";
+    rec.onresult = (e: any) => {
+      let t = "";
+      for (let i = 0; i < e.results.length; i++) t += e.results[i][0].transcript;
+      setText(base + t);
+    };
+    rec.onerror = (e: any) => {
+      if (e.error === "not-allowed") toast.error("মাইক্রোফোনের অনুমতি দিন");
+      else if (e.error !== "no-speech" && e.error !== "aborted") toast.error("ভয়েস বোঝা যায়নি, আবার চেষ্টা করুন");
+    };
+    rec.onend = () => setListening(false);
+    recRef.current = rec;
+    try { rec.start(); setListening(true); } catch { setListening(false); }
+  }
+
   async function send(q: string) {
+    if (listening) recRef.current?.stop();
     const content = q.trim();
     if (!content || busy) return;
     const next = [...msgs, { role: "user" as const, content }];
@@ -73,8 +98,12 @@ export function CopilotDrawer() {
             <div ref={endRef} />
           </div>
           <form className="flex gap-2 border-t p-3" onSubmit={(e) => { e.preventDefault(); send(text); }}>
-            <Textarea value={text} onChange={(e) => setText(e.target.value)} rows={1} placeholder="প্রশ্ন লিখুন…" className="min-h-10 resize-none"
+            <Textarea value={text} onChange={(e) => setText(e.target.value)} rows={1} placeholder={listening ? "বলুন, শুনছি…" : "প্রশ্ন লিখুন বা মাইকে বলুন…"} className="min-h-10 resize-none"
               onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(text); } }} />
+            <Button type="button" size="icon" variant={listening ? "destructive" : "outline"} onClick={toggleVoice}
+              aria-label={listening ? "ভয়েস বন্ধ করুন" : "ভয়েসে বলুন"} className={listening ? "animate-pulse" : ""}>
+              {listening ? <Square className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+            </Button>
             <Button type="submit" size="icon" disabled={busy || !text.trim()}><Send className="h-4 w-4" /></Button>
           </form>
         </SheetContent>
