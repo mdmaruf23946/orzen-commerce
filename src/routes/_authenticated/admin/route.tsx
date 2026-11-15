@@ -5,6 +5,7 @@ import { MARKETING_PLATFORMS, useMarketingConnections, type MarketingConnectionM
 import { CALL_SMS_PROVIDERS, CALL_SMS_HUB_PATH, type ProviderConnectionMap } from "@/lib/calls/call-sms-providers";
 import { useProviderConnections } from "@/lib/calls/use-call-sms-connections";
 import { isBetaPath, isBetaTester } from "@/lib/beta-features";
+import { CopilotDrawer } from "@/components/admin/copilot/CopilotDrawer";
 import { PAYMENT_SECTIONS, usePaymentGatewayConnections } from "@/lib/payments/payment-gateway-apps";
 import { AI_MESSAGING_APPS, useAiMessagingConnections, type AiMessagingConnectionMap } from "@/lib/agents/ai-messaging-apps";
 import { createFileRoute, Link, Outlet, useNavigate, useRouter, useRouterState } from "@tanstack/react-router";
@@ -989,6 +990,7 @@ function AdminLayout() {
                   <PlanLockGate path={currentPath}>
                     <EmailVerifyGate path={currentPath}>
                       <Outlet />
+                      {betaTester && <CopilotDrawer />}
                     </EmailVerifyGate>
                   </PlanLockGate>
                 </ReadOnlyGuard>
