@@ -17,7 +17,7 @@ import { cn } from "@/lib/utils";
 
 type Overrides = Record<string, any>;
 const DEVICES = {
-  desktop: { w: 1280, h: 860, icon: Monitor },
+  desktop: { w: 1280, h: 760, icon: Monitor },
   tablet: { w: 820, h: 1080, icon: Tablet },
   mobile: { w: 390, h: 780, icon: Smartphone },
 } as const;
@@ -206,8 +206,8 @@ export function ThemeStudio() {
     if (!el) return;
     const update = () => {
       if (el.clientWidth <= 0) return;
-      const byW = (el.clientWidth - 26) / device.w;
-      const byH = el.clientHeight > 40 && window.innerWidth >= 1024 ? (el.clientHeight - 26) / device.h : byW;
+      const byW = (el.clientWidth - 14) / device.w;
+      const byH = el.clientHeight > 40 && window.innerWidth >= 1024 ? (el.clientHeight - 14) / device.h : byW;
       setScale(Math.min(1, Math.max(0.1, Math.min(byW, byH))));
     };
     update();
@@ -300,9 +300,9 @@ export function ThemeStudio() {
   const [headerParts, footerParts] = [STUDIO_PARTS.slice(0, 3), STUDIO_PARTS.slice(3)];
 
   return (
-    <div className="flex flex-col gap-3 lg:h-[calc(100dvh-8rem)] lg:overflow-hidden">
+    <div className="flex flex-col gap-2 lg:-mx-4 lg:-my-6 lg:h-[calc(100dvh-5.5rem)] lg:overflow-hidden">
       <div className="flex shrink-0 flex-wrap items-center gap-2 lg:flex-nowrap [&_button]:whitespace-nowrap">
-        <h1 className="mr-auto whitespace-nowrap text-lg font-semibold">Theme Studio <span className="ml-1 rounded bg-primary/10 px-1.5 py-0.5 text-xs text-primary">Beta</span></h1>
+        <h1 className="mr-auto whitespace-nowrap text-base font-semibold">Theme Studio <span className="ml-1 rounded bg-primary/10 px-1.5 py-0.5 text-xs text-primary">Beta</span></h1>
         <Button size="sm" variant="ghost" disabled={!history.length} onClick={() => { const h = [...history]; const prev = h.pop()!; setHistory(h); setLocal(prev); }}>
           <Undo2 className="mr-1 h-4 w-4" /> Undo
         </Button>
@@ -313,9 +313,19 @@ export function ThemeStudio() {
         <Button size="sm" disabled={save.isPending} onClick={() => save.mutate(true)}>
           <Save className="mr-1 h-4 w-4" /> Publish
         </Button>
+        <div className="ml-2 flex items-center gap-1 border-l pl-3">
+          {(Object.keys(DEVICES) as Mode[]).map((m) => {
+              const Icon = DEVICES[m].icon;
+              return (
+                <Button key={m} size="sm" className="h-8 px-2.5" variant={mode === m ? "default" : "outline"} onClick={() => setMode(m)}>
+                  <Icon className="h-3.5 w-3.5" />
+                </Button>
+              );
+            })}
+        </div>
       </div>
 
-      <div className="grid gap-3 lg:min-h-0 lg:flex-1 lg:grid-cols-[340px_minmax(0,1fr)]">
+      <div className="grid gap-3 lg:min-h-0 lg:flex-1 lg:grid-cols-[320px_minmax(0,1fr)]">
         <div className="space-y-2 lg:h-full lg:overflow-y-auto lg:overscroll-contain lg:pr-1">
           <div className="overflow-hidden rounded-xl border bg-card">
             <button type="button" onClick={() => setOpenPart(openPart === "themes" ? "" : "themes")}
@@ -371,19 +381,8 @@ export function ThemeStudio() {
           </div>
         </div>
 
-        <div className="flex min-w-0 flex-col gap-2 lg:h-full lg:min-h-0">
-          <div className="flex shrink-0 items-center gap-1.5">
-            <span className="mr-auto whitespace-nowrap text-sm font-semibold">লাইভ প্রিভিউ</span>
-            {(Object.keys(DEVICES) as Mode[]).map((m) => {
-              const Icon = DEVICES[m].icon;
-              return (
-                <Button key={m} size="sm" className="h-8 px-2.5" variant={mode === m ? "default" : "outline"} onClick={() => setMode(m)}>
-                  <Icon className="h-3.5 w-3.5" />
-                </Button>
-              );
-            })}
-          </div>
-          <div ref={wrapRef} className="flex w-full min-w-0 max-w-full items-start justify-center overflow-hidden overscroll-contain rounded-xl border bg-muted/30 p-3 lg:min-h-0 lg:flex-1">
+        <div className="flex min-w-0 flex-col gap-1 lg:h-full lg:min-h-0">
+          <div ref={wrapRef} className="flex w-full min-w-0 max-w-full items-start justify-center overflow-hidden overscroll-contain rounded-xl border bg-muted/30 p-1.5 lg:min-h-0 lg:flex-1">
             <div className="shrink-0 overflow-hidden rounded-lg border bg-background shadow-sm" style={{ width: device.w * scale, height: device.h * scale }}>
               <iframe ref={frameRef} key={mode} title="Store live preview" onLoad={push}
                 src={`/store/${state.slug}?${THEME_PREVIEW_PARAM}=1`}
