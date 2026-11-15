@@ -1,7 +1,7 @@
 // AI Business Co-pilot chat drawer (beta; mounted only for beta testers).
 import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { Sparkles, Send, Loader2, X, Mic, Square } from "lucide-react";
+import { Sparkles, Send, Loader2, X, Mic, Square, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
@@ -19,6 +19,8 @@ const SUGGESTIONS = [
   "ডেলিভারি ও কুরিয়ার সেটিংস ঠিক আছে কি?",
 ];
 
+const STORE_KEY = "orzen-copilot-chat-v1";
+
 export function CopilotDrawer() {
   const chat = useServerFn(copilotChat);
   const [open, setOpen] = useState(false);
@@ -26,6 +28,15 @@ export function CopilotDrawer() {
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
+  const loadedRef = useRef(false);
+  useEffect(() => {
+    try { const raw = localStorage.getItem(STORE_KEY); if (raw) setMsgs(JSON.parse(raw)); } catch {}
+    loadedRef.current = true;
+  }, []);
+  useEffect(() => {
+    if (!loadedRef.current) return;
+    try { localStorage.setItem(STORE_KEY, JSON.stringify(msgs.slice(-60))); } catch {}
+  }, [msgs]);
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: "smooth" }); }, [msgs, busy]);
 
   const [listening, setListening] = useState(false);
@@ -73,11 +84,16 @@ export function CopilotDrawer() {
         <Sparkles className="h-4 w-4" /> Co-pilot
       </button>
       <Sheet open={open} onOpenChange={setOpen}>
-        <SheetContent side="right" className="flex w-full flex-col gap-0 p-0 sm:max-w-md">
-          <SheetHeader className="border-b p-4">
-            <SheetTitle className="flex items-center gap-2"><Sparkles className="h-4 w-4 text-primary" /> AI Business Co-pilot <span className="rounded bg-muted px-1.5 text-[10px] font-medium text-muted-foreground">Beta</span></SheetTitle>
+        <SheetContent side="right" className="flex w-full flex-col gap-0 overflow-hidden p-0 sm:inset-y-4 sm:right-4 sm:h-auto sm:max-w-lg sm:rounded-2xl sm:border sm:shadow-2xl">
+          <SheetHeader className="flex-row items-center gap-2 space-y-0 border-b px-5 py-3 pr-12">
+            <SheetTitle className="flex items-center gap-2 text-base"><span className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/15"><Sparkles className="h-4 w-4 text-primary" /></span> Co-pilot <span className="rounded bg-muted px-1.5 text-[10px] font-medium text-muted-foreground">Beta</span></SheetTitle>
+            {msgs.length > 0 && (
+              <Button type="button" variant="ghost" size="sm" className="ml-auto h-7 gap-1 px-2 text-xs text-muted-foreground" onClick={() => setMsgs([])}>
+                <RotateCcw className="h-3 w-3" /> নতুন চ্যাট
+              </Button>
+            )}
           </SheetHeader>
-          <div className="flex-1 space-y-3 overflow-y-auto p-4">
+          <div className="flex-1 space-y-3 overflow-y-auto px-5 py-4">
             {msgs.length === 0 && (
               <div className="space-y-2">
                 <p className="text-sm text-muted-foreground">আপনার স্টোরের আসল তথ্য দেখে পরামর্শ দেব। কী জানতে চান?</p>
@@ -88,7 +104,7 @@ export function CopilotDrawer() {
             )}
             {msgs.map((m, i) => (
               <div key={i} className={m.role === "user" ? "flex justify-end" : "flex justify-start"}>
-                <div className={`max-w-[85%] whitespace-pre-wrap rounded-2xl px-3 py-2 text-sm ${m.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted text-foreground"}`}>
+                <div className={`max-w-[85%] whitespace-pre-wrap rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed ${m.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted text-foreground"}`}>
                   {m.content}
                   {m.drafts?.map((d, j) => <DraftCard key={j} draft={d} />)}
                 </div>
@@ -97,14 +113,18 @@ export function CopilotDrawer() {
             {busy && <div className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" /> আপনার স্টোরের তথ্য দেখছি…</div>}
             <div ref={endRef} />
           </div>
-          <form className="flex gap-2 border-t p-3" onSubmit={(e) => { e.preventDefault(); send(text); }}>
-            <Textarea value={text} onChange={(e) => setText(e.target.value)} rows={1} placeholder={listening ? "বলুন, শুনছি…" : "প্রশ্ন লিখুন বা মাইকে বলুন…"} className="min-h-10 resize-none"
+          <form className="border-t p-4" onSubmit={(e) => { e.preventDefault(); send(text); }}>
+            <div className="rounded-xl border bg-background p-2 focus-within:ring-2 focus-within:ring-ring">
+            <Textarea value={text} onChange={(e) => setText(e.target.value)} rows={5} placeholder={listening ? "বলুন, শুনছি…" : "প্রশ্ন লিখুন বা মাইকে বলুন…"} className="max-h-48 min-h-28 resize-none overflow-y-auto border-0 bg-transparent p-1 text-sm leading-relaxed shadow-none focus-visible:ring-0"
               onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(text); } }} />
+            <div className="mt-1 flex items-center justify-end gap-2">
             <Button type="button" size="icon" variant={listening ? "destructive" : "outline"} onClick={toggleVoice}
               aria-label={listening ? "ভয়েস বন্ধ করুন" : "ভয়েসে বলুন"} className={listening ? "animate-pulse" : ""}>
               {listening ? <Square className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
             </Button>
             <Button type="submit" size="icon" disabled={busy || !text.trim()}><Send className="h-4 w-4" /></Button>
+            </div>
+            </div>
           </form>
         </SheetContent>
       </Sheet>
