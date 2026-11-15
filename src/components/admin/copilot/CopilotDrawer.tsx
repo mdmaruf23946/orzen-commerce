@@ -70,7 +70,10 @@ export function CopilotDrawer() {
     const next = [...msgs, { role: "user" as const, content }];
     setMsgs(next); setText(""); setBusy(true);
     try {
-      const r: any = await chat({ data: { messages: next.slice(-20).map(({ role, content }) => ({ role, content })) } });
+      const r: any = await Promise.race([
+        chat({ data: { messages: next.slice(-20).map(({ role, content }) => ({ role, content })) } }),
+        new Promise((_, rej) => setTimeout(() => rej(new Error("উত্তর আসতে বেশি সময় লাগছে। আবার প্রশ্নটি পাঠান।")), 90_000)),
+      ]);
       setMsgs((m) => [...m, { role: "assistant", content: r.reply || "…", drafts: r.drafts }]);
     } catch (e: any) {
       setMsgs((m) => [...m, { role: "assistant", content: e?.message || "Co-pilot এখন ব্যস্ত, একটু পরে চেষ্টা করুন।" }]);

@@ -76,15 +76,16 @@ function stripVendor(modelId: string) {
 function geminiModel(modelId: string) {
   const m = stripVendor(modelId);
   if (m.includes("pro")) return "gemini-pro-latest";
-  if (m.includes("lite")) return "gemini-flash-lite-latest";
-  return "gemini-flash-latest";
+  if (m.includes("lite")) return "gemini-3.1-flash-lite-preview";
+  // "gemini-flash-latest" currently hangs without answering; use a model that responds.
+  return "gemini-3-flash-preview";
 }
 
 /** Sibling Gemini models tried on the same key when the first is busy or out of quota. */
 function geminiFallbackModels(primary: string): string[] {
-  if (primary === "gemini-pro-latest") return ["gemini-flash-latest", "gemini-3.6-flash", "gemini-3.5-flash"];
-  if (primary === "gemini-flash-lite-latest") return ["gemini-3.5-flash-lite", "gemini-3.1-flash-lite"];
-  return ["gemini-3.6-flash", "gemini-3.5-flash", "gemini-3-flash-preview"];
+  if (primary === "gemini-pro-latest") return ["gemini-3-flash-preview", "gemini-3.5-flash", "gemini-3.6-flash"];
+  if (primary === "gemini-3.1-flash-lite-preview") return ["gemini-3.5-flash-lite", "gemini-3.1-flash-lite"];
+  return ["gemini-3.5-flash", "gemini-3.6-flash", "gemini-3.1-flash-lite-preview"];
 }
 
 function openaiModel(modelId: string) {
@@ -714,7 +715,7 @@ async function nativeGeminiVision(parts: VisionPart[], jsonOnly: boolean, maxTok
     (k) => k.enabled && k.key && k.provider === "gemini" && k.failed_on !== today,
   );
   for (const k of keys) {
-    for (const model of ["gemini-flash-lite-latest", "gemini-flash-latest"]) {
+    for (const model of ["gemini-3.1-flash-lite-preview", "gemini-3-flash-preview"]) {
       const bk = `native-vision|${k.id}|${model}`;
       if (breakerOpen(bk)) continue;
       try {
@@ -796,7 +797,7 @@ export async function routedTranscribeAudio(bytes: Uint8Array, mime: string): Pr
   for (const k of keys) {
     try {
       if (k.provider === "gemini") {
-        for (const model of ["gemini-flash-lite-latest", "gemini-flash-latest"]) {
+        for (const model of ["gemini-3.1-flash-lite-preview", "gemini-3-flash-preview"]) {
           const res = await fetch(
             `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(k.key)}`,
             {
