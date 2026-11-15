@@ -193,6 +193,23 @@ export function ThemeStudio() {
       window.location.origin,
     );
   useEffect(() => { push(); });
+  // A brief network/server hiccup can leave the preview on the error screen.
+  // Detect it and quietly retry (max 3 times) so the merchant never has to refresh.
+  const retries = useRef(0);
+  const onFrameLoad = () => {
+    push();
+    check();
+    setTimeout(check, 2500);
+  };
+  const check = () => {
+    const f = frameRef.current;
+    let failed = false;
+    try { failed = !!f?.contentDocument?.body?.innerText?.includes("This page didn't load"); } catch { /* cross-origin */ }
+    if (failed && retries.current < 3) {
+      retries.current += 1;
+      setTimeout(() => f?.contentWindow?.location.reload(), 800 * retries.current);
+    } else if (!failed) retries.current = 0;
+  };
   useEffect(() => {
     const onMsg = (e: MessageEvent) => {
       if (e.origin === window.location.origin && e.data?.type === THEME_PREVIEW_READY) push();
@@ -384,7 +401,7 @@ export function ThemeStudio() {
         <div className="flex min-w-0 flex-col gap-1 lg:h-full lg:min-h-0">
           <div ref={wrapRef} className="flex w-full min-w-0 max-w-full items-start justify-center overflow-hidden overscroll-contain rounded-xl border bg-muted/30 p-1.5 lg:min-h-0 lg:flex-1">
             <div className="shrink-0 overflow-hidden rounded-lg border bg-background shadow-sm" style={{ width: device.w * scale, height: device.h * scale }}>
-              <iframe ref={frameRef} key={mode} title="Store live preview" onLoad={push}
+              <iframe ref={frameRef} title="Store live preview" onLoad={onFrameLoad}
                 src={`/store/${state.slug}?${THEME_PREVIEW_PARAM}=1`}
                 className="border-0"
                 style={{ width: device.w, height: device.h, transform: `scale(${scale})`, transformOrigin: "top left" }} />
