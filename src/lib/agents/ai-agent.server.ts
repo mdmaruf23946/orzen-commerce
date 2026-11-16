@@ -125,10 +125,11 @@ export async function logUsage(storeId: string | null, model: string, usage: any
     });
     // AI credit tracking (Messenger/WhatsApp/Web chat). Never blocks a reply.
     // Bill the real total: input + output tokens.
-    const { billableTokens } = await import("@/lib/payments/ai-credit-billing");
+    const { billableTokens, isBilledChannel } = await import("@/lib/payments/ai-credit-billing");
     const billed = billableTokens(pt, ct);
-    if (storeId && billed > 0) {
-      await (sb as any).rpc("consume_ai_credits", { _store: storeId, _tokens: billed, _channel: kind });
+    if (storeId && billed > 0 && isBilledChannel(kind)) {
+      const { error } = await (sb as any).rpc("consume_ai_credits", { _store: storeId, _tokens: billed, _channel: kind });
+      if (error) console.error("[ai-credits] deduction failed", error.message);
     }
   } catch {
     /* swallow */

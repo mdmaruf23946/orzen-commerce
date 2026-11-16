@@ -15,3 +15,9 @@ export function billableTokens(
 export function formatCredits(v: number | null | undefined): string {
   return Number(v || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
+
+/** Only customer chat channels are billed: Messenger, WhatsApp, Website chat, Instagram. */
+const BILLED_CHANNELS = new Set(["messenger", "whatsapp", "instagram", "web", "chat", "website", "webchat"]);
+export function isBilledChannel(kind: string | null | undefined): boolean {
+  return BILLED_CHANNELS.has(String(kind ?? "").toLowerCase());
+}
