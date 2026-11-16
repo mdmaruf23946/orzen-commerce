@@ -1,4 +1,5 @@
 // Upload digital product files to store-assets/{storeId}/digital/...
+import { uploadStoreAsset } from "@/lib/storage/upload-asset";
 import { useRef, useState } from "react";
 import { Upload, X, FileText } from "lucide-react";
 import { toast } from "sonner";
@@ -59,7 +60,7 @@ export function DigitalFilesUploader({
         const rawExt = (file.name.split(".").pop() || "bin").toLowerCase().replace(/[^a-z0-9]/g, "");
         const ext = rawExt.slice(0, 6) || "bin";
         const path = `${storeId}/digital/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
-        const { error } = await supabase.storage.from("store-assets").upload(path, file, {
+        const { error } = await uploadStoreAsset(path, file, {
           upsert: false,
           contentType: file.type || "application/octet-stream",
         });

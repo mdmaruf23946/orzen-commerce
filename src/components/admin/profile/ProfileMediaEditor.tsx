@@ -1,4 +1,5 @@
 import { useCallback, useRef, useState, type ReactNode } from "react";
+import { uploadStoreAsset } from "@/lib/storage/upload-asset";
 import Cropper, { type Area } from "react-easy-crop";
 import { Camera, ImagePlus, LayoutGrid, Loader2, Trash2 } from "lucide-react";
 import { toast } from "sonner";
@@ -37,7 +38,7 @@ export function MediaMenu({
   async function uploadBlob(blob: Blob) {
     if (!folder) throw new Error("Upload folder not ready");
     const path = `${folder}/${kind}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.webp`;
-    const { error } = await supabase.storage.from("store-assets").upload(path, blob, { contentType: "image/webp", upsert: false });
+    const { error } = await uploadStoreAsset(path, blob, { contentType: "image/webp", upsert: false });
     if (error) throw new Error(error.message || "Upload failed");
     await onApply(path);
   }

@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { uploadStoreAsset } from "@/lib/storage/upload-asset";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState } from "react";
@@ -154,7 +155,7 @@ async function uploadLogo(file: File, code: string, kind: "logo" | "dark" | "fav
   const ext = file.type === "image/svg+xml" ? "svg" : file.type === "image/webp" ? "webp" : "png";
   const safe = code.toLowerCase().replace(/[^a-z0-9]/g, "") || "brand";
   const path = `brand-logos/courier/${safe}/${kind}-${Date.now()}.${ext}`;
-  const { error } = await supabase.storage.from("store-assets").upload(path, toUpload, { upsert: true, contentType: toUpload.type });
+  const { error } = await uploadStoreAsset(path, toUpload, { upsert: true, contentType: toUpload.type });
   if (error) throw new Error(error.message);
   return path;
 }

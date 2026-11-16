@@ -34,6 +34,7 @@ import { Route as Char91DotmcpChar93ListToolsRouteImport } from './routes/[.mcp]
 import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
 import { Route as AuthenticatedAdminRouteRouteImport } from './routes/_authenticated/admin/route'
 import { Route as AuthenticatedOwnerRouteRouteImport } from './routes/_authenticated/owner/route'
+import { Route as ApiUploadRouteImport } from './routes/api/upload'
 import { Route as LpSlugRouteImport } from './routes/lp.$slug'
 import { Route as StoreSlugRouteRouteImport } from './routes/store/$slug/route'
 import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
@@ -417,6 +418,11 @@ const AuthenticatedOwnerRouteRoute = AuthenticatedOwnerRouteRouteImport.update({
   id: '/owner',
   path: '/owner',
   getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const ApiUploadRoute = ApiUploadRouteImport.update({
+  id: '/api/upload',
+  path: '/api/upload',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const LpSlugRoute = LpSlugRouteImport.update({
   id: '/lp/$slug',
@@ -1922,6 +1928,7 @@ export interface FileRoutesByFullPath {
   '/store/$slug': typeof StoreSlugRouteRouteWithChildren
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
+  '/api/upload': typeof ApiUploadRoute
   '/lp/$slug': typeof LpSlugRoute
   '/admin/billing': typeof AuthenticatedAdminBillingRouteRouteWithChildren
   '/admin/facebook': typeof AuthenticatedAdminFacebookRouteRouteWithChildren
@@ -2202,6 +2209,7 @@ export interface FileRoutesByTo {
   '/terms': typeof TermsRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
+  '/api/upload': typeof ApiUploadRoute
   '/lp/$slug': typeof LpSlugRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
@@ -2477,6 +2485,7 @@ export interface FileRoutesById {
   '/store/$slug': typeof StoreSlugRouteRouteWithChildren
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
+  '/api/upload': typeof ApiUploadRoute
   '/lp/$slug': typeof LpSlugRoute
   '/_authenticated/admin/billing': typeof AuthenticatedAdminBillingRouteRouteWithChildren
   '/_authenticated/admin/facebook': typeof AuthenticatedAdminFacebookRouteRouteWithChildren
@@ -2762,6 +2771,7 @@ export interface FileRouteTypes {
     | '/store/$slug'
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
+    | '/api/upload'
     | '/lp/$slug'
     | '/admin/billing'
     | '/admin/facebook'
@@ -3042,6 +3052,7 @@ export interface FileRouteTypes {
     | '/terms'
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
+    | '/api/upload'
     | '/lp/$slug'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
@@ -3316,6 +3327,7 @@ export interface FileRouteTypes {
     | '/store/$slug'
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
+    | '/api/upload'
     | '/lp/$slug'
     | '/_authenticated/admin/billing'
     | '/_authenticated/admin/facebook'
@@ -3599,6 +3611,7 @@ export interface RootRouteChildren {
   StoreSlugRouteRoute: typeof StoreSlugRouteRouteWithChildren
   Char91DotmcpChar93ListToolsRoute: typeof Char91DotmcpChar93ListToolsRoute
   Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
+  ApiUploadRoute: typeof ApiUploadRoute
   LpSlugRoute: typeof LpSlugRoute
   DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
   Char91DotmcpChar93InvokeToolToolRoute: typeof Char91DotmcpChar93InvokeToolToolRoute
@@ -3830,6 +3843,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/owner'
       preLoaderRoute: typeof AuthenticatedOwnerRouteRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/api/upload': {
+      id: '/api/upload'
+      path: '/api/upload'
+      fullPath: '/api/upload'
+      preLoaderRoute: typeof ApiUploadRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/lp/$slug': {
       id: '/lp/$slug'
@@ -6337,6 +6357,7 @@ const rootRouteChildren: RootRouteChildren = {
   Char91DotmcpChar93ListToolsRoute: Char91DotmcpChar93ListToolsRoute,
   Char91DotwellKnownChar93OauthProtectedResourceRoute:
     Char91DotwellKnownChar93OauthProtectedResourceRoute,
+  ApiUploadRoute: ApiUploadRoute,
   LpSlugRoute: LpSlugRoute,
   DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
   Char91DotmcpChar93InvokeToolToolRoute: Char91DotmcpChar93InvokeToolToolRoute,

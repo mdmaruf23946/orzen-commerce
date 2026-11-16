@@ -1,5 +1,6 @@
 // Upload a file (image by default) to private bucket store-assets/{folder}/...
 // Stores the storage path and renders via /api/img/{path}.
+import { uploadStoreAsset } from "@/lib/storage/upload-asset";
 import { useRef, useState } from "react";
 import { Upload, X } from "lucide-react";
 import { toast } from "sonner";
@@ -87,7 +88,7 @@ export function ImageUploader({
         .replace(/[^a-z0-9]/g, "");
       const ext = rawExt.slice(0, 5) || (isImage ? "jpg" : "bin");
       const path = `${dir}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
-      const { error } = await supabase.storage.from("store-assets").upload(path, toUpload, {
+      const { error } = await uploadStoreAsset(path, toUpload, {
         upsert: false,
         contentType: toUpload.type,
       });

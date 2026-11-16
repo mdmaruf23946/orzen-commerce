@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { uploadStoreAsset } from "@/lib/storage/upload-asset";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
@@ -87,7 +88,7 @@ function Page() {
       const upload = file.type === "image/svg+xml" ? file : await compressImage(file, { maxEdge: 1920, quality: 0.92 });
       const ext = (upload.name.split(".").pop() || "png").toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 5) || "png";
       const path = `platform-branding/global-banner/banner-${Date.now()}.${ext}`;
-      const { error } = await supabase.storage.from("store-assets").upload(path, upload, { upsert: true, contentType: upload.type });
+      const { error } = await uploadStoreAsset(path, upload, { upsert: true, contentType: upload.type });
       if (error) throw new Error(error.message);
       setGB((current) => ({ ...current, image_url: `/api/img/${path}` }));
       toast.success("Banner uploaded — save settings to publish it");

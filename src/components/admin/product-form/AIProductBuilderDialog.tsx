@@ -1,6 +1,7 @@
 // Type-aware AI Product Builder wizard.
 // Step 1 images + classification -> Step 2 type-specific essentials ->
 // Step 3 describe -> generate -> hand off to the matching product form.
+import { uploadStoreAsset } from "@/lib/storage/upload-asset";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
@@ -168,7 +169,7 @@ export function AIProductBuilderDialog({
         }
         const ext = (file.name.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 5) || "jpg";
         const path = `${storeId}/ai-tmp/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
-        const { error } = await supabase.storage.from("store-assets").upload(path, file, {
+        const { error } = await uploadStoreAsset(path, file, {
           upsert: false,
           contentType: file.type,
         });

@@ -1,4 +1,5 @@
 // Upload multiple gallery images to store-assets/{folder}/...
+import { uploadStoreAsset } from "@/lib/storage/upload-asset";
 import { useRef, useState } from "react";
 import { Plus, X, ArrowLeft, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
@@ -59,7 +60,7 @@ export function GalleryUploader({
         const rawExt = (file.name.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "");
         const ext = rawExt.slice(0, 5) || "jpg";
         const path = `${dir}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
-        const { error } = await supabase.storage.from("store-assets").upload(path, file, {
+        const { error } = await uploadStoreAsset(path, file, {
           upsert: false,
           contentType: file.type,
         });

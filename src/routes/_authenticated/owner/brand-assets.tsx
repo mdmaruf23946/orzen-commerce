@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { uploadStoreAsset } from "@/lib/storage/upload-asset";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState } from "react";
@@ -143,7 +144,7 @@ function BrandCard({
       const ext = (toUpload.name.split(".").pop() || "png").toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 5) || "png";
       const safeCode = code.toLowerCase().replace(/[^a-z0-9]/g, "") || "brand";
       const path = `brand-logos/${kind}/${safeCode}-${variant}-${Date.now()}.${ext}`;
-      const { error } = await supabase.storage.from("store-assets").upload(path, toUpload, {
+      const { error } = await uploadStoreAsset(path, toUpload, {
         upsert: true,
         contentType: toUpload.type,
       });

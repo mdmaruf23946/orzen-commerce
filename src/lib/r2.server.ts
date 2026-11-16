@@ -37,3 +37,36 @@ export async function r2Get(key: string): Promise<Blob | null> {
     return null;
   }
 }
+
+/** Upload bytes to R2 at "<bucket>/<path>" key. Returns false on any failure (caller falls back). */
+export async function r2Put(key: string, body: ArrayBuffer, contentType: string): Promise<boolean> {
+  const id = process.env.R2_ACCESS_KEY_ID, secret = process.env.R2_SECRET_ACCESS_KEY, acct = process.env.CF_ACCOUNT_ID;
+  const bucket = process.env.R2_BUCKET_NAME || "orzen-media";
+  if (!id || !secret || !acct) return false;
+  try {
+    const host = `${acct}.r2.cloudflarestorage.com`;
+    const path = `/${bucket}/${key.split("/").map((s) => encodeURIComponent(s)).join("/")}`;
+    const now = new Date().toISOString().replace(/[:-]|\.\d{3}/g, "");
+    const date = now.slice(0, 8);
+    const payload = hex(await crypto.subtle.digest("SHA-256", body));
+    const canon = `PUT\n${path}\n\ncontent-type:${contentType}\nhost:${host}\nx-amz-content-sha256:${payload}\nx-amz-date:${now}\n\ncontent-type;host;x-amz-content-sha256;x-amz-date\n${payload}`;
+    const scope = `${date}/auto/s3/aws4_request`;
+    const sts = `AWS4-HMAC-SHA256\n${now}\n${scope}\n${await sha(canon)}`;
+    let k = await hmac(enc.encode("AWS4" + secret), date);
+    for (const p of ["auto", "s3", "aws4_request"]) k = await hmac(k, p);
+    const sig = hex(await hmac(k, sts));
+    const res = await fetch(`https://${host}${path}`, {
+      method: "PUT",
+      body,
+      headers: {
+        "content-type": contentType,
+        "x-amz-date": now,
+        "x-amz-content-sha256": payload,
+        Authorization: `AWS4-HMAC-SHA256 Credential=${id}/${scope}, SignedHeaders=content-type;host;x-amz-content-sha256;x-amz-date, Signature=${sig}`,
+      },
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
