@@ -154,7 +154,11 @@ export const Route = createFileRoute("/api/img/$")({
           if (resized) return resized;
         }
 
-        const data = (await fetchWithServiceRole(path)) ?? (await fetchWithPublishableKey(path));
+        const { r2Get } = await import("@/lib/r2.server");
+        const data =
+          (await r2Get(`store-assets/${path}`)) ??
+          (await fetchWithServiceRole(path)) ??
+          (await fetchWithPublishableKey(path));
         if (!data) return new Response("Not found", { status: 404 });
 
         // Only stream back real images, never arbitrary binaries with an image name.
