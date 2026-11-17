@@ -166,7 +166,7 @@ function OwnerStores() {
                 {s.status === "active" ? "Suspend" : "Activate"}
               </Button>
               <a
-                href={storeHref(s.slug)}
+                href={storeHref(s.slug, "", s.public_url)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex h-7 items-center rounded-md border px-2 text-xs hover:bg-muted"
@@ -218,7 +218,7 @@ function OwnerStores() {
                       <Eye className="h-4 w-4" />
                     </Button>
                     <a
-                      href={storeHref(s.slug)}
+                      href={storeHref(s.slug, "", s.public_url)}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex h-9 items-center rounded-md border px-3 text-xs hover:bg-muted"

@@ -47,7 +47,17 @@ export const listAllStores = createServerFn({ method: "GET" })
       .select("*, subscription_packages(name)")
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
-    return data ?? [];
+    // Canonical public URL: the verified primary custom domain when one exists.
+    const ids = (data ?? []).map((s: any) => s.primary_domain_id).filter(Boolean);
+    const { data: doms } = ids.length
+      ? await context.supabase.from("store_domains").select("id,hostname,status,landing_page_id").in("id", ids)
+      : { data: [] as any[] };
+    const byId = new Map((doms ?? []).map((d: any) => [d.id, d]));
+    return (data ?? []).map((s: any) => {
+      const p: any = s.primary_domain_id ? byId.get(s.primary_domain_id) : null;
+      const ok = p && !p.landing_page_id && ["verified", "active"].includes(String(p.status));
+      return { ...s, public_url: ok ? `https://${String(p.hostname).toLowerCase()}` : null };
+    });
   });
 
 export const setStoreStatus = createServerFn({ method: "POST" })
@@ -1609,11 +1619,11 @@ export const ownerStoreHealth = createServerFn({ method: "GET" })
 
 
     const [storesRes, ordersRes, productsRes, customersRes, domainsRes] = await Promise.all([
-      sb.from("stores").select("id,name,slug,status,subscription_status,expires_at,trial_ends_at,created_at,package_id,merchant_code").order("created_at", { ascending: false }),
+      sb.from("stores").select("id,name,slug,status,subscription_status,expires_at,trial_ends_at,created_at,package_id,merchant_code,primary_domain_id").order("created_at", { ascending: false }),
       sb.from("orders").select("store_id,created_at,status,subtotal,discount_amount,delivery_amount"),
       sb.from("products").select("store_id,status"),
       sb.from("store_customers").select("store_id,last_login_at"),
-      sb.from("store_domains").select("store_id,hostname,status,ssl_status,is_primary"),
+      sb.from("store_domains").select("id,store_id,hostname,status,ssl_status,is_primary,landing_page_id"),
     ]);
 
     type Agg = { orders: number; orders7d: number; revenue: number; lastOrderAt: string | null };
@@ -1649,7 +1659,9 @@ export const ownerStoreHealth = createServerFn({ method: "GET" })
     }
 
     const domainAgg = new Map<string, { hostname: string; status: string; ssl: string | null }[]>();
+    const domainById = new Map<string, any>();
     for (const d of (domainsRes.data ?? []) as any[]) {
+      domainById.set(d.id, d);
       const list = domainAgg.get(d.store_id) ?? [];
       list.push({ hostname: d.hostname, status: d.status, ssl: d.ssl_status ?? null });
       domainAgg.set(d.store_id, list);
@@ -1690,6 +1702,12 @@ export const ownerStoreHealth = createServerFn({ method: "GET" })
         customers: c.total,
         last_customer_login_at: c.lastLoginAt,
         domains,
+        public_url: (() => {
+          const p = s.primary_domain_id ? domainById.get(s.primary_domain_id) : null;
+          return p && !p.landing_page_id && ["verified", "active"].includes(String(p.status))
+            ? `https://${String(p.hostname).toLowerCase()}`
+            : null;
+        })(),
         issues,
         score,
       };
