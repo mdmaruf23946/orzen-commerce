@@ -17,7 +17,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ImageUploader } from "@/components/admin/ImageUploader";
-import { heroBannerSizeError, HERO_MIN, HERO_MAX } from "@/lib/banner-size";
 import { cn } from "@/lib/utils";
 import { AdminPageHeader } from "@/components/admin/page/AdminPageHeader";
 import { TypeFilterTabs } from "@/components/admin/page/TypeFilterTabs";
@@ -372,14 +371,14 @@ function BannerDialog({
               storeId={storeId}
               value={image}
               onChange={setImage}
-              validateSize={position === "hero" ? heroBannerSizeError : undefined}
+              cropTo={position === "hero" ? { w: 1920, h: 800 } : { w: 1280, h: 800 }}
             />
             {position === "hero" ? (
               <p className="text-xs text-muted-foreground">
-                Hero banner size: {HERO_MIN.w}×{HERO_MIN.h}px to {HERO_MAX.w}×{HERO_MAX.h}px (ratio 12:5). Best: 1920×800px. Larger or mismatched images are rejected.
+                যেকোনো সাইজের ছবি দিন — আপলোডের আগে ফ্রেমে (12:5) কোন অংশ দেখাবে ঠিক করতে পারবেন।
               </p>
             ) : (
-              <p className="text-xs text-muted-foreground">Recommended: 800×500px (ratio 8:5).</p>
+              <p className="text-xs text-muted-foreground">যেকোনো সাইজের ছবি দিন — আপলোডের আগে ফ্রেমে (8:5) কোন অংশ দেখাবে ঠিক করতে পারবেন।</p>
             )}
           </div>
 

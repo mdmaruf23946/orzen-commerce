@@ -996,7 +996,7 @@ function TemplateBannerDialog({
 
           <div className="space-y-1.5">
             <Label>Banner image</Label>
-            <ImageUploader folder={TEMPLATE_FOLDER} value={image} onChange={setImage} label="Upload banner" />
+            <ImageUploader folder={TEMPLATE_FOLDER} value={image} onChange={setImage} label="Upload banner" cropTo={position === "hero" ? { w: 1920, h: 800 } : { w: 1280, h: 800 }} />
             <p className="text-xs text-muted-foreground">Recommended 1600×600 (JPG/PNG/WEBP).</p>
           </div>
 

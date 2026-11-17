@@ -232,8 +232,11 @@ export function HeroBanners({ banners }: { banners: HeroBanner[] }) {
     >
       <div className={left ? "lg:order-2" : ""}>{mainEl}</div>
       {hasSide && (
-        <div className={`grid min-w-0 grid-cols-2 gap-3 lg:grid-cols-1 lg:grid-rows-2 ${left ? "lg:order-1" : ""}`}>
-          {slots.map((items, i) => slotBox(items, i, "aspect-[8/5] lg:aspect-auto"))}
+        <div className={`relative min-w-0 ${left ? "lg:order-1" : ""}`}>
+          {/* Locked to the main banner's height: no image size can stretch this column. */}
+          <div className="grid grid-cols-2 gap-3 lg:absolute lg:inset-0 lg:grid-cols-1 lg:grid-rows-2">
+            {slots.map((items, i) => slotBox(items, i, "aspect-[8/5] lg:aspect-auto lg:h-full"))}
+          </div>
         </div>
       )}
     </section>

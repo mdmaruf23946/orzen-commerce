@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { compressImage } from "@/lib/compress-image";
+import { BannerCropDialog } from "@/components/admin/BannerCropDialog";
 
 const DEFAULT_MAX_BYTES = 5 * 1024 * 1024; // 5 MB
 
@@ -36,6 +37,7 @@ export function ImageUploader({
   label,
   wide = false,
   validateSize,
+  cropTo,
 }: {
   storeId?: string;
   folder?: string;
@@ -48,13 +50,25 @@ export function ImageUploader({
   wide?: boolean;
   /** Return an error message to reject an image by its pixel size. */
   validateSize?: (w: number, h: number) => string | null;
+  /** When set, every image goes through a fixed-frame cropper and is saved at exactly this size. */
+  cropTo?: { w: number; h: number };
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
+  const [pending, setPending] = useState<File | null>(null);
   const isImage = accept.startsWith("image");
   const dir = folder || storeId;
 
-  async function handle(file: File) {
+  async function handle(file: File, cropped = false) {
+    if (isImage && cropTo && !cropped) {
+      if (!file.type.startsWith("image/")) {
+        toast.error("Please choose an image file");
+        return;
+      }
+      setPending(file);
+      if (inputRef.current) inputRef.current.value = "";
+      return;
+    }
     if (!dir) {
       toast.error("Upload folder not ready");
       return;
@@ -63,7 +77,7 @@ export function ImageUploader({
       toast.error("Please choose an image file");
       return;
     }
-    if (isImage && validateSize) {
+    if (isImage && validateSize && !cropped) {
       const dims = await readImageSize(file);
       const err = dims ? validateSize(dims.w, dims.h) : "Could not read image size";
       if (err) {
@@ -110,6 +124,17 @@ export function ImageUploader({
 
   return (
     <div className="flex items-center gap-3">
+      {pending && cropTo && (
+        <BannerCropDialog
+          file={pending}
+          output={cropTo}
+          onCancel={() => setPending(null)}
+          onDone={(f) => {
+            setPending(null);
+            void handle(f, true);
+          }}
+        />
+      )}
       <div
         className={
           wide
